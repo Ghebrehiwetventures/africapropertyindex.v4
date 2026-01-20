@@ -4,6 +4,8 @@ import { SourceStatus, SourceState, createInitialState } from "./status";
 import { loadSourcesConfig, loadRulesConfig, SourceConfig } from "./configLoader";
 import { RuleViolation } from "./goldenRules";
 import { ListingVisibility } from "./classifyListing";
+import { runPreflightCv } from "./preflightCv";
+import { LifecycleState } from "./preflightTypes";
 import {
   batchEvaluateMarket,
   MarketListingInput,
@@ -283,6 +285,18 @@ export async function runCvIngest(): Promise<IngestReport> {
 
   console.log(`\n=== Starting ingest for market: ${marketId} ===\n`);
 
+  // Run preflight FIRST
+  console.log(`[Preflight] Running preflight check...`);
+  const preflightReport = await runPreflightCv();
+
+  // Build lifecycle state map from preflight results
+  const lifecycleMap: Map<string, LifecycleState> = new Map();
+  for (const result of preflightReport.results) {
+    lifecycleMap.set(result.sourceId, result.lifecycleState);
+  }
+
+  console.log(`[Preflight] Complete: IN=${preflightReport.summary.inCount}, OBSERVE=${preflightReport.summary.observeCount}, DROP=${preflightReport.summary.dropCount}`);
+
   // Load config
   const sourcesResult = loadSourcesConfig(marketId);
   const rulesResult = loadRulesConfig(marketId);
@@ -333,6 +347,29 @@ export async function runCvIngest(): Promise<IngestReport> {
 
   // Process each source
   for (const source of sources) {
+    const lifecycle = lifecycleMap.get(source.id);
+
+    // DROP: skip entirely
+    if (lifecycle === LifecycleState.DROP) {
+      console.log(`[${source.id}] Skipped (DROP)`);
+      const state = sourceStates.get(source.id)!;
+      state.status = SourceStatus.BROKEN_SOURCE;
+      state.lastError = "Dropped by preflight";
+      sourceStates.set(source.id, state);
+      continue;
+    }
+
+    // OBSERVE: skip normal ingest (Trial Enrichment already done in preflight)
+    if (lifecycle === LifecycleState.OBSERVE) {
+      console.log(`[${source.id}] Skipped (OBSERVE)`);
+      const state = sourceStates.get(source.id)!;
+      state.status = SourceStatus.PARTIAL_OK;
+      state.lastError = "Under observation";
+      sourceStates.set(source.id, state);
+      continue;
+    }
+
+    // IN: proceed with normal ingest
     try {
       if (source.type === "html") {
         // Real source - fetch and parse

@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import { PreflightReport, LifecycleState } from "./preflightTypes";
 
 interface SourceReport {
   id: string;
@@ -106,6 +107,82 @@ function runReport(): void {
       if (source.lastError) {
         console.log(`    Error: ${source.lastError}`);
       }
+    }
+  }
+
+  console.log("");
+
+  // Preflight Lifecycle Report
+  displayPreflightReport();
+}
+
+function findLatestPreflightReport(): string | null {
+  const reportsDir = path.resolve(__dirname, "../reports");
+
+  if (!fs.existsSync(reportsDir)) {
+    return null;
+  }
+
+  const pattern = /^cv_preflight_(\d{8})_(\d{6})(?:_\d{2})?\.json$/;
+  const files = fs.readdirSync(reportsDir);
+
+  const matches: { filename: string; timestamp: string }[] = [];
+
+  for (const file of files) {
+    const match = file.match(pattern);
+    if (match) {
+      const timestamp = match[1] + match[2];
+      matches.push({ filename: file, timestamp });
+    }
+  }
+
+  if (matches.length === 0) {
+    return null;
+  }
+
+  matches.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+  return path.join(reportsDir, matches[0].filename);
+}
+
+function displayPreflightReport(): void {
+  console.log("\n=== Preflight Lifecycle Report ===\n");
+
+  const reportPath = findLatestPreflightReport();
+
+  if (!reportPath) {
+    console.log("No preflight report found in reports/ directory.");
+    console.log("Run 'npm run preflight:cv' to generate one.");
+    return;
+  }
+
+  const report: PreflightReport = JSON.parse(fs.readFileSync(reportPath, "utf-8"));
+
+  console.log(`Report: ${path.basename(reportPath)}`);
+  console.log(`Generated: ${report.generatedAt}`);
+
+  // Counts per lifecycle state
+  console.log("\n--- Lifecycle State Summary ---");
+  console.log(`  IN:      ${report.summary.inCount}`);
+  console.log(`  OBSERVE: ${report.summary.observeCount}`);
+  console.log(`  DROP:    ${report.summary.dropCount}`);
+  console.log(`  Total:   ${report.summary.total}`);
+
+  // Per-source lifecycle state
+  console.log("\n--- Per-Source Lifecycle ---");
+  for (const result of report.results) {
+    const reasonStr = result.reasons.length > 0 ? ` (${result.reasons.join(", ")})` : "";
+    console.log(`  ${result.sourceName}: ${result.lifecycleState}${reasonStr}`);
+  }
+
+  // OBSERVE → IN promotions
+  const promotions = report.results.filter((r) => r.promotedToIn === true);
+  console.log("\n--- OBSERVE → IN Promotions ---");
+  if (promotions.length === 0) {
+    console.log("  (none)");
+  } else {
+    for (const p of promotions) {
+      console.log(`  ${p.sourceName}: promoted after trial enrichment`);
     }
   }
 

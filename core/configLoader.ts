@@ -8,6 +8,7 @@ export interface SourceConfig {
   name: string;
   url: string;
   type: string;
+  userAgent?: string;
   selectors: {
     listing: string;
     title: string;
