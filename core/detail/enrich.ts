@@ -34,7 +34,9 @@ export async function runDetailEnrichment(
 
   const enrichable = inputs.filter((input) => {
     if (!input.detailUrl) return false;
-    if (!needsEnrichment(input.violations)) return false;
+    // DEBUG_TERRA override: bypass needsEnrichment check for Terra
+    const debugTerraOverride = process.env.DEBUG_TERRA === "1" && input.sourceId === "cv_terracaboverde";
+    if (!debugTerraOverride && !needsEnrichment(input.violations)) return false;
     if (!factory.hasPlugin(input.sourceId)) return false;
     return true;
   });
@@ -146,6 +148,12 @@ export async function runDetailEnrichment(
       description: extractResult.description || input.currentDescription,
       imageUrls: allImages,
       location: extractResult.location || input.currentLocation,
+      // Structured property data from extraction
+      bedrooms: extractResult.bedrooms,
+      bathrooms: extractResult.bathrooms,
+      parkingSpaces: extractResult.parkingSpaces,
+      terraceArea: extractResult.terraceArea,
+      amenities: extractResult.amenities,
     });
 
     console.log(`[Enrichment] ✓ ${input.listingId} (enriched: ${wasEnriched})`);

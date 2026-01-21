@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
-import type { CheerioAPI, Cheerio, Element } from "cheerio";
+import type { CheerioAPI, Cheerio } from "cheerio";
+import type { AnyNode } from "domhandler";
 import * as crypto from "crypto";
 
 export interface ParsedListing {
@@ -89,7 +90,7 @@ function isValidImageUrl(url: string): boolean {
   return true;
 }
 
-function extractImagesFromStyleBlocks($: CheerioAPI, $el: Cheerio<Element>, baseUrl: string): string[] {
+function extractImagesFromStyleBlocks($: CheerioAPI, $el: Cheerio<AnyNode>, baseUrl: string): string[] {
   const imageUrls: string[] = [];
 
   const classes = new Set<string>();

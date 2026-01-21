@@ -35,6 +35,12 @@ interface IngestListing {
   location?: string;
   detailUrl?: string;
   createdAt: Date;
+  // Structured property data
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  parkingSpaces?: number | null;
+  terraceArea?: number | null;
+  amenities?: string[];
 }
 
 // ============================================
@@ -253,6 +259,12 @@ interface ListingReport {
   price?: number;
   location?: string;
   imageCount: number;
+  // Structured property data
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  parkingSpaces?: number | null;
+  terraceArea?: number | null;
+  amenities?: string[];
 }
 
 interface HiddenListingReport extends ListingReport {
@@ -360,13 +372,19 @@ export async function runCvIngest(): Promise<IngestReport> {
     }
 
     // OBSERVE: skip normal ingest (Trial Enrichment already done in preflight)
+    // DEBUG_TERRA override: allow Terra through for debug testing
     if (lifecycle === LifecycleState.OBSERVE) {
-      console.log(`[${source.id}] Skipped (OBSERVE)`);
-      const state = sourceStates.get(source.id)!;
-      state.status = SourceStatus.PARTIAL_OK;
-      state.lastError = "Under observation";
-      sourceStates.set(source.id, state);
-      continue;
+      if (process.env.DEBUG_TERRA === "1" && source.id === "cv_terracaboverde") {
+        console.log(`[${source.id}] DEBUG_TERRA override (OBSERVE -> fetch)`);
+        // Fall through to normal ingest
+      } else {
+        console.log(`[${source.id}] Skipped (OBSERVE)`);
+        const state = sourceStates.get(source.id)!;
+        state.status = SourceStatus.PARTIAL_OK;
+        state.lastError = "Under observation";
+        sourceStates.set(source.id, state);
+        continue;
+      }
     }
 
     // IN: proceed with normal ingest
@@ -461,7 +479,13 @@ export async function runCvIngest(): Promise<IngestReport> {
         listing.imageUrls = result.imageUrls;
         if (result.description) listing.description = result.description;
         if (result.title) listing.title = result.title;
-        if (result.price) listing.price = result.price;
+        if (result.price !== undefined) listing.price = result.price;
+        // Map structured property data from enrichment
+        if (result.bedrooms !== undefined) listing.bedrooms = result.bedrooms;
+        if (result.bathrooms !== undefined) listing.bathrooms = result.bathrooms;
+        if (result.parkingSpaces !== undefined) listing.parkingSpaces = result.parkingSpaces;
+        if (result.terraceArea !== undefined) listing.terraceArea = result.terraceArea;
+        if (result.amenities !== undefined) listing.amenities = result.amenities;
       }
     }
 
@@ -524,6 +548,12 @@ export async function runCvIngest(): Promise<IngestReport> {
       price: listing.price,
       location: listing.location,
       imageCount: listing.imageUrls?.length || 0,
+      // Structured property data
+      bedrooms: listing.bedrooms,
+      bathrooms: listing.bathrooms,
+      parkingSpaces: listing.parkingSpaces,
+      terraceArea: listing.terraceArea,
+      amenities: listing.amenities,
     };
 
     if (classification.visibility === ListingVisibility.VISIBLE) {

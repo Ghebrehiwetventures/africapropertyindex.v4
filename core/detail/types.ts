@@ -29,6 +29,12 @@ export interface DetailEnrichmentResult {
   imageUrls: string[];
   location?: string;
   error?: string;
+  // Structured property data
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  parkingSpaces?: number | null;
+  terraceArea?: number | null;
+  amenities?: string[];
 }
 
 /**
@@ -50,6 +56,12 @@ export interface DetailExtractResult {
   imageUrls: string[];
   location?: string;
   error?: string;
+  // Structured property data
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  parkingSpaces?: number | null;
+  terraceArea?: number | null;
+  amenities?: string[];
 }
 
 /**
