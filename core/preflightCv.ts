@@ -141,7 +141,28 @@ async function runTrialEnrichment(
 async function preflightSource(source: SourceConfig): Promise<PreflightResult> {
   const timestamp = new Date().toISOString();
 
-  const fetchResult = await fetchHtml(source.url, source.userAgent);
+  // Respect lifecycle override from config
+  if (source.lifecycleOverride) {
+    const overrideState = LifecycleState[source.lifecycleOverride as keyof typeof LifecycleState];
+    console.log(`[${source.id}] Lifecycle override: ${overrideState}`);
+    return {
+      sourceId: source.id,
+      sourceName: source.name,
+      lifecycleState: overrideState,
+      metrics: {
+        listingsCount: 0,
+        hasPriceRatio: 0,
+        hasImageRatio: 0,
+        hasDescriptionRatio: 0,
+      },
+      reasons: [`OVERRIDE: ${source.lifecycleOverride}`],
+      timestamp,
+      trialEnrichmentDone: false,
+      promotedToIn: false,
+    };
+  }
+
+  const fetchResult = await fetchHtml(source.url, source.userAgent ? { headers: { "User-Agent": source.userAgent } } : undefined);
 
   if (!fetchResult.success || !fetchResult.html) {
     return {

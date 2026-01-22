@@ -18,7 +18,9 @@ import { parseTerraCaboVerde } from "./parseTerraCaboVerde";
 import { runDetailEnrichment } from "./detail/enrich";
 import { getStrategyFactory } from "./detail/strategyFactory";
 import { terraCaboVerdePlugin } from "./detail/plugins/terraCaboVerde";
+import { simplyCapeVerdePlugin } from "./detail/plugins/simplyCapeVerde";
 import { DetailEnrichmentInput } from "./detail/types";
+import { upsertListings, SupabaseListing } from "./supabaseWriter";
 
 // ============================================
 // LISTING TYPES
@@ -34,6 +36,7 @@ interface IngestListing {
   imageUrls?: string[];
   location?: string;
   detailUrl?: string;
+  externalUrl?: string;
   createdAt: Date;
   // Structured property data
   bedrooms?: number | null;
@@ -41,6 +44,10 @@ interface IngestListing {
   parkingSpaces?: number | null;
   terraceArea?: number | null;
   amenities?: string[];
+  // Detail enrichment tracking
+  detail_enriched?: boolean;
+  detail_error?: string | null;
+  detail_skipped_reason?: string | null;
 }
 
 // ============================================
@@ -265,6 +272,10 @@ interface ListingReport {
   parkingSpaces?: number | null;
   terraceArea?: number | null;
   amenities?: string[];
+  // Detail enrichment tracking
+  detail_enriched?: boolean;
+  detail_error?: string | null;
+  detail_skipped_reason?: string | null;
 }
 
 interface HiddenListingReport extends ListingReport {
@@ -447,8 +458,9 @@ export async function runCvIngest(): Promise<IngestReport> {
     // Register plugins
     const factory = getStrategyFactory();
     factory.register(terraCaboVerdePlugin);
+    factory.register(simplyCapeVerdePlugin);
 
-    // Build enrichment inputs from hidden listings
+    // Build enrichment inputs from hidden listings only
     const enrichmentInputs: DetailEnrichmentInput[] = evalResult.classifications
       .filter((c) => c.visibility !== ListingVisibility.VISIBLE)
       .map((c) => {
@@ -456,7 +468,7 @@ export async function runCvIngest(): Promise<IngestReport> {
         return {
           listingId: c.listingId,
           sourceId: listing?.sourceId || "",
-          detailUrl: listing?.detailUrl || "",
+          detailUrl: listing?.externalUrl || listing?.detailUrl || "",
           currentTitle: listing?.title,
           currentPrice: listing?.price,
           currentDescription: listing?.description,
@@ -471,21 +483,38 @@ export async function runCvIngest(): Promise<IngestReport> {
 
     const enrichResult = await runDetailEnrichment(enrichmentInputs, detailEnrichLimit);
 
-    // Update listings with enriched data
+    // Update listings with enriched data and track enrichment status
     for (const result of enrichResult.results) {
-      if (!result.success || !result.enriched) continue;
       const listing = allListings.find((l) => l.id === result.listingId);
-      if (listing) {
-        listing.imageUrls = result.imageUrls;
-        if (result.description) listing.description = result.description;
-        if (result.title) listing.title = result.title;
-        if (result.price !== undefined) listing.price = result.price;
-        // Map structured property data from enrichment
-        if (result.bedrooms !== undefined) listing.bedrooms = result.bedrooms;
-        if (result.bathrooms !== undefined) listing.bathrooms = result.bathrooms;
-        if (result.parkingSpaces !== undefined) listing.parkingSpaces = result.parkingSpaces;
-        if (result.terraceArea !== undefined) listing.terraceArea = result.terraceArea;
-        if (result.amenities !== undefined) listing.amenities = result.amenities;
+      if (!listing) continue;
+
+      // Track enrichment status for all results
+      if (result.skipped) {
+        listing.detail_enriched = false;
+        listing.detail_error = null;
+        listing.detail_skipped_reason = result.skippedReason || "unknown";
+      } else if (!result.success) {
+        listing.detail_enriched = false;
+        listing.detail_error = result.error || "extraction failed";
+        listing.detail_skipped_reason = null;
+      } else {
+        listing.detail_enriched = result.enriched;
+        listing.detail_error = null;
+        listing.detail_skipped_reason = null;
+
+        // Apply enriched data
+        if (result.enriched) {
+          listing.imageUrls = result.imageUrls;
+          if (result.description) listing.description = result.description;
+          if (result.title) listing.title = result.title;
+          if (result.price !== undefined) listing.price = result.price;
+          // Map structured property data from enrichment
+          if (result.bedrooms !== undefined) listing.bedrooms = result.bedrooms;
+          if (result.bathrooms !== undefined) listing.bathrooms = result.bathrooms;
+          if (result.parkingSpaces !== undefined) listing.parkingSpaces = result.parkingSpaces;
+          if (result.terraceArea !== undefined) listing.terraceArea = result.terraceArea;
+          if (result.amenities !== undefined) listing.amenities = result.amenities;
+        }
       }
     }
 
@@ -498,7 +527,7 @@ export async function runCvIngest(): Promise<IngestReport> {
       }
     }
 
-    console.log(`[Enrichment] Summary: ${enrichResult.summary.enrichedCount} enriched, ${enrichResult.summary.failedCount} failed`);
+    console.log(`[Enrichment] Summary: ${enrichResult.summary.enrichedCount} enriched, ${enrichResult.summary.failedCount} failed, ${enrichResult.summary.skippedCount} skipped`);
     if (enrichResult.summary.stoppedReason) {
       console.log(`[Enrichment] Stopped: ${enrichResult.summary.stoppedReason}`);
     }
@@ -554,6 +583,10 @@ export async function runCvIngest(): Promise<IngestReport> {
       parkingSpaces: listing.parkingSpaces,
       terraceArea: listing.terraceArea,
       amenities: listing.amenities,
+      // Detail enrichment tracking
+      detail_enriched: listing.detail_enriched,
+      detail_error: listing.detail_error,
+      detail_skipped_reason: listing.detail_skipped_reason,
     };
 
     if (classification.visibility === ListingVisibility.VISIBLE) {
@@ -597,6 +630,51 @@ export async function runCvIngest(): Promise<IngestReport> {
   console.log(`\n=== Ingest Complete ===`);
   console.log(`Report written to: ${outputPath}`);
   console.log(`Summary: ${report.summary.visibleCount} visible, ${report.summary.hiddenCount} hidden, ${report.summary.duplicatesRemoved} duplicates\n`);
+
+  // Write visible listings to Supabase
+  console.log(`\n[Supabase] Writing ${visibleListings.length} visible listings...`);
+  const supabaseListings: SupabaseListing[] = visibleListings.map((listing) => {
+    const fullListing = allListings.find((l) => l.id === listing.id);
+    
+    // Parse location into island and city
+    let island: string | undefined;
+    let city: string | undefined;
+    if (listing.location) {
+      const locationLower = listing.location.toLowerCase();
+      if (locationLower.includes("sal") || locationLower.includes("santa maria")) {
+        island = "Sal";
+        city = locationLower.includes("santa maria") ? "Santa Maria" : undefined;
+      } else if (locationLower.includes("santiago") || locationLower.includes("praia")) {
+        island = "Santiago";
+        city = locationLower.includes("praia") ? "Praia" : undefined;
+      } else if (locationLower.includes("boa vista")) {
+        island = "Boa Vista";
+      } else if (locationLower.includes("são vicente") || locationLower.includes("mindelo")) {
+        island = "São Vicente";
+        city = locationLower.includes("mindelo") ? "Mindelo" : undefined;
+      }
+    }
+
+    return {
+      id: listing.id,
+      source_id: listing.sourceId,
+      source_url: fullListing?.detailUrl || fullListing?.externalUrl || "",
+      title: listing.title,
+      description: fullListing?.description,
+      price: listing.price,
+      currency: "EUR",
+      island,
+      city,
+      bedrooms: listing.bedrooms ?? null,
+      bathrooms: listing.bathrooms ?? null,
+      property_size_sqm: null,
+      land_area_sqm: null,
+      image_urls: fullListing?.imageUrls || [],
+      status: "observe",
+    };
+  });
+
+  await upsertListings(supabaseListings);
 
   return report;
 }
