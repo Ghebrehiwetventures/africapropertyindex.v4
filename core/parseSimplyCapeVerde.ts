@@ -13,6 +13,7 @@ export interface ParsedListing {
   imageUrls: string[];
   location?: string;
   detailUrl?: string;
+  externalUrl?: string;
   createdAt: Date;
 }
 
@@ -56,15 +57,65 @@ function makeAbsoluteUrl(url: string, baseUrl: string): string {
 function isValidImageUrl(url: string): boolean {
   if (!url) return false;
   const lower = url.toLowerCase();
+  // Filter non-http(s) URLs
+  if (!lower.startsWith("http://") && !lower.startsWith("https://")) return false;
+  // Filter UI elements
   if (lower.includes("logo")) return false;
   if (lower.includes("icon")) return false;
   if (lower.includes("avatar")) return false;
+  if (lower.includes("sprite")) return false;
   if (lower.includes("placeholder") && !lower.includes("property")) return false;
+  if (lower.includes("default")) return false;
   if (lower.includes("spinner")) return false;
   if (lower.includes("loading")) return false;
   if (lower.endsWith(".svg")) return false;
   if (lower.endsWith(".gif") && lower.includes("load")) return false;
+  // Filter tiny images by size hints in URL (e.g., 32x32, 64px, 100w)
+  if (/[_\-\/](32|48|50|64|72|80|100)(x\d+)?[_\-\.\/]|[_\-\/]\d+x(32|48|50|64|72|80|100)[_\-\.\/]/i.test(lower)) return false;
   return true;
+}
+
+// UI strings to remove from descriptions
+const UI_STRINGS_PATTERN = /\b(Add to favou?rites?|Favou?rite|Share|Print|Contact|Call|Email|WhatsApp|Similar properties|Related properties|Back)\b/gi;
+
+function cleanDescription(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+
+  let cleaned = raw
+    // Remove UI strings
+    .replace(UI_STRINGS_PATTERN, "")
+    // Normalize whitespace within lines
+    .replace(/[ \t]+/g, " ")
+    // Split into lines for deduplication
+    .split(/\n+/)
+    // Trim each line
+    .map((line) => line.trim())
+    // Remove empty lines
+    .filter((line) => line.length > 0)
+    // Remove duplicate lines (case-insensitive)
+    .filter((line, idx, arr) => arr.findIndex((l) => l.toLowerCase() === line.toLowerCase()) === idx)
+    // Rejoin
+    .join(" ");
+
+  // Final trim and length cap
+  cleaned = cleaned.trim();
+  if (cleaned.length > 300) cleaned = cleaned.slice(0, 300) + "...";
+
+  return cleaned || undefined;
+}
+
+function cleanImageUrls(urls: string[]): string[] {
+  // Dedupe while preserving order
+  const seen = new Set<string>();
+  const deduped: string[] = [];
+  for (const url of urls) {
+    if (!seen.has(url)) {
+      seen.add(url);
+      deduped.push(url);
+    }
+  }
+  // Cap at 20
+  return deduped.slice(0, 20);
 }
 
 function extractImagesFromElement($: CheerioAPI, $el: Cheerio<AnyNode>, baseUrl: string): string[] {
@@ -270,10 +321,11 @@ export function parseSimplyCapeVerde(
           sourceName,
           title: title || undefined,
           price,
-          description: description || undefined,
-          imageUrls: imageUrls.slice(0, 10),
+          description: cleanDescription(description),
+          imageUrls: cleanImageUrls(imageUrls),
           location: location || undefined,
           detailUrl,
+          externalUrl: detailUrl || undefined,
           createdAt: now,
         });
       }
@@ -325,8 +377,6 @@ export function parseSimplyCapeVerde(
 
       // Extract description
       let description = $card.find(".description, .excerpt, p").first().text().trim();
-      description = description.replace(/\s+/g, " ");
-      if (description.length > 300) description = description.slice(0, 300) + "...";
 
       if (title || price) {
         listings.push({
@@ -335,8 +385,8 @@ export function parseSimplyCapeVerde(
           sourceName,
           title: title || undefined,
           price,
-          description: description || undefined,
-          imageUrls: imageUrls.slice(0, 10),
+          description: cleanDescription(description),
+          imageUrls: cleanImageUrls(imageUrls),
           location: location || undefined,
           detailUrl,
           createdAt: now,

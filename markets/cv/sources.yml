@@ -24,6 +24,7 @@ sources:
     name: "Simply Cape Verde"
     url: https://simplycapeverde.com/
     type: html
+    lifecycleOverride: IN
     selectors:
       listing: ".es-listing"
       title: "h3"
@@ -54,6 +55,7 @@ sources:
     name: "Terra Cabo Verde"
     url: https://terracaboverde.com/properties/
     type: html
+    lifecycleOverride: IN
     selectors:
       listing: ".e-loop-item"
       title: "h2, h3"

@@ -8,6 +8,7 @@
     "report:cv": "npx ts-node --transpile-only core/reportCv.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.91.0",
     "cheerio": "^1.0.0",
     "js-yaml": "^4.1.0"
   },

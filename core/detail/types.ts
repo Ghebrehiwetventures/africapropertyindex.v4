@@ -20,8 +20,11 @@ export interface DetailEnrichmentInput {
  */
 export interface DetailEnrichmentResult {
   listingId: string;
+  detailUrl: string;
   success: boolean;
   enriched: boolean;
+  skipped?: boolean;
+  skippedReason?: string;
   canonicalId?: string;
   title?: string;
   price?: number;
@@ -71,6 +74,7 @@ export interface EnrichmentSummary {
   totalProcessed: number;
   successCount: number;
   failedCount: number;
+  skippedCount: number;
   enrichedCount: number;
   stoppedReason?: "CAPTCHA" | "HTTP_403" | "HTTP_429";
 }

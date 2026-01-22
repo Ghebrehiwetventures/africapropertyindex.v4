@@ -6,9 +6,19 @@ import {
 import { DetailQueue } from "./queue";
 import { getStrategyFactory } from "./strategyFactory";
 import { generateCanonicalId } from "./canonicalId";
-import { fetchHtml, FetchResult } from "../fetchHtml";
+import { fetchHtml, FetchResult, FetchOptions } from "../fetchHtml";
 import { RuleViolation } from "../goldenRules";
 import { SourceStatus } from "../status";
+
+// Browser-like headers for SimplyCapeVerde to reduce CAPTCHA triggers
+const SIMPLY_BROWSER_HEADERS: Record<string, string> = {
+  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+  "Accept-Language": "en-US,en;q=0.9,sv-SE;q=0.8,sv;q=0.7",
+  "Referer": "https://simplycapeverde.com/",
+  "Cache-Control": "no-cache",
+  "Pragma": "no-cache",
+};
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -20,6 +30,28 @@ function needsEnrichment(violations: RuleViolation[]): boolean {
       v === RuleViolation.INSUFFICIENT_IMAGES ||
       v === RuleViolation.DESCRIPTION_TOO_SHORT
   );
+}
+
+/**
+ * Check if URL looks like a Terra list page (not a detail page)
+ * List pages have patterns like ?e-page- or pathname /properties or /properties/
+ */
+function isTerraListPage(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    // Check query string for pagination
+    if (parsed.search.includes("e-page-")) {
+      return true;
+    }
+    // Check pathname for /properties (list pages)
+    const pathname = parsed.pathname;
+    if (pathname === "/properties" || pathname === "/properties/") {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 export async function runDetailEnrichment(
@@ -36,7 +68,9 @@ export async function runDetailEnrichment(
     if (!input.detailUrl) return false;
     // DEBUG_TERRA override: bypass needsEnrichment check for Terra
     const debugTerraOverride = process.env.DEBUG_TERRA === "1" && input.sourceId === "cv_terracaboverde";
-    if (!debugTerraOverride && !needsEnrichment(input.violations)) return false;
+    // Simply Cape Verde always requires detail enrichment for Golden quality
+    const forceDetailForSimply = input.sourceId === "cv_simplycapeverde";
+    if (!debugTerraOverride && !forceDetailForSimply && !needsEnrichment(input.violations)) return false;
     if (!factory.hasPlugin(input.sourceId)) return false;
     return true;
   });
@@ -46,7 +80,7 @@ export async function runDetailEnrichment(
   if (enrichable.length === 0) {
     return {
       results: [],
-      summary: { totalProcessed: 0, successCount: 0, failedCount: 0, enrichedCount: 0 },
+      summary: { totalProcessed: 0, successCount: 0, failedCount: 0, skippedCount: 0, enrichedCount: 0 },
     };
   }
 
@@ -69,15 +103,51 @@ export async function runDetailEnrichment(
     const input = queue.dequeue();
     if (!input) break;
 
+    const listingId = input.listingId;
+    const detailUrl = input.detailUrl;
+
     const plugin = factory.getPlugin(input.sourceId);
     if (!plugin) continue;
 
-    console.log(`[Enrichment] Fetching ${input.listingId}...`);
+    // Check for Terra list page guard before fetching
+    if (isTerraListPage(detailUrl)) {
+      console.log(`[Enrichment] ↷ ${listingId} url=${detailUrl} reason=list page guard`);
+      results.push({
+        listingId,
+        detailUrl,
+        success: false,
+        enriched: false,
+        skipped: true,
+        skippedReason: "list page guard",
+        imageUrls: input.currentImageUrls,
+      });
+      continue;
+    }
 
-    const fetchResult: FetchResult = await fetchHtml(input.detailUrl);
+    console.log(`[Enrichment] Fetching ${listingId}...`);
 
-    // CAPTCHA/403/429 => PAUSED_BY_SYSTEM and stop
+    // SimplyCapeVerde: extra delay + browser headers to reduce CAPTCHA
+    const isSimply = input.sourceId === "cv_simplycapeverde";
+    if (isSimply) {
+      const extraDelay = 8000 + Math.floor(Math.random() * 4000); // 8-12s jitter
+      console.log(`[Enrichment] Simply rate-limit: waiting ${extraDelay}ms`);
+      await sleep(extraDelay);
+    }
+
+    const fetchOpts: FetchOptions | undefined = isSimply
+      ? { headers: SIMPLY_BROWSER_HEADERS }
+      : undefined;
+    const fetchResult: FetchResult = await fetchHtml(detailUrl, fetchOpts);
+
+    // CAPTCHA/403/429 handling
+    // Simply: skip listing and continue (don't stop the whole run)
+    // Other sources: pause and stop
     if (fetchResult.statusCode === 403) {
+      if (input.sourceId === "cv_simplycapeverde") {
+        console.log(`[Enrichment] ✗ ${listingId} url=${detailUrl} reason=403`);
+        results.push({ listingId, detailUrl, success: false, enriched: false, skipped: true, skippedReason: "403", imageUrls: input.currentImageUrls });
+        continue;
+      }
       stoppedReason = "HTTP_403";
       pausedSource = { sourceId: input.sourceId, status: SourceStatus.PAUSED_BY_SYSTEM };
       console.log(`[Enrichment] 403 - PAUSED_BY_SYSTEM`);
@@ -85,6 +155,11 @@ export async function runDetailEnrichment(
     }
 
     if (fetchResult.statusCode === 429) {
+      if (input.sourceId === "cv_simplycapeverde") {
+        console.log(`[Enrichment] ✗ ${listingId} url=${detailUrl} reason=429`);
+        results.push({ listingId, detailUrl, success: false, enriched: false, skipped: true, skippedReason: "429", imageUrls: input.currentImageUrls });
+        continue;
+      }
       stoppedReason = "HTTP_429";
       pausedSource = { sourceId: input.sourceId, status: SourceStatus.PAUSED_BY_SYSTEM };
       console.log(`[Enrichment] 429 - PAUSED_BY_SYSTEM`);
@@ -92,6 +167,11 @@ export async function runDetailEnrichment(
     }
 
     if (fetchResult.html && fetchResult.html.toLowerCase().includes("captcha")) {
+      if (input.sourceId === "cv_simplycapeverde") {
+        console.log(`[Enrichment] ✗ ${listingId} url=${detailUrl} reason=captcha`);
+        results.push({ listingId, detailUrl, success: false, enriched: false, skipped: true, skippedReason: "captcha", imageUrls: input.currentImageUrls });
+        continue;
+      }
       stoppedReason = "CAPTCHA";
       pausedSource = { sourceId: input.sourceId, status: SourceStatus.PAUSED_BY_SYSTEM };
       console.log(`[Enrichment] CAPTCHA - PAUSED_BY_SYSTEM`);
@@ -99,8 +179,10 @@ export async function runDetailEnrichment(
     }
 
     if (!fetchResult.success || !fetchResult.html) {
+      console.log(`[Enrichment] ✗ ${listingId} url=${detailUrl} reason=fetch failed: ${fetchResult.error || "no html"}`);
       results.push({
-        listingId: input.listingId,
+        listingId,
+        detailUrl,
         success: false,
         enriched: false,
         imageUrls: input.currentImageUrls,
@@ -109,11 +191,13 @@ export async function runDetailEnrichment(
       continue;
     }
 
-    const extractResult = plugin.extract(fetchResult.html, input.detailUrl);
+    const extractResult = plugin.extract(fetchResult.html, detailUrl);
 
     if (!extractResult.success) {
+      console.log(`[Enrichment] ✗ ${listingId} url=${detailUrl} reason=plugin returned success:false`);
       results.push({
-        listingId: input.listingId,
+        listingId,
+        detailUrl,
         success: false,
         enriched: false,
         imageUrls: input.currentImageUrls,
@@ -139,7 +223,8 @@ export async function runDetailEnrichment(
     );
 
     results.push({
-      listingId: input.listingId,
+      listingId,
+      detailUrl,
       success: true,
       enriched: wasEnriched,
       canonicalId,
@@ -156,7 +241,7 @@ export async function runDetailEnrichment(
       amenities: extractResult.amenities,
     });
 
-    console.log(`[Enrichment] ✓ ${input.listingId} (enriched: ${wasEnriched})`);
+    console.log(`[Enrichment] ✓ ${listingId} (enriched: ${wasEnriched})`);
   }
 
   return {
@@ -164,7 +249,8 @@ export async function runDetailEnrichment(
     summary: {
       totalProcessed: results.length,
       successCount: results.filter((r) => r.success).length,
-      failedCount: results.filter((r) => !r.success).length,
+      failedCount: results.filter((r) => !r.success && !r.skipped).length,
+      skippedCount: results.filter((r) => r.skipped).length,
       enrichedCount: results.filter((r) => r.enriched).length,
       stoppedReason,
     },

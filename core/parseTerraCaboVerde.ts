@@ -146,9 +146,21 @@ export function parseTerraCaboVerde(
     // Skip pagination, category, and non-property links
     if (!href) return;
     if (href.includes("/page/")) return;
-    if (href === "https://terracaboverde.com/properties/") return;
-    if (href === baseUrl) return;
+    if (href.includes("?e-page-")) return; // pagination query param
     if (processedUrls.has(href)) return;
+
+    // Only accept /properties/<slug>/ URLs (actual detail pages)
+    // Reject: /properties/ , /properties/?e-page-xxx
+    try {
+      const parsed = new URL(href, baseUrl);
+      const pathname = parsed.pathname;
+      // Must match /properties/<slug>/ where slug is non-empty
+      const match = pathname.match(/^\/properties\/([^/]+)\/?$/);
+      if (!match || !match[1]) return;
+    } catch {
+      return;
+    }
+
     processedUrls.add(href);
 
     const detailUrl = makeAbsoluteUrl(href, baseUrl);
@@ -257,6 +269,15 @@ export function parseTerraCaboVerde(
       createdAt: now,
     });
   });
+
+  // DEBUG_TERRA: assert no pagination URLs leaked through
+  if (process.env.DEBUG_TERRA === "1") {
+    const paginationUrls = listings.filter((l) => l.detailUrl?.includes("?e-page-"));
+    console.log(`[DEBUG_TERRA] detailUrls with ?e-page-: ${paginationUrls.length}`);
+    if (paginationUrls.length > 0) {
+      console.log(`[DEBUG_TERRA] WARNING: pagination URLs found:`, paginationUrls.map((l) => l.detailUrl));
+    }
+  }
 
   return listings;
 }

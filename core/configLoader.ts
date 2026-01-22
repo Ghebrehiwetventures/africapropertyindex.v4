@@ -9,6 +9,7 @@ export interface SourceConfig {
   url: string;
   type: string;
   userAgent?: string;
+  lifecycleOverride?: "IN" | "OBSERVE" | "DROP";
   selectors: {
     listing: string;
     title: string;
