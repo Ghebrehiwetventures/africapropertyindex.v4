@@ -1,4 +1,4 @@
-# Utvärdering: Africa Property Finder ↔ Morabesa Data
+# Utvärdering: Africa Property Finder ↔ Africa Property Index Data
 
 **Datum:** 2026-02-11  
 **Syfte:** Avgöra om frontend-sajten fungerar med vår Supabase-data.
@@ -28,7 +28,7 @@ bedrooms, bathrooms, area, areaUnit, status, image, source,
 syncDate, type, tags[], lat, lng
 ```
 
-### Morabesa Supabase har (SupabaseListing)
+### Africa Property Index Supabase har (SupabaseListing)
 
 ```typescript
 id, source_id, source_url, title, description, price, currency,

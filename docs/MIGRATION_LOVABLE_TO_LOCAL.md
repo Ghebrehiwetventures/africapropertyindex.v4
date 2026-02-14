@@ -1,4 +1,4 @@
-# Migration: Lovable → Local (Morabesa)
+# Migration: Lovable → Local (Africa Property Index)
 
 **Mål:** Ladda ner frontend från Lovable, arbeta lokalt, deploya till Vercel.  
 **Risk:** Inga country-specific tweaks – behåll genericitet.
@@ -29,9 +29,9 @@
 
 ## Fas 2: Setup lokalt
 
-### Plats i morabesa
+### Plats i projektet
 ```
-morabesa/
+(projektrot)/
   web/          ← Lovable-export här (ny dir)
   core/         ← Pipeline (oförändrad)
   markets/      ← YAML (oförändrad)
@@ -95,7 +95,7 @@ grep -r "lovable\|gpt-engineer" web/
 
 ### Setup
 1. **Vercel CLI:** `npm i -g vercel`
-2. **Connect repo:** Vercel Dashboard → Import Project → morabesa
+2. **Connect repo:** Vercel Dashboard → Import Project → africa-property-index
 3. **Root Directory:** Sätt till `web` (om frontend ligger i web/)
 4. **Framework Preset:** Vite eller Next.js (auto-detect)
 5. **Build command:** `npm run build` (default)
@@ -129,5 +129,5 @@ grep -r "lovable\|gpt-engineer" web/
 ## Noteringar
 
 - **Lovable export:** Vanligtvis React + Vite. Next.js om backend ingår.
-- **Supabase:** Lovable-projekt använder ofta Supabase – samma som morabesa pipeline.
-- **Env vars:** Supabase-nycklar ska vara samma som i morabesa (samma DB).
+- **Supabase:** Lovable-projekt använder ofta Supabase – samma som Africa Property Index pipeline.
+- **Env vars:** Supabase-nycklar ska vara samma som i projektet (samma DB).
