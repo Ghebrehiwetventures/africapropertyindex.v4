@@ -1009,7 +1009,7 @@ function ListingsTabView() {
             </select>
           </div>
           <div>
-            <label className="label-style block mb-1">Imported from</label>
+            <label className="label-style block mb-1">Updated from</label>
             <input
               type="date"
               value={filters.importedAfter ?? ""}
@@ -1021,7 +1021,7 @@ function ListingsTabView() {
             />
           </div>
           <div>
-            <label className="label-style block mb-1">Imported to</label>
+            <label className="label-style block mb-1">Updated to</label>
             <input
               type="date"
               value={filters.importedBefore ?? ""}
