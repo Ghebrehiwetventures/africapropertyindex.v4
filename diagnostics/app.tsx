@@ -770,7 +770,7 @@ function downloadCsv(csv: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-const LISTINGS_COLUMNS: { key: ListingsSortKey | "photo" | "action"; label: string }[] = [
+const LISTINGS_COLUMNS: { key: ListingsSortKey | "photo" | "grade" | "action"; label: string }[] = [
   { key: "photo", label: "Photo" },
   { key: "title", label: "Title" },
   { key: "price", label: "Price" },
@@ -780,6 +780,7 @@ const LISTINGS_COLUMNS: { key: ListingsSortKey | "photo" | "action"; label: stri
   { key: "bathrooms", label: "Baths" },
   { key: "property_size_sqm", label: "Area" },
   { key: "source_id", label: "Source" },
+  { key: "grade", label: "Grade" },
   { key: "action", label: "" },
 ];
 
@@ -787,6 +788,7 @@ function ListingsTabView() {
   const [markets, setMarkets] = useState<{ id: string; name: string }[]>([]);
   const [marketId, setMarketId] = useState("all");
   const [sourceOptions, setSourceOptions] = useState<{ id: string; name: string }[]>([]);
+  const [gradeBySourceId, setGradeBySourceId] = useState<Map<string, "A" | "B" | "C" | "D">>(new Map());
   const [filters, setFilters] = useState<ListingsFilters>({});
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<ListingsSortKey>("id");
@@ -810,6 +812,7 @@ function ListingsTabView() {
           ? s.sourceRows.filter((r) => r.marketId === marketId).map((r) => ({ id: r.source_id, name: r.sourceName }))
           : s.sourceRows.map((r) => ({ id: r.source_id, name: r.sourceName }));
       setSourceOptions(opts);
+      setGradeBySourceId(new Map(s.sourceRows.map((r) => [r.source_id, r.grade])));
     });
   }, [marketId]);
 
@@ -1005,6 +1008,30 @@ function ListingsTabView() {
               <option value="no">No</option>
             </select>
           </div>
+          <div>
+            <label className="label-style block mb-1">Imported from</label>
+            <input
+              type="date"
+              value={filters.importedAfter ?? ""}
+              onChange={(e) => {
+                setFilters((f) => ({ ...f, importedAfter: e.target.value || undefined }));
+                setPage(1);
+              }}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="label-style block mb-1">Imported to</label>
+            <input
+              type="date"
+              value={filters.importedBefore ?? ""}
+              onChange={(e) => {
+                setFilters((f) => ({ ...f, importedBefore: e.target.value || undefined }));
+                setPage(1);
+              }}
+              className={inputCls}
+            />
+          </div>
           <div className="sm:col-span-2 md:col-span-1">
             <label className="label-style block mb-1">Title search</label>
             <input
@@ -1138,7 +1165,7 @@ function ListingsTabView() {
               <thead>
                 <tr className="border-b border-border">
                   {LISTINGS_COLUMNS.map(({ key, label }) =>
-                    key === "photo" || key === "action" ? (
+                    key === "photo" || key === "grade" || key === "action" ? (
                       <th key={key} className="text-left py-2 px-3 label-style">
                         {label}
                       </th>
@@ -1202,6 +1229,13 @@ function ListingsTabView() {
                       {l.area_sqm != null ? Math.round(l.area_sqm) + " m²" : "—"}
                     </td>
                     <td className="py-2 px-3 text-muted-foreground text-sm">{l.sourceName}</td>
+                    <td className="py-2 px-3">
+                      {gradeBySourceId.get(l.sourceId) ? (
+                        <GradeBadge grade={gradeBySourceId.get(l.sourceId)!} />
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
+                    </td>
                     <td className="py-2 px-3">
                       <button
                         onClick={(ev) => {

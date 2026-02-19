@@ -258,6 +258,7 @@ interface SupabaseListing {
   property_type?: string | null;
   amenities?: string[] | null;
   price_period?: string | null;
+  created_at?: string | null;
 }
 
 async function loadFromSupabase(): Promise<Market[]> {
@@ -546,6 +547,10 @@ export interface ListingsFilters {
   titleSearch?: string;
   /** Filter by approved (visible) status */
   approved?: boolean;
+  /** Filter by import date (requires created_at on listings). ISO date YYYY-MM-DD. */
+  importedAfter?: string;
+  /** Filter by import date (requires created_at on listings). ISO date YYYY-MM-DD. */
+  importedBefore?: string;
 }
 
 /** Column key for sorting (must match DB column or mapped) */
@@ -557,7 +562,7 @@ export interface ListingsResult {
 }
 
 const LISTING_COLS =
-  "id,title,price,currency,source_id,source_url,island,city,bedrooms,bathrooms,property_size_sqm,image_urls,approved";
+  "id,title,price,currency,source_id,source_url,island,city,bedrooms,bathrooms,property_size_sqm,image_urls,approved,created_at";
 
 export async function getListings(
   marketId: string,
@@ -586,6 +591,8 @@ export async function getListings(
     if (filters.areaMin != null) query = query.gte("property_size_sqm", filters.areaMin);
     if (filters.areaMax != null) query = query.lte("property_size_sqm", filters.areaMax);
     if (filters.approved !== undefined) query = query.eq("approved", filters.approved);
+    if (filters.importedAfter) query = query.gte("created_at", filters.importedAfter + "T00:00:00.000Z");
+    if (filters.importedBefore) query = query.lte("created_at", filters.importedBefore + "T23:59:59.999Z");
 
     query = query.range((page - 1) * pageSize, page * pageSize - 1);
     const { data, error, count } = await query;
