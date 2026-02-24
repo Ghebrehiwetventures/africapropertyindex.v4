@@ -242,8 +242,14 @@ async function enrichDetailPages(
       await sleep(delayMs + Math.floor(Math.random() * 1000));
 
       try {
+        const DETAIL_FETCH_TIMEOUT_MS = 45_000;
         const fetchResult = useHeadless
-          ? await fetchHeadless(listing.detailUrl)
+          ? await Promise.race([
+              fetchHeadless(listing.detailUrl),
+              new Promise<{ success: false; error: string }>((_, reject) =>
+                setTimeout(() => reject(new Error(`detail fetch timeout after ${DETAIL_FETCH_TIMEOUT_MS / 1000}s`)), DETAIL_FETCH_TIMEOUT_MS)
+              ),
+            ])
           : await fetchHtml(listing.detailUrl);
 
         if (!fetchResult.success || !fetchResult.html) {
@@ -634,6 +640,7 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
     description: l.description,
     imageUrls: l.imageUrls,
     location: l.location,
+    sourceUrl: l.detailUrl || l.externalUrl || null,
     sourceStatus: sourceStates.get(l.sourceId)?.status || SourceStatus.OK,
     createdAt: l.createdAt,
   }));
@@ -739,6 +746,7 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
     description: l.description,
     imageUrls: l.imageUrls,
     location: l.location,
+    sourceUrl: l.detailUrl || l.externalUrl || null,
     sourceStatus: sourceStates.get(l.sourceId)?.status || SourceStatus.OK,
     createdAt: l.createdAt,
   }));

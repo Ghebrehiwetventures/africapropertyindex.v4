@@ -182,6 +182,7 @@ export enum RuleViolation {
   DESCRIPTION_TOO_SHORT = "DESCRIPTION_TOO_SHORT",
   BROKEN_SOURCE = "BROKEN_SOURCE",
   DUPLICATE = "DUPLICATE",
+  MISSING_SOURCE_URL = "MISSING_SOURCE_URL",
 }
 
 export interface ListingInput {
@@ -191,6 +192,7 @@ export interface ListingInput {
   description?: string;
   imageUrls?: string[];
   location?: string;
+  sourceUrl?: string | null;
   sourceStatus: SourceStatus;
 }
 
@@ -269,11 +271,34 @@ export function checkSourceStatus(status: SourceStatus): RuleViolation | null {
   return null;
 }
 
+export function isValidSourceUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  const trimmed = url.trim();
+  if (trimmed.length === 0) return false;
+  if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) return false;
+  try {
+    new URL(trimmed);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function checkSourceUrl(url: string | null | undefined): RuleViolation | null {
+  if (!isValidSourceUrl(url)) {
+    return RuleViolation.MISSING_SOURCE_URL;
+  }
+  return null;
+}
+
 export function evaluateGoldenRules(listing: ListingInput): RuleViolation[] {
   const violations: RuleViolation[] = [];
 
   const sourceViolation = checkSourceStatus(listing.sourceStatus);
   if (sourceViolation) violations.push(sourceViolation);
+
+  const urlViolation = checkSourceUrl(listing.sourceUrl);
+  if (urlViolation) violations.push(urlViolation);
 
   const imageViolation = checkImages(listing.imageUrls);
   if (imageViolation) violations.push(imageViolation);

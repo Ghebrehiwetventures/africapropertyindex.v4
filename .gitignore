@@ -1,5 +1,8 @@
 node_modules/
 artifacts/
 .env
+.env.local
 .DS_Store
 reports/
+.vercel
+dist/

@@ -1,4 +1,7 @@
 import { getSupabaseClient } from "./supabaseClient";
+import { isValidSourceUrl } from "./goldenRules";
+import { getCanonicalId } from "./canonicalId";
+import { normalizeUrl } from "./normalizeUrl";
 import * as crypto from "crypto";
 
 export interface SupabaseListing {
@@ -24,6 +27,11 @@ export interface SupabaseListing {
   property_type?: string;
   amenities?: string[];
   price_period?: string;
+  canonical_id?: string | null;
+  source_url_normalized?: string | null;
+  first_seen_at?: string | null;
+  last_seen_at?: string | null;
+  is_superseded?: boolean;
 }
 
 function makeDedupKey(title?: string, price?: number, url?: string | null): string {
@@ -38,11 +46,25 @@ export async function upsertListings(listings: SupabaseListing[]): Promise<void>
 
   const supabase = getSupabaseClient();
 
-  // Compute dedup_key if not set
+  const nowIso = new Date().toISOString();
+
   for (const l of listings) {
+    if (!isValidSourceUrl(l.source_url)) {
+      l.source_url = null;
+      if (!l.violations.includes("MISSING_SOURCE_URL")) {
+        l.violations.push("MISSING_SOURCE_URL");
+      }
+      l.approved = false;
+    }
+
     if (!l.dedup_key) {
       l.dedup_key = makeDedupKey(l.title, l.price, l.source_url);
     }
+
+    l.canonical_id = getCanonicalId(l.source_id, l.source_url, l.id);
+    l.source_url_normalized = l.source_url != null ? normalizeUrl(l.source_url) : null;
+    l.last_seen_at = nowIso;
+    l.is_superseded = false;
   }
 
   // Deduplicate by id, then by dedup_key (keep first seen)

@@ -465,6 +465,7 @@ export async function runMarketIngest(marketId: string): Promise<IngestReport> {
     description: l.description,
     imageUrls: l.imageUrls,
     location: l.location,
+    sourceUrl: l.detailUrl || l.externalUrl || null,
     sourceStatus: sourceStates.get(l.sourceId)?.status || SourceStatus.OK,
     createdAt: l.createdAt,
   }));
