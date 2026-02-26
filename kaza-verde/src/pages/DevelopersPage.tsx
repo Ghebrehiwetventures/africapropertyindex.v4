@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Play, Database, Shield, RefreshCw, Globe, Mail } from "lucide-react";
-import { supabase } from "../lib/supabase";
+import { arei } from "../lib/arei";
 
 export function DevelopersPage() {
   const { t } = useTranslation();
@@ -111,16 +111,14 @@ function ApiExplorer() {
     setLoading(true);
     setResponse(null);
     try {
-      const { data, error, count } = await supabase
-        .from("listings")
-        .select("id,title,price,currency,island,city,bedrooms,bathrooms", { count: "exact" })
-        .eq("approved", true)
-        .ilike("source_id", "cv_%")
-        .order("id", { ascending: false })
-        .limit(3);
-
-      if (error) throw error;
-      setResponse(JSON.stringify({ count, data }, null, 2));
+      const result = await arei.getListings({ page: 1, pageSize: 3 });
+      setResponse(
+        JSON.stringify(
+          { count: result.total, data: result.data },
+          null,
+          2
+        )
+      );
     } catch (err) {
       setResponse(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }, null, 2));
     } finally {
@@ -136,7 +134,7 @@ function ApiExplorer() {
       <div className="bg-gray-900 rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
           <code className="text-sm text-gray-300">
-            supabase.from("listings").select("*").eq("approved", true).ilike("source_id", "cv_%").limit(3)
+            arei.getListings(&#123; page: 1, pageSize: 3 &#125;)
           </code>
           <button
             onClick={runQuery}

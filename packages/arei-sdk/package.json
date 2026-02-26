@@ -1,0 +1,21 @@
+{
+  "name": "arei-sdk",
+  "version": "0.1.0",
+  "description": "Africa Real Estate Index SDK — shared query functions for consumer sites",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "typescript": "^5.7.0"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

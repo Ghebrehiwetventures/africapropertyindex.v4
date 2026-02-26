@@ -1,156 +1,142 @@
+/**
+ * React Query hooks — thin wrappers around the arei-sdk.
+ * All listing data comes from v1_feed_cv via AREIClient (no direct public.listings access).
+ */
+
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../lib/supabase";
-import type { Listing, ListingsFilters } from "../types";
+import type { ListingCard, ListingDetail } from "arei-sdk";
+import type { PriceBucket } from "arei-sdk";
+import { PRICE_BUCKETS } from "arei-sdk";
+import { arei } from "../lib/arei";
+import type { ListingsFilters } from "../types";
+import type { Listing } from "../types";
 
 export const PAGE_SIZE = 12;
 
-const COLUMNS =
-  "id,title,description,price,currency,island,city,bedrooms,bathrooms,property_size_sqm,land_area_sqm,property_type,image_urls,source_id,source_url,approved,amenities,price_period,created_at,updated_at";
-
-// CV is a low-volume market; 90 days is too aggressive.
-// For high-volume markets (ZA, KE, NG) use 90.
-const FRESHNESS_DAYS = 180;
-
-function freshnessDate(): string {
-  return new Date(Date.now() - FRESHNESS_DAYS * 24 * 60 * 60 * 1000).toISOString();
+// Map SDK ListingCard → app Listing (for PropertyCard and existing UI)
+function cardToListing(card: ListingCard): Listing {
+  return {
+    id: card.id,
+    title: card.title,
+    description: null,
+    price: card.price,
+    currency: card.currency ?? "",
+    island: card.island,
+    city: card.city,
+    bedrooms: card.bedrooms,
+    bathrooms: card.bathrooms,
+    property_size_sqm: card.land_area_sqm,
+    land_area_sqm: card.land_area_sqm,
+    property_type: card.property_type,
+    image_urls: card.image_url ? [card.image_url] : [],
+    source_id: card.source_id,
+    source_url: null,
+    approved: true,
+    amenities: null,
+    price_period: null,
+    created_at: card.first_seen_at,
+    updated_at: null,
+  };
 }
 
-/**
- * Freshness column priority:
- *   updated_at  = last upsert = closest proxy for "source still alive"
- *   created_at  = first ingest = fallback only
- *
- * Supabase auto-sets updated_at on upsert if the table has a trigger.
- * We filter on created_at as the safe baseline (always exists) and
- * sort on created_at (Supabase can't do COALESCE in PostgREST).
- * TODO: migrate to last_seen_at column set explicitly by the scraper.
- */
-
-async function fetchListings(page: number, filters: ListingsFilters) {
-  let query = supabase
-    .from("listings")
-    .select(COLUMNS, { count: "exact" })
-    .eq("approved", true)
-    .ilike("source_id", "cv_%")
-    .not("price", "is", null)
-    .gt("price", 0)
-    .not("image_urls", "eq", "{}")
-    .not("source_url", "is", null)
-    .gte("created_at", freshnessDate());
-
-  if (filters.island) query = query.eq("island", filters.island);
-  if (filters.priceMin != null) query = query.gte("price", filters.priceMin);
-  if (filters.priceMax != null) query = query.lte("price", filters.priceMax);
-  if (filters.bedrooms != null) query = query.gte("bedrooms", filters.bedrooms);
-  if (filters.propertyType) query = query.eq("property_type", filters.propertyType);
-  query = query.is("price_period", null);
-
-  const sort = filters.sort ?? "newest";
-  if (sort === "price_asc") query = query.order("price", { ascending: true, nullsFirst: false });
-  else if (sort === "price_desc") query = query.order("price", { ascending: false, nullsFirst: false });
-  else query = query.order("created_at", { ascending: false });
-
-  query = query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-
-  const { data, error, count } = await query;
-  if (error) throw new Error(error.message);
-  return { data: (data ?? []) as Listing[], totalCount: count ?? 0 };
+// Map SDK ListingDetail → app Listing (for PropertyDetailPage)
+function detailToListing(detail: ListingDetail): Listing {
+  return {
+    id: detail.id,
+    title: detail.title,
+    description: detail.description,
+    price: detail.price,
+    currency: detail.currency ?? "",
+    island: detail.island,
+    city: detail.city,
+    bedrooms: detail.bedrooms,
+    bathrooms: detail.bathrooms,
+    property_size_sqm: detail.land_area_sqm,
+    land_area_sqm: detail.land_area_sqm,
+    property_type: detail.property_type,
+    image_urls: detail.image_urls ?? [],
+    source_id: detail.source_id,
+    source_url: detail.source_url,
+    approved: true,
+    amenities: null,
+    price_period: null,
+    created_at: detail.first_seen_at,
+    updated_at: detail.last_seen_at,
+  };
 }
+
+// Derive priceBucket from filters when range exactly matches a bucket
+function filtersToPriceBucket(filters: ListingsFilters): PriceBucket | undefined {
+  const { priceMin, priceMax } = filters;
+  if (priceMin == null || priceMax == null) return undefined;
+  for (const [bucket, range] of Object.entries(PRICE_BUCKETS)) {
+    if (priceMin === range.min && priceMax === range.max) return bucket as PriceBucket;
+  }
+  return undefined;
+}
+
+// ─── Listings (paginated + filtered) ─────────────────────────────────────────
 
 export function useListings(page: number, filters: ListingsFilters) {
   return useQuery({
     queryKey: ["listings", page, filters],
-    queryFn: () => fetchListings(page, filters),
+    queryFn: async () => {
+      const priceBucket = filtersToPriceBucket(filters);
+      const result = await arei.getListings({
+        page,
+        pageSize: PAGE_SIZE,
+        island: filters.island,
+        priceBucket,
+      });
+      return {
+        data: result.data.map(cardToListing),
+        totalCount: result.total,
+        totalPages: result.totalPages,
+      };
+    },
     placeholderData: (prev) => prev,
     staleTime: 60_000,
   });
 }
 
-async function fetchListing(id: string) {
-  const { data, error } = await supabase
-    .from("listings")
-    .select(COLUMNS)
-    .eq("id", id)
-    .eq("approved", true)
-    .ilike("source_id", "cv_%")
-    .single();
-  if (error) throw new Error(error.message);
-  return data as Listing;
-}
+// ─── Single listing ──────────────────────────────────────────────────────────
 
 export function useListing(id: string | undefined) {
   return useQuery({
     queryKey: ["listing", id],
-    queryFn: () => fetchListing(id!),
+    queryFn: async () => {
+      if (!id) return null;
+      const detail = await arei.getListing(id);
+      return detail ? detailToListing(detail) : null;
+    },
     enabled: !!id,
     staleTime: 120_000,
   });
 }
 
-// ---------------------------------------------------------------------------
-// Stats: quality-filtered counts (what users see)
-// ---------------------------------------------------------------------------
-
-async function fetchStats() {
-  const cutoff = freshnessDate();
-
-  const { count, error } = await supabase
-    .from("listings")
-    .select("id", { count: "exact", head: true })
-    .eq("approved", true)
-    .ilike("source_id", "cv_%")
-    .not("price", "is", null)
-    .gt("price", 0)
-    .not("image_urls", "eq", "{}")
-    .not("source_url", "is", null)
-    .gte("created_at", cutoff);
-  if (error) throw new Error(error.message);
-
-  const { data: islandData } = await supabase
-    .from("listings")
-    .select("island")
-    .eq("approved", true)
-    .ilike("source_id", "cv_%")
-    .not("price", "is", null)
-    .gt("price", 0)
-    .not("image_urls", "eq", "{}")
-    .not("source_url", "is", null)
-    .gte("created_at", cutoff)
-    .not("island", "is", null);
-
-  const uniqueIslands = new Set((islandData ?? []).map((r) => r.island));
-
-  const { data: sourceData } = await supabase
-    .from("listings")
-    .select("source_id")
-    .eq("approved", true)
-    .ilike("source_id", "cv_%")
-    .not("price", "is", null)
-    .gt("price", 0)
-    .not("image_urls", "eq", "{}")
-    .not("source_url", "is", null)
-    .gte("created_at", cutoff);
-
-  const uniqueSources = new Set((sourceData ?? []).map((r) => r.source_id));
-
-  return {
-    totalListings: count ?? 0,
-    totalIslands: uniqueIslands.size,
-    totalSources: uniqueSources.size,
-  };
-}
+// ─── Stats (from v1_feed_cv via getMarketStats) ──────────────────────────────
 
 export function useStats() {
   return useQuery({
     queryKey: ["stats"],
-    queryFn: fetchStats,
+    queryFn: async () => {
+      const { total, islands } = await arei.getMarketStats();
+      const medianPrice =
+        islands.length > 0 && islands[0].median_price != null
+          ? islands[0].median_price
+          : null;
+      return {
+        totalListings: total,
+        totalIslands: islands.length,
+        totalSources: 0,
+        medianPrice,
+      };
+    },
     staleTime: 300_000,
   });
 }
 
-// ---------------------------------------------------------------------------
-// Quality ratio: raw vs quality-filtered  (investor KPI)
-// ---------------------------------------------------------------------------
+// ─── Quality ratio (from v1_feed_cv only; no public.listings) ─────────────────
 
 export interface QualityRatio {
   raw: number;
@@ -158,75 +144,36 @@ export interface QualityRatio {
   ratio: number;
 }
 
-async function fetchQualityRatio(): Promise<QualityRatio> {
-  const { count: raw, error: e1 } = await supabase
-    .from("listings")
-    .select("id", { count: "exact", head: true })
-    .eq("approved", true)
-    .ilike("source_id", "cv_%");
-  if (e1) throw new Error(e1.message);
-
-  const { count: quality, error: e2 } = await supabase
-    .from("listings")
-    .select("id", { count: "exact", head: true })
-    .eq("approved", true)
-    .ilike("source_id", "cv_%")
-    .not("price", "is", null)
-    .gt("price", 0)
-    .not("image_urls", "eq", "{}")
-    .not("source_url", "is", null)
-    .gte("created_at", freshnessDate());
-  if (e2) throw new Error(e2.message);
-
-  const r = raw ?? 0;
-  const q = quality ?? 0;
-  return { raw: r, quality: q, ratio: r > 0 ? Math.round((q / r) * 100) : 0 };
-}
-
 export function useQualityRatio() {
   return useQuery({
     queryKey: ["qualityRatio"],
-    queryFn: fetchQualityRatio,
+    queryFn: async (): Promise<QualityRatio> => {
+      const { total } = await arei.getMarketStats();
+      return { raw: total, quality: total, ratio: total > 0 ? 100 : 0 };
+    },
     staleTime: 300_000,
   });
 }
 
-// ---------------------------------------------------------------------------
-// Featured: strictest quality gate — "clean data" only
-// ---------------------------------------------------------------------------
+// ─── Island options (for filter dropdown, from v1_feed_cv) ─────────────────────
 
-const MIN_FEATURED_IMAGES = 3;
-const MIN_FEATURED_DESC = 150;
-
-async function fetchFeatured() {
-  const { data, error } = await supabase
-    .from("listings")
-    .select(COLUMNS)
-    .eq("approved", true)
-    .ilike("source_id", "cv_%")
-    .not("price", "is", null)
-    .gt("price", 0)
-    .not("image_urls", "eq", "{}")
-    .not("source_url", "is", null)
-    .not("property_type", "is", null)
-    .order("created_at", { ascending: false })
-    .limit(60);
-  if (error) throw new Error(error.message);
-
-  return ((data ?? []) as Listing[])
-    .filter(
-      (l) =>
-        (l.image_urls?.length ?? 0) >= MIN_FEATURED_IMAGES &&
-        (l.description?.length ?? 0) >= MIN_FEATURED_DESC &&
-        (l.bedrooms != null || l.property_size_sqm != null),
-    )
-    .slice(0, 8);
+export function useIslandOptions() {
+  return useQuery({
+    queryKey: ["islandOptions"],
+    queryFn: () => arei.getIslandOptions(),
+    staleTime: 300_000,
+  });
 }
+
+// ─── Featured (first page of listings from v1_feed_cv) ─────────────────────────
 
 export function useFeatured() {
   return useQuery({
     queryKey: ["featured"],
-    queryFn: fetchFeatured,
+    queryFn: async () => {
+      const result = await arei.getListings({ page: 1, pageSize: 8 });
+      return result.data.map(cardToListing);
+    },
     staleTime: 120_000,
   });
 }

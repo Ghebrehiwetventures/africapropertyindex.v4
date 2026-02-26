@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { SlidersHorizontal, X } from "lucide-react";
-import { useListings, PAGE_SIZE } from "../hooks/useListings";
+import { useListings, useIslandOptions, PAGE_SIZE } from "../hooks/useListings";
 import { PropertyCard } from "../components/PropertyCard";
 import { FilterPanel, activeFilterCount } from "../components/FilterPanel";
 import type { ListingsFilters } from "../types";
@@ -34,9 +34,11 @@ export function PropertiesPage() {
   }, [filters, setSearchParams]);
 
   const { data, isLoading, error } = useListings(page, filters);
+  const { data: islandOptions } = useIslandOptions();
   const listings = data?.data ?? [];
   const totalCount = data?.totalCount ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const totalPages = data?.totalPages ?? Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const islandNames = islandOptions?.map((o) => o.island);
 
   const handleFilterChange = (f: ListingsFilters) => {
     setFilters(f);
@@ -84,7 +86,7 @@ export function PropertiesPage() {
           {/* Desktop filters */}
           <aside className="hidden lg:block w-[280px] shrink-0">
             <div className="sticky top-24">
-              <FilterPanel filters={filters} onChange={handleFilterChange} />
+              <FilterPanel filters={filters} onChange={handleFilterChange} islandNames={islandNames} />
             </div>
           </aside>
 
@@ -100,7 +102,7 @@ export function PropertiesPage() {
                   </button>
                 </div>
                 <div className="p-5">
-                  <FilterPanel filters={filters} onChange={(f) => { handleFilterChange(f); setMobileFiltersOpen(false); }} />
+                  <FilterPanel filters={filters} onChange={(f) => { handleFilterChange(f); setMobileFiltersOpen(false); }} islandNames={islandNames} />
                 </div>
               </div>
             </div>

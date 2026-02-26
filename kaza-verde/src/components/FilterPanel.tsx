@@ -6,12 +6,15 @@ import type { ListingsFilters } from "../types";
 interface Props {
   filters: ListingsFilters;
   onChange: (filters: ListingsFilters) => void;
+  /** Island names for dropdown (from arei.getIslandOptions); falls back to ISLAND_NAMES */
+  islandNames?: string[];
 }
 
 const PROPERTY_TYPES = ["Apartment", "Villa", "House", "Land", "Commercial", "Studio"];
 
-export function FilterPanel({ filters, onChange }: Props) {
+export function FilterPanel({ filters, onChange, islandNames }: Props) {
   const { t } = useTranslation();
+  const names = islandNames ?? ISLAND_NAMES;
 
   const hasFilters =
     filters.island ||
@@ -55,7 +58,7 @@ export function FilterPanel({ filters, onChange }: Props) {
             className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-white focus:ring-2 focus:ring-ocean-500/20 focus:border-ocean-500 outline-none transition"
           >
             <option value="">{t("filters.allIslands")}</option>
-            {ISLAND_NAMES.map((name) => (
+            {names.map((name) => (
               <option key={name} value={name}>{name}</option>
             ))}
           </select>

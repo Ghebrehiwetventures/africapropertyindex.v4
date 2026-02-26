@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
     "@tanstack/react-query": "^5.62.0",
+    "arei-sdk": "file:../packages/arei-sdk",
     "i18next": "^24.2.2",
     "lucide-react": "^0.468.0",
     "react": "^18.2.0",
