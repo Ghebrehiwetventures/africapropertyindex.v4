@@ -45,13 +45,17 @@ function cardToDemoListing(card: ListingCard): DemoListing {
   };
 }
 
+type ViewMode = "grid" | "list";
+
 export default function Listings() {
   useDocumentMeta("All Properties", "Browse all property listings in Cape Verde. Every island, every listing, one index.");
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialIsland = searchParams.get("island") || "";
+  const initialPage = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
   const [island, setIsland] = useState(initialIsland);
   const [priceBucket, setPriceBucket] = useState("");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initialPage);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [listings, setListings] = useState<DemoListing[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -61,6 +65,13 @@ export default function Listings() {
   useEffect(() => {
     setPage(1);
   }, [island, priceBucket]);
+
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (page === 1) next.delete("page");
+    else next.set("page", String(page));
+    setSearchParams(next, { replace: true });
+  }, [page]);
 
   useEffect(() => {
     async function load() {
@@ -95,7 +106,7 @@ export default function Listings() {
 
   if (error) {
     return (
-      <div className="lh anim-fu delay-1" style={{ padding: "2rem", maxWidth: 560 }}>
+      <div className="lh" style={{ padding: "2rem", maxWidth: 560 }}>
         <h1>All <em>Properties</em></h1>
         <div style={{ marginTop: 16, padding: 16, background: "#fef2f2", borderRadius: 8, color: "#991b1b" }}>
           <strong>Kunde inte ladda listor</strong>
@@ -110,12 +121,12 @@ export default function Listings() {
 
   return (
     <>
-      <div className="lh anim-fu delay-1">
+      <div className="lh">
         <h1>All <em>Properties</em></h1>
         <p>{total} listings across {ISLANDS.length} islands, aggregated from 9 agency sources.</p>
       </div>
 
-      <div className="fb anim-fu delay-2">
+      <div className="fb">
         <select className="fs" value={island} onChange={(e) => setIsland(e.target.value)}>
           <option value="">All Islands</option>
           {ISLANDS.map((i) => (
@@ -128,12 +139,32 @@ export default function Listings() {
           ))}
         </select>
         <div className="fsp" />
+        <div className="view-toggle">
+          <button
+            type="button"
+            className={viewMode === "grid" ? "on" : ""}
+            onClick={() => setViewMode("grid")}
+            aria-label="Grid view"
+            title="Grid view"
+          >
+            <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          </button>
+          <button
+            type="button"
+            className={viewMode === "list" ? "on" : ""}
+            onClick={() => setViewMode("list")}
+            aria-label="List view"
+            title="List view"
+          >
+            <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </button>
+        </div>
         <span className="rc">Showing {from}–{to} of {total}</span>
       </div>
 
-      <div className="grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 }}>
-        {listings.map((l, i) => (
-          <PropertyCard key={l.id} listing={l} index={i} />
+      <div className={viewMode === "list" ? "list-view" : "grid-3"} style={viewMode === "grid" ? { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 } : undefined}>
+        {listings.map((l) => (
+          <PropertyCard key={l.id} listing={l} viewMode={viewMode} />
         ))}
       </div>
 
@@ -150,7 +181,7 @@ export default function Listings() {
           <div className="pn">
             <button
               type="button"
-              className="pnn"
+              className="pnn bo"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               aria-label="Previous page"
@@ -160,7 +191,7 @@ export default function Listings() {
             <span className="pnn on" style={{ cursor: "default" }}>{page} / {totalPages}</span>
             <button
               type="button"
-              className="pnn"
+              className="pnn bp"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               aria-label="Next page"

@@ -41,6 +41,56 @@
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
 }
 
+.dg-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.dg-arrow:hover { background: rgba(0, 0, 0, 0.7); }
+.dg-arrow svg { width: 24px; height: 24px; }
+.dg-arrow-prev { left: 16px; }
+.dg-arrow-next { right: 16px; }
+
+.dg-thumbs {
+  position: absolute;
+  bottom: 28px;
+  right: 28px;
+  left: 28px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  z-index: 2;
+  flex-wrap: wrap;
+}
+.dg-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  padding: 0;
+}
+.dg-thumb:hover { border-color: rgba(255,255,255,0.6); }
+.dg-thumb.on {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--ac);
+}
+
 .dg {
   display: grid;
   grid-template-columns: 1fr 380px;

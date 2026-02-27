@@ -6,9 +6,10 @@ import "./PropertyCard.css";
 interface Props {
   listing: DemoListing;
   index?: number;
+  viewMode?: "grid" | "list";
 }
 
-export default function PropertyCard({ listing, index = 0 }: Props) {
+export default function PropertyCard({ listing, index = 0, viewMode = "grid" }: Props) {
   const navigate = useNavigate();
   const isNew = isNewListing(listing.first_seen_at);
 
@@ -27,8 +28,7 @@ export default function PropertyCard({ listing, index = 0 }: Props) {
 
   return (
     <article
-      className="pc anim-ci"
-      style={{ animationDelay: `${0.3 + index * 0.07}s` }}
+      className={`pc${viewMode === "list" ? " pc-list" : ""}`}
       onClick={() => navigate(`/listing/${listing.id}`)}
     >
       <div className="pci">

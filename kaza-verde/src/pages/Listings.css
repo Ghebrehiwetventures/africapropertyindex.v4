@@ -45,6 +45,34 @@
 .fs:hover { border-color: var(--bd2); color: var(--tx); }
 .fs:focus { outline: none; border-color: var(--ac); }
 .fsp { flex: 1; }
+
+.view-toggle {
+  display: flex;
+  gap: 4px;
+}
+.view-toggle button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--bd2);
+  background: var(--sf);
+  color: var(--tx3);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.view-toggle button svg { width: 18px; height: 18px; }
+.view-toggle button:hover { border-color: var(--bd); color: var(--tx2); }
+.view-toggle button.on { border-color: var(--ac); color: var(--ac); background: var(--acs); }
+
+.list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .rc {
   font-size: 0.78rem;
   font-weight: 500;
@@ -76,7 +104,35 @@
   font-weight: 500;
 }
 .pnn:hover { background: var(--sf); }
-.pnn.on { background: var(--ac); color: var(--bg); font-weight: 700; }
+.pnn.on {
+  width: auto;
+  min-width: 36px;
+  padding: 0 10px;
+  white-space: nowrap;
+  background: var(--acs);
+  color: var(--ac);
+  border: 1px solid var(--bd2);
+  font-weight: 600;
+  cursor: default;
+}
+.pnn.on:hover { background: var(--acs); }
+.pg .pnn.bo,
+.pg .pnn.bp {
+  border: 1px solid var(--bd2);
+  background: var(--sf);
+  color: var(--tx2);
+}
+.pg .pnn.bo:hover:not(:disabled),
+.pg .pnn.bp:hover:not(:disabled) {
+  border-color: var(--tx3);
+  color: var(--tx);
+  background: var(--bg2);
+}
+.pg .pnn.bo:disabled,
+.pg .pnn.bp:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 .empty-state {
   text-align: center;

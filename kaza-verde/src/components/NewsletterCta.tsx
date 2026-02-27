@@ -9,7 +9,7 @@ interface Props {
 export default function NewsletterCta({
   overline = "Monthly Property Index",
   heading = <>Cape Verde <em>market intelligence</em></>,
-  description = "Median prices by island, inventory trends, new development alerts, and regulatory changes — one email per month.",
+  description = "Median prices by island, inventory trends, new development alerts, and regulatory changes.",
 }: Props) {
   return (
     <div className="nl-cta anim-fu delay-4">

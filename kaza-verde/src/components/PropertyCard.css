@@ -115,6 +115,24 @@
 .pc:hover .ca { border-color: var(--tx2); }
 .pc:hover .ca svg { stroke: var(--tx); }
 
+.pc-list {
+  flex-direction: row;
+  gap: 24px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--bd);
+  background: var(--bg2);
+}
+.pc-list .pci {
+  width: 220px;
+  min-width: 220px;
+  height: 160px;
+  border-radius: 10px;
+}
+.pc-list .pcb { padding: 0; flex: 1; }
+.pc-list .ca { flex-shrink: 0; }
+
 @media (max-width: 768px) {
   .pci { height: 230px; }
+  .pc-list .pci { width: 140px; min-width: 140px; height: 100px; }
 }

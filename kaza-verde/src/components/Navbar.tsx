@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useSaved } from "../hooks/useSaved";
 import "./Navbar.css";
@@ -5,6 +6,9 @@ import "./Navbar.css";
 export default function Navbar() {
   const { count } = useSaved();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const closeMenu = () => setMenuOpen(false);
 
   return (
     <nav className="nav anim-fd">
@@ -21,6 +25,29 @@ export default function Navbar() {
         <NavLink to="/about" className={({ isActive }) => (isActive ? "on" : "")}>ABOUT</NavLink>
       </div>
 
+      <button
+        type="button"
+        className="nav-hamburger hide-desktop"
+        onClick={() => setMenuOpen((o) => !o)}
+        aria-label={menuOpen ? "Close menu" : "Open menu"}
+        aria-expanded={menuOpen}
+      >
+        {menuOpen ? (
+          <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        ) : (
+          <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        )}
+      </button>
+
+      <div className={`nc-mobile${menuOpen ? " open" : ""}`}>
+        <NavLink to="/" end className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>BUY</NavLink>
+        <NavLink to="/rent" className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>RENT</NavLink>
+        <NavLink to="/listings" className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>SELL</NavLink>
+        <NavLink to="/market" className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>MARKET DATA</NavLink>
+        <NavLink to="/blog" className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>BLOG</NavLink>
+        <NavLink to="/about" className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>ABOUT</NavLink>
+      </div>
+
       <div className="nr">
         <NavLink to="/saved" className="nl nav-saved">
           <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
@@ -29,7 +56,7 @@ export default function Navbar() {
           SAVED
           <span className={`saved-badge${count === 0 ? " hide" : ""}`}>{count}</span>
         </NavLink>
-        <button className="bp" onClick={() => navigate("/listings")}>LIST PROPERTY</button>
+        <button className="bp hide-mobile" onClick={() => navigate("/listings")}>LIST PROPERTY</button>
       </div>
     </nav>
   );

@@ -14,6 +14,7 @@ export default function Detail() {
   const [listing, setListing] = useState<DemoListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   useDocumentMeta(
     listing?.title ?? (error ? "Property not found" : "Property"),
@@ -67,6 +68,10 @@ export default function Detail() {
     return () => { cancelled = true; };
   }, [id]);
 
+  useEffect(() => {
+    setGalleryIndex(0);
+  }, [listing?.id]);
+
   if (loading) {
     return (
       <>
@@ -108,9 +113,25 @@ export default function Detail() {
     specs.push({ value: String(listing.land_area_sqm), label: "m² Land" });
   }
 
-  const heroStyle: React.CSSProperties = listing.image_urls.length > 0
-    ? { backgroundImage: `url(${listing.image_urls[0]})`, backgroundSize: "cover", backgroundPosition: "center" }
-    : { background: listing._bg };
+  const images = listing.image_urls ?? [];
+  const hasMultipleImages = images.length > 1;
+  const mainImageStyle: React.CSSProperties =
+    images.length > 0
+      ? { backgroundImage: `url(${images[galleryIndex]})`, backgroundSize: "contain", backgroundPosition: "center", backgroundRepeat: "no-repeat" }
+      : { background: listing._bg };
+
+  const goPrev = () => setGalleryIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
+  const goNext = () => setGalleryIndex((i) => (i >= images.length - 1 ? 0 : i + 1));
+
+  useEffect(() => {
+    if (!hasMultipleImages) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") setGalleryIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
+      if (e.key === "ArrowRight") setGalleryIndex((i) => (i >= images.length - 1 ? 0 : i + 1));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [hasMultipleImages, images.length]);
 
   return (
     <>
@@ -123,8 +144,40 @@ export default function Detail() {
       </a>
 
       <div className="dhi anim-fu delay-1">
-        <div className="ph" style={heroStyle} />
+        <div className="ph" style={mainImageStyle} />
         <div className="pb">{formatPrice(listing.price, listing.currency)}</div>
+        {hasMultipleImages && (
+          <>
+            <button
+              type="button"
+              className="dg-arrow dg-arrow-prev"
+              onClick={goPrev}
+              aria-label="Previous image"
+            >
+              <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><polyline points="15 18 9 12 15 6" /></svg>
+            </button>
+            <button
+              type="button"
+              className="dg-arrow dg-arrow-next"
+              onClick={goNext}
+              aria-label="Next image"
+            >
+              <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+            <div className="dg-thumbs">
+              {images.map((url, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`dg-thumb${i === galleryIndex ? " on" : ""}`}
+                  onClick={() => setGalleryIndex(i)}
+                  style={{ backgroundImage: `url(${url})` }}
+                  aria-label={`View image ${i + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="dg anim-fu delay-2">
