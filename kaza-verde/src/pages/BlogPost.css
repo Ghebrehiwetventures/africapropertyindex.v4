@@ -64,26 +64,117 @@
   line-height: 1.85;
   color: var(--tx2);
 }
+
+/* Headings */
 .bp-content h2 {
   font-family: var(--fd);
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: var(--tx);
-  margin-top: 36px;
-  margin-bottom: 12px;
+  margin-top: 48px;
+  margin-bottom: 16px;
+  padding-top: 8px;
 }
 .bp-content h2:first-of-type { margin-top: 0; }
+.bp-content h3 {
+  font-family: var(--fd);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--tx);
+  margin-top: 32px;
+  margin-bottom: 10px;
+}
 .bp-content p {
   margin-bottom: 16px;
 }
-.bp-content ul {
+
+/* Lists */
+.bp-content ul,
+.bp-content ol {
   margin: 16px 0;
   padding-left: 24px;
 }
+.bp-content ul { list-style: disc; }
+.bp-content ol { list-style: decimal; }
 .bp-content li {
   margin-bottom: 8px;
 }
+
+/* Inline */
 .bp-content strong { color: var(--tx); }
+.bp-content em { font-style: italic; }
+.bp-content a {
+  color: var(--ac);
+  text-decoration: underline;
+  text-decoration-color: hsla(65, 70%, 55%, 0.3);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s;
+}
+.bp-content a:hover {
+  text-decoration-color: var(--ac);
+}
+
+/* Horizontal rules — subtle section dividers */
+.bp-content hr {
+  border: none;
+  height: 1px;
+  background: var(--bd);
+  margin: 40px 0;
+  opacity: 0.5;
+}
+
+/* Tables */
+.bp-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.bp-content thead th {
+  text-align: left;
+  font-weight: 700;
+  color: var(--tx);
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--bd2);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.bp-content tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bd);
+  vertical-align: top;
+}
+.bp-content tbody tr:last-child td {
+  border-bottom: none;
+}
+.bp-content tbody tr:hover {
+  background: hsla(25, 15%, 25%, 0.4);
+}
+
+/* Blockquotes */
+.bp-content blockquote {
+  border-left: 3px solid var(--ac);
+  padding: 12px 20px;
+  margin: 24px 0;
+  background: hsla(25, 15%, 25%, 0.3);
+  border-radius: 0 8px 8px 0;
+  color: var(--tx);
+  font-style: italic;
+}
+.bp-content blockquote p:last-child { margin-bottom: 0; }
+
+/* Mobile tables */
+@media (max-width: 640px) {
+  .bp-content table {
+    font-size: 0.8rem;
+  }
+  .bp-content thead th,
+  .bp-content tbody td {
+    padding: 8px 10px;
+  }
+}
 
 .bp-notfound {
   padding: 80px 0;

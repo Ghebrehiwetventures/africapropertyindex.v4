@@ -4,8 +4,8 @@ import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import PropertyCard from "../components/PropertyCard";
 import NewsletterCta from "../components/NewsletterCta";
 import { arei } from "../lib/arei";
-import type { ListingCard } from "arei-sdk";
 import type { DemoListing } from "../lib/demo-data";
+import { cardToDemoListing } from "../lib/transforms";
 import "./Listings.css";
 
 const PRICE_BUCKETS = [
@@ -16,34 +16,8 @@ const PRICE_BUCKETS = [
   { label: "€500K+", value: "over_500k" },
 ];
 
-const ISLANDS = [
-  { name: "Sal" },
-  { name: "Boa Vista" },
-  { name: "Santiago" },
-];
-
-const PAGE_SIZE = 12;
-
-function cardToDemoListing(card: ListingCard): DemoListing {
-  return {
-    id: card.id,
-    title: card.title,
-    island: card.island,
-    city: card.city,
-    price: card.price,
-    currency: card.currency ?? "",
-    image_urls: card.image_url ? [card.image_url] : [],
-    bedrooms: card.bedrooms,
-    bathrooms: card.bathrooms,
-    property_type: card.property_type,
-    land_area_sqm: card.land_area_sqm,
-    first_seen_at: card.first_seen_at,
-    source_id: card.source_id,
-    source_url: "",
-    last_seen_at: null,
-    _bg: "linear-gradient(145deg,#5B8A72,#1A4A32)",
-  };
-}
+const PAGE_SIZES = [24, 48, 96];
+const DEFAULT_PAGE_SIZE = 24;
 
 type ViewMode = "grid" | "list";
 
@@ -54,6 +28,7 @@ export default function Listings() {
   const initialPage = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
   const [island, setIsland] = useState(initialIsland);
   const [priceBucket, setPriceBucket] = useState("");
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(initialPage);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [listings, setListings] = useState<DemoListing[]>([]);
@@ -61,10 +36,15 @@ export default function Listings() {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [islands, setIslands] = useState<{ island: string; count: number }[]>([]);
+
+  useEffect(() => {
+    arei.getIslandOptions().then(setIslands).catch(() => {});
+  }, []);
 
   useEffect(() => {
     setPage(1);
-  }, [island, priceBucket]);
+  }, [island, priceBucket, pageSize]);
 
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
@@ -80,7 +60,7 @@ export default function Listings() {
       try {
         const result = await arei.getListings({
           page,
-          pageSize: PAGE_SIZE,
+          pageSize,
           island: island || undefined,
           priceBucket: priceBucket ? (priceBucket as "under_100k" | "100k_250k" | "250k_500k" | "over_500k") : undefined,
         });
@@ -97,10 +77,10 @@ export default function Listings() {
       }
     }
     load();
-  }, [page, island, priceBucket]);
+  }, [page, pageSize, island, priceBucket]);
 
-  const from = total > 0 ? (page - 1) * PAGE_SIZE + 1 : 0;
-  const to = Math.min(page * PAGE_SIZE, total);
+  const from = total > 0 ? (page - 1) * pageSize + 1 : 0;
+  const to = Math.min(page * pageSize, total);
 
   if (loading) return <div>Loading properties...</div>;
 
@@ -123,14 +103,14 @@ export default function Listings() {
     <>
       <div className="lh">
         <h1>All <em>Properties</em></h1>
-        <p>{total} listings across {ISLANDS.length} islands, aggregated from 9 agency sources.</p>
+        <p>{total} listings across {islands.length || "multiple"} islands, aggregated from 9 agency sources.</p>
       </div>
 
       <div className="fb">
         <select className="fs" value={island} onChange={(e) => setIsland(e.target.value)}>
           <option value="">All Islands</option>
-          {ISLANDS.map((i) => (
-            <option key={i.name} value={i.name}>{i.name}</option>
+          {islands.map((i) => (
+            <option key={i.island} value={i.island}>{i.island} ({i.count})</option>
           ))}
         </select>
         <select className="fs" value={priceBucket} onChange={(e) => setPriceBucket(e.target.value)}>
@@ -159,7 +139,12 @@ export default function Listings() {
             <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
           </button>
         </div>
-        <span className="rc">Showing {from}–{to} of {total}</span>
+        <select className="fs fs-sm hide-mobile" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}>
+          {PAGE_SIZES.map((s) => (
+            <option key={s} value={s}>Show {s}</option>
+          ))}
+        </select>
+        <span className="rc hide-mobile">Showing {from}–{to} of {total}</span>
       </div>
 
       <div className={viewMode === "list" ? "list-view" : "grid-3"} style={viewMode === "grid" ? { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 } : undefined}>
@@ -177,7 +162,6 @@ export default function Listings() {
 
       {totalPages > 1 && (
         <div className="pg">
-          <span className="rc">Showing {from}–{to} of {total}</span>
           <div className="pn">
             <button
               type="button"

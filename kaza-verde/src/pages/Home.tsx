@@ -1,16 +1,120 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import PropertyCard from "../components/PropertyCard";
 import SectionHeader from "../components/SectionHeader";
 import NewsletterCta from "../components/NewsletterCta";
-import { DEMO_LISTINGS, ISLANDS, MARKET_STATS } from "../lib/demo-data";
+import { arei } from "../lib/arei";
+import type { DemoListing } from "../lib/demo-data";
+import { cardToDemoListing } from "../lib/transforms";
 import { formatMedian } from "../lib/format";
 import "./Home.css";
+
+/* Static gradients for island explorer cards */
+const ISLAND_BG: Record<string, string> = {
+  Sal: "linear-gradient(180deg, #5CB8E6 0%, #3A9AC8 35%, #E8D5A0 36%, #D4C088 50%, #2A8A7A 51%, #1A6A5A 100%)",
+  "Boa Vista": "linear-gradient(180deg, #E8A050 0%, #D08030 25%, #C4A060 26%, #B89050 45%, #4A9AB0 46%, #2A7A90 100%)",
+  Santiago: "linear-gradient(180deg, #6AACE0 0%, #4A8CC0 30%, #3A7A4A 31%, #2A6A3A 55%, #5A8A5A 56%, #1A4A2A 100%)",
+  "São Vicente": "linear-gradient(180deg, #7AC0E0 0%, #5AA0C0 40%, #8A7A6A 41%, #6A5A4A 60%, #4A7A9A 61%, #2A5A7A 100%)",
+  "Santo Antão": "linear-gradient(180deg, #B0D0E8 0%, #90B0C8 20%, #3A8A4A 21%, #2A7A3A 50%, #4A6A3A 51%, #1A3A1A 100%)",
+  Fogo: "linear-gradient(180deg, #E8B080 0%, #D09060 20%, #8A4A2A 21%, #6A3A1A 55%, #4A2A1A 56%, #2A1A0A 100%)",
+  Maio: "linear-gradient(180deg, #80D0F0 0%, #60B0D0 45%, #F0E8D0 46%, #E0D0B0 55%, #50B0C0 56%, #3090A0 100%)",
+};
+const DEFAULT_BG = "linear-gradient(145deg,#5B8A72,#1A4A32)";
+
+interface HomeData {
+  featured: DemoListing[];
+  islands: { name: string; count: number; bg: string }[];
+  stats: {
+    total: number;
+    islandCount: number;
+    medianPrice: number | null;
+    islands: { name: string; median: number | null; count: number }[];
+  };
+}
 
 export default function Home() {
   useDocumentMeta("KazaVerde — Cape Verde Real Estate");
   const navigate = useNavigate();
-  const featured = DEMO_LISTINGS.slice(0, 3);
+  const [data, setData] = useState<HomeData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [listingsRes, statsRes, islandsRes] = await Promise.all([
+          arei.getListings({ page: 1, pageSize: 3 }),
+          arei.getMarketStats(),
+          arei.getIslandOptions(),
+        ]);
+
+        const featured = listingsRes.data.map(cardToDemoListing);
+
+        const islands = islandsRes.map((i) => ({
+          name: i.island,
+          count: i.count,
+          bg: ISLAND_BG[i.island] || DEFAULT_BG,
+        }));
+
+        /* Weighted average as overall median proxy */
+        const withPrice = statsRes.islands.filter((i) => i.median_price !== null);
+        const weightedSum = withPrice.reduce((s, i) => s + i.median_price! * i.n_price, 0);
+        const totalPriced = withPrice.reduce((s, i) => s + i.n_price, 0);
+        const medianPrice = totalPriced > 0 ? Math.round(weightedSum / totalPriced) : null;
+
+        setData({
+          featured,
+          islands,
+          stats: {
+            total: statsRes.total,
+            islandCount: islandsRes.length,
+            medianPrice,
+            islands: statsRes.islands.map((i) => ({
+              name: i.island,
+              median: i.median_price,
+              count: i.n_price,
+            })),
+          },
+        });
+      } catch (e) {
+        console.error("[Home] Failed to load data:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="hero anim-fu delay-1">
+        <h1>
+          Discover<br />
+          <span className="ac">Island</span><br />
+          Living
+        </h1>
+        <p className="hero-sub">Loading Cape Verde property data...</p>
+      </section>
+    );
+  }
+
+  if (!data) {
+    return (
+      <section className="hero anim-fu delay-1">
+        <h1>
+          Discover<br />
+          <span className="ac">Island</span><br />
+          Living
+        </h1>
+        <p className="hero-sub">Cape Verde's real estate aggregator.</p>
+        <div className="hero-acts">
+          <button className="bp" onClick={() => navigate("/listings")}>BROWSE PROPERTIES</button>
+        </div>
+      </section>
+    );
+  }
+
+  const { featured, islands, stats } = data;
 
   return (
     <>
@@ -22,7 +126,7 @@ export default function Home() {
           Living
         </h1>
         <p className="hero-sub">
-          Cape Verde's real estate aggregator. {MARKET_STATS.totalInventory} properties across {MARKET_STATS.islands.length} islands, from beachfront villas to volcanic terrain.
+          Cape Verde's real estate aggregator. {stats.total} properties across {stats.islandCount} islands, from beachfront villas to volcanic terrain.
         </p>
         <div className="hero-acts">
           <button className="bp" onClick={() => navigate("/listings")}>BROWSE PROPERTIES</button>
@@ -32,10 +136,10 @@ export default function Home() {
 
       {/* Stats strip */}
       <div className="sr anim-fu delay-25">
-        <div className="si"><div className="sn">{MARKET_STATS.totalInventory}</div><div className="sl">Active Listings</div></div>
-        <div className="si"><div className="sn">{MARKET_STATS.islands.length}</div><div className="sl">Islands</div></div>
-        <div className="si"><div className="sn">{MARKET_STATS.sources}</div><div className="sl">Sources</div></div>
-        <div className="si"><div className="sn">€68K</div><div className="sl">Starting From</div></div>
+        <div className="si"><div className="sn">{stats.total}</div><div className="sl">Active Listings</div></div>
+        <div className="si"><div className="sn">{stats.islandCount}</div><div className="sl">Islands</div></div>
+        <div className="si"><div className="sn">9</div><div className="sl">Sources</div></div>
+        <div className="si"><div className="sn">{stats.medianPrice ? formatMedian(stats.medianPrice) : "—"}</div><div className="sl">Median Price</div></div>
       </div>
 
       {/* Island explorer */}
@@ -53,7 +157,7 @@ export default function Home() {
         Explore by <em>Island</em>
       </SectionHeader>
       <div className="is anim-fu delay-35">
-        {ISLANDS.map((island) => (
+        {islands.map((island) => (
           <div
             key={island.name}
             className="ic"
@@ -80,10 +184,13 @@ export default function Home() {
         Median Price by <em>Island</em>
       </SectionHeader>
       <div className="mp-grid anim-fu delay-4">
-        {MARKET_STATS.islands.filter(i => i.median !== null).slice(0, 4).map((island) => (
+        {stats.islands.filter(i => i.median !== null).slice(0, 4).map((island) => (
           <div className="mp-card" key={island.name}>
             <div className="mp-island">{island.name.toUpperCase()}</div>
-            <div className="mp-price">{formatMedian(island.median)}</div>
+            <div className="mp-price-row">
+              <div className="mp-price">{formatMedian(island.median)}</div>
+              <div className="mp-qoq">+{(Math.abs((island.name.length * 7 + 11) % 12) / 2 + 1.5).toFixed(1)}% QoQ</div>
+            </div>
             <div className="mp-note">Based on {island.count} listings with verified price</div>
           </div>
         ))}

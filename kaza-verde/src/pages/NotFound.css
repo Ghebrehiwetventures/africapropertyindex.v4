@@ -1,0 +1,101 @@
+.nf {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 60vh;
+  padding: 48px 24px;
+}
+
+.nf-icon {
+  width: 100px;
+  height: 100px;
+  color: var(--tx3);
+  margin-bottom: 32px;
+  opacity: 0.5;
+}
+.nf-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.nf-title {
+  font-family: var(--fd);
+  font-size: 2rem;
+  font-weight: 400;
+  margin-bottom: 12px;
+}
+
+.nf-body {
+  font-size: 0.95rem;
+  color: var(--tx2);
+  max-width: 420px;
+  line-height: 1.6;
+  margin-bottom: 36px;
+}
+
+.nf-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+.nf-btn {
+  padding: 13px 28px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--fb);
+  border: none;
+}
+
+.nf-primary {
+  background: var(--ac);
+  color: var(--bg);
+}
+.nf-primary:hover {
+  background: var(--ac2);
+}
+
+.nf-secondary {
+  background: transparent;
+  color: var(--tx);
+  border: 1.5px solid var(--bd2);
+}
+.nf-secondary:hover {
+  border-color: var(--tx);
+}
+
+.nf-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.82rem;
+}
+.nf-links a {
+  color: var(--tx2);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.nf-links a:hover {
+  color: var(--ac);
+}
+.nf-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--tx3);
+}
+
+@media (max-width: 768px) {
+  .nf { min-height: 50vh; padding: 32px 20px; }
+  .nf-icon { width: 80px; height: 80px; margin-bottom: 24px; }
+  .nf-title { font-size: 1.6rem; }
+  .nf-actions { flex-direction: column; width: 100%; max-width: 280px; }
+  .nf-btn { width: 100%; text-align: center; }
+}

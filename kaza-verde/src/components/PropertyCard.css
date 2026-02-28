@@ -129,10 +129,24 @@
   height: 160px;
   border-radius: 10px;
 }
-.pc-list .pcb { padding: 0; flex: 1; }
+.pc-list .pcb { padding: 0; flex: 1; align-items: center; }
 .pc-list .ca { flex-shrink: 0; }
+.pc-lprice {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--ac);
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: var(--fd);
+}
 
 @media (max-width: 768px) {
   .pci { height: 230px; }
-  .pc-list .pci { width: 140px; min-width: 140px; height: 100px; }
+  .pci .pr { font-size: 1.1rem; padding: 5px 12px; }
+
+  .pc-list { gap: 14px; padding: 12px; }
+  .pc-list .pci { width: 100px; min-width: 100px; height: 80px; border-radius: 8px; }
+  .pc-list .pcb { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .pc-list .pct { font-size: 0.88rem; }
+  .pc-list .pc-lprice { font-size: 1rem; }
 }

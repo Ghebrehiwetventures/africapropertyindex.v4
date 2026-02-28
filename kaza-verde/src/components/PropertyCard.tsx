@@ -26,15 +26,17 @@ export default function PropertyCard({ listing, index = 0, viewMode = "grid" }: 
     ? { backgroundImage: `url(${listing.image_urls[0]})`, backgroundSize: "cover", backgroundPosition: "center" }
     : { background: listing._bg };
 
+  const isList = viewMode === "list";
+
   return (
     <article
-      className={`pc${viewMode === "list" ? " pc-list" : ""}`}
+      className={`pc${isList ? " pc-list" : ""}`}
       onClick={() => navigate(`/listing/${listing.id}`)}
     >
       <div className="pci">
         <div className="ph" style={heroStyle} />
         {isNew && <span className="tg tg-n">NEW</span>}
-        <div className="pr">{formatPrice(listing.price, listing.currency)}</div>
+        {!isList && <div className="pr">{formatPrice(listing.price, listing.currency)}</div>}
       </div>
       <div className="pcb">
         <div className="pcl">
@@ -49,12 +51,16 @@ export default function PropertyCard({ listing, index = 0, viewMode = "grid" }: 
             </div>
           )}
         </div>
-        <div className="ca">
-          <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
-        </div>
+        {isList ? (
+          <div className="pc-lprice">{formatPrice(listing.price, listing.currency)}</div>
+        ) : (
+          <div className="ca">
+            <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </div>
+        )}
       </div>
     </article>
   );

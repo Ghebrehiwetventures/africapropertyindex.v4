@@ -35,6 +35,7 @@ import {
   genericPaginatedFetcher,
   GenericParsedListing,
   SourceFetchConfig,
+  dedupeImageUrls,
 } from "./genericFetcher";
 
 // ============================================
@@ -48,6 +49,7 @@ interface IngestListing {
   title?: string;
   price?: number;
   description?: string;
+  description_html?: string;
   imageUrls?: string[];
   location?: string;
   detailUrl?: string;
@@ -270,6 +272,9 @@ async function genericDetailEnrichment(
 
       if (extractResult.description && extractResult.description.length >= 50) {
         listing.description = extractResult.description;
+        if (extractResult.description_html) {
+          listing.description_html = extractResult.description_html;
+        }
         wasEnriched = true;
       }
 
@@ -280,14 +285,12 @@ async function genericDetailEnrichment(
       if (extractResult.amenities?.length) listing.amenities = extractResult.amenities;
 
       if (extractResult.imageUrls?.length) {
-        const currentImages = listing.imageUrls || [];
-        for (const img of extractResult.imageUrls) {
-          if (!currentImages.includes(img)) {
-            currentImages.push(img);
-            wasEnriched = true;
-          }
+        const merged = [...(listing.imageUrls || []), ...extractResult.imageUrls];
+        const deduped = dedupeImageUrls(merged);
+        if (deduped.length !== (listing.imageUrls || []).length) {
+          wasEnriched = true;
         }
-        listing.imageUrls = currentImages;
+        listing.imageUrls = deduped;
       }
 
       if (wasEnriched) {
@@ -575,6 +578,7 @@ export async function runMarketIngest(marketId: string): Promise<IngestReport> {
       source_url: fullListing?.detailUrl || fullListing?.externalUrl || null,
       title: listing.title,
       description: fullListing?.description,
+      description_html: fullListing?.description_html,
       price: listing.price,
       currency,
       country,

@@ -1,0 +1,69 @@
+/* ═══ Market Context Section ═══ */
+.mctx {
+  margin-top: 40px;
+  padding-top: 36px;
+  border-top: 1px solid var(--bd);
+}
+
+.mctx-h {
+  font-family: var(--fd);
+  font-size: 1.6rem;
+  font-weight: 400;
+  margin-bottom: 20px;
+}
+.mctx-h em {
+  font-style: normal;
+  color: var(--ac);
+}
+
+/* Grid — columns adapt to card count */
+.mctx-grid {
+  display: grid;
+  gap: 16px;
+}
+.mctx-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.mctx-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.mctx-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* Note line under stat label */
+.mctx-note {
+  font-size: 0.68rem;
+  color: var(--tx3);
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+/* Disclaimer / link row */
+.mctx-disc {
+  font-size: 0.72rem;
+  color: var(--tx3);
+  font-style: italic;
+  margin-top: 16px;
+}
+.mctx-disc a {
+  color: var(--ac);
+  text-decoration: none;
+  font-style: normal;
+  font-weight: 600;
+}
+.mctx-disc a:hover {
+  text-decoration: underline;
+}
+
+/* ══ Tablet ══ */
+@media (max-width: 1024px) {
+  .mctx-grid-3,
+  .mctx-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ══ Mobile ══ */
+@media (max-width: 768px) {
+  .mctx { margin-top: 48px; padding-top: 32px; }
+  .mctx-grid-2,
+  .mctx-grid-3,
+  .mctx-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

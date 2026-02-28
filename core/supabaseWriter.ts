@@ -10,6 +10,7 @@ export interface SupabaseListing {
   source_url: string | null;
   title?: string;
   description?: string;
+  description_html?: string;
   price?: number;
   currency: string;
   island?: string;

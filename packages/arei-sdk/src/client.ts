@@ -8,10 +8,13 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type {
   AREIConfig,
   GetListingsParams,
+  GetSimilarParams,
   PaginatedListings,
   IslandOption,
   IslandMedianStat,
+  IslandContext,
   ListingRow,
+  ListingCard,
   ListingDetail,
   PriceBucket,
 } from "./types.js";
@@ -61,6 +64,7 @@ const DETAIL_COLUMNS = [
   "bedrooms",
   "bathrooms",
   "land_area_sqm",
+  "property_size_sqm",
   "description",
   "image_urls",
   "source_id",
@@ -180,6 +184,124 @@ export class AREIClient {
   }
 
   // =========================================================================
+  // getSimilarListings — fallback chain for detail page
+  // =========================================================================
+  async getSimilarListings(
+    params: GetSimilarParams
+  ): Promise<ListingCard[]> {
+    const { listing, limit = 4, minResults = 2 } = params;
+
+    // Guard: no island → no query possible
+    if (!listing.island) return [];
+
+    const hasType = listing.property_type != null;
+    const hasPrice = listing.price != null && listing.price > 0;
+    const hasBedrooms =
+      hasType &&
+      listing.property_type!.toLowerCase() !== "land" &&
+      listing.bedrooms != null;
+
+    // Build deterministic strategy list
+    type Strategy = {
+      type?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      minBed?: number;
+      maxBed?: number;
+    };
+    const strategies: Strategy[] = [];
+
+    if (hasType && hasPrice && hasBedrooms) {
+      const minPrice = Math.max(0, Math.round(listing.price! * 0.7));
+      const maxPrice = Math.round(listing.price! * 1.3);
+      const minBed = Math.max(0, listing.bedrooms! - 1);
+      const maxBed = listing.bedrooms! + 1;
+      // Step 1: island + type + price + bedrooms
+      strategies.push({
+        type: listing.property_type!,
+        minPrice,
+        maxPrice,
+        minBed,
+        maxBed,
+      });
+      // Step 2: island + type + price
+      strategies.push({
+        type: listing.property_type!,
+        minPrice,
+        maxPrice,
+      });
+    } else if (hasType && hasPrice) {
+      const minPrice = Math.max(0, Math.round(listing.price! * 0.7));
+      const maxPrice = Math.round(listing.price! * 1.3);
+      // Step 2: island + type + price
+      strategies.push({
+        type: listing.property_type!,
+        minPrice,
+        maxPrice,
+      });
+    }
+
+    if (hasType) {
+      // Step 3: island + type
+      strategies.push({ type: listing.property_type! });
+    }
+
+    if (!hasType) {
+      // Step 4: island only (only when type is null)
+      strategies.push({});
+    }
+
+    let lastResults: ListingCard[] = [];
+
+    for (const strategy of strategies) {
+      let query = this.sb
+        .from(VIEW)
+        .select(CARD_COLUMNS)
+        .eq("island", listing.island)
+        .gt("price", 0)
+        .neq("id", listing.id)
+        .order("first_seen_at", { ascending: false })
+        .limit(limit + 4);
+
+      if (strategy.type) {
+        query = query.eq("property_type", strategy.type);
+      }
+      if (strategy.minPrice != null && strategy.maxPrice != null) {
+        query = query
+          .gte("price", strategy.minPrice)
+          .lte("price", strategy.maxPrice);
+      }
+      if (strategy.minBed != null && strategy.maxBed != null) {
+        query = query
+          .gte("bedrooms", strategy.minBed)
+          .lte("bedrooms", strategy.maxBed);
+      }
+
+      const { data, error } = await query;
+      if (error) continue;
+
+      const rows = (data ?? []) as unknown as ListingRow[];
+      let cards = rows.map(toListingCard);
+
+      if (hasPrice) {
+        cards.sort(
+          (a, b) =>
+            Math.abs((a.price ?? 0) - listing.price!) -
+            Math.abs((b.price ?? 0) - listing.price!)
+        );
+      }
+
+      lastResults = cards.slice(0, limit);
+
+      if (lastResults.length >= minResults) {
+        return lastResults;
+      }
+    }
+
+    return lastResults;
+  }
+
+  // =========================================================================
   // getMarketStats — per-island median price
   // =========================================================================
   async getMarketStats(): Promise<{
@@ -234,5 +356,100 @@ export class AREIClient {
     islands.sort((a, b) => b.n_price - a.n_price);
 
     return { total, islands };
+  }
+
+  // =========================================================================
+  // getIslandContext — market context for a listing's island
+  // =========================================================================
+  async getIslandContext(
+    island: string,
+    listingPrice: number | null
+  ): Promise<IslandContext> {
+    const { data, error } = await this.sb
+      .from(VIEW)
+      .select("price, property_size_sqm, last_seen_at")
+      .eq("island", island);
+
+    if (error) throw new Error(`getIslandContext failed: ${error.message}`);
+
+    const rows = (data ?? []) as {
+      price: number | null;
+      property_size_sqm: number | null;
+      last_seen_at: string | null;
+    }[];
+
+    // --- Valid prices (outlier-filtered) ---
+    const validPrices: number[] = [];
+    for (const row of rows) {
+      if (
+        row.price != null &&
+        row.price >= PRICE_FLOOR &&
+        row.price <= PRICE_CEILING
+      ) {
+        validPrices.push(row.price);
+      }
+    }
+    validPrices.sort((a, b) => a - b);
+    const n = validPrices.length;
+
+    // --- Median price ---
+    const medianPrice =
+      n >= MIN_MEDIAN_SAMPLE
+        ? n % 2 === 0
+          ? (validPrices[n / 2 - 1] + validPrices[n / 2]) / 2
+          : validPrices[Math.floor(n / 2)]
+        : null;
+
+    // --- Median price per sqm ---
+    const pricesPerSqm: number[] = [];
+    for (const row of rows) {
+      if (
+        row.price != null &&
+        row.price >= PRICE_FLOOR &&
+        row.price <= PRICE_CEILING &&
+        row.property_size_sqm != null &&
+        row.property_size_sqm > 0
+      ) {
+        pricesPerSqm.push(row.price / row.property_size_sqm);
+      }
+    }
+    pricesPerSqm.sort((a, b) => a - b);
+    const nSqm = pricesPerSqm.length;
+    const medianPricePerSqm =
+      nSqm >= MIN_MEDIAN_SAMPLE
+        ? nSqm % 2 === 0
+          ? (pricesPerSqm[nSqm / 2 - 1] + pricesPerSqm[nSqm / 2]) / 2
+          : pricesPerSqm[Math.floor(nSqm / 2)]
+        : null;
+
+    // --- Price percentile ---
+    let pricePercentile: number | null = null;
+    if (
+      listingPrice != null &&
+      listingPrice >= PRICE_FLOOR &&
+      listingPrice <= PRICE_CEILING &&
+      n >= MIN_MEDIAN_SAMPLE
+    ) {
+      const below = validPrices.filter((p) => p < listingPrice).length;
+      pricePercentile = Math.round((below / n) * 100);
+    }
+
+    // --- Last updated ---
+    let lastUpdated: string | null = null;
+    for (const row of rows) {
+      if (row.last_seen_at && (!lastUpdated || row.last_seen_at > lastUpdated)) {
+        lastUpdated = row.last_seen_at;
+      }
+    }
+
+    return {
+      island,
+      activeListings: n,
+      medianPrice,
+      medianPricePerSqm,
+      nSqmListings: nSqm,
+      pricePercentile,
+      lastUpdated,
+    };
   }
 }

@@ -37,3 +37,8 @@ export function formatMedian(value: number | null): string {
   if (value >= 1000) return `€${Math.round(value / 1000)}K`;
   return `€${value.toLocaleString("en-US")}`;
 }
+
+export function formatPricePerSqm(value: number | null): string {
+  if (value === null) return "—";
+  return `€${Math.round(value).toLocaleString("en-US")}`;
+}

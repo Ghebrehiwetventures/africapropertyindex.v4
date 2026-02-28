@@ -102,6 +102,20 @@
 .bar-fill { height: 100%; background: var(--ac); border-radius: 4px; transition: width 0.6s ease; }
 .bar-val { font-size: 0.78rem; color: var(--tx3); width: 36px; flex-shrink: 0; }
 
+/* Inventory SVG chart */
+.inv-chart {
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  margin-top: 8px;
+}
+
+/* Delta badge on KPI */
+.kpi .kn-delta {
+  color: var(--ac);
+  font-weight: 600;
+}
+
 .chart-disc {
   font-size: 0.7rem;
   color: var(--tx3);

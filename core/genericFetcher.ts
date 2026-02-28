@@ -212,6 +212,61 @@ function isValidImageUrl(url: string): boolean {
   return !invalidPatterns.some((p) => lower.includes(p));
 }
 
+/** Normalize URL: force https, strip query params, hash, trailing slashes. */
+function normalizeImageUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    u.protocol = "https:";
+    u.search = "";
+    u.hash = "";
+    u.pathname = u.pathname.replace(/\/+$/, "");
+    return u.href;
+  } catch {
+    return url;
+  }
+}
+
+const NON_PROPERTY_PATTERNS = [
+  /logo/i,
+  /icon/i,
+  /avatar/i,
+  /spinner/i,
+  /loading/i,
+  /placeholder/i,
+  /favicon/i,
+  /badge/i,
+  /banner[\-_]?ad/i,
+  /pixel\.gif/i,
+  /spacer/i,
+  /blank\.(gif|png|jpg)/i,
+  /1x1\./i,
+  /tracking/i,
+  /analytics/i,
+  /\.svg$/i,
+];
+
+/**
+ * Deduplicate & clean image URL list.
+ * 1. Normalize (strip query/hash)
+ * 2. Deduplicate (Set on normalized form, first occurrence wins)
+ * 3. Filter non-property images (logos, placeholders, icons, trackers)
+ * 4. Preserve original order
+ */
+export function dedupeImageUrls(urls: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const url of urls) {
+    if (!url) continue;
+    const norm = normalizeImageUrl(url);
+    if (seen.has(norm)) continue;
+    seen.add(norm);
+    // Filter non-property images
+    if (NON_PROPERTY_PATTERNS.some((p) => p.test(norm))) continue;
+    result.push(norm);
+  }
+  return result;
+}
+
 function parsePrice(priceText: string, config?: SourceFetchConfig["price_format"]): number | undefined {
   if (!priceText) return undefined;
 
@@ -490,7 +545,7 @@ function parseListingsFromHtml(
       title,
       price,
       description: undefined, // Usually not available on list pages
-      imageUrls: imageUrls.slice(0, 10),
+      imageUrls: dedupeImageUrls(imageUrls).slice(0, 10),
       location: location || undefined,
       detailUrl: absoluteUrl?.replace(/\/+$/, "") || absoluteUrl,
       createdAt: now,

@@ -58,6 +58,7 @@ export interface ListingDetail {
   bedrooms: number | null;
   bathrooms: number | null;
   land_area_sqm: number | null;
+  property_size_sqm: number | null;
   description: string | null;
   image_urls: string[];
   source_id: string;
@@ -65,6 +66,13 @@ export interface ListingDetail {
   first_seen_at: string;
   last_seen_at: string | null;
   is_new: boolean;
+}
+
+/** Parameters for getSimilarListings() */
+export interface GetSimilarParams {
+  listing: ListingDetail;
+  limit?: number;       // default 4
+  minResults?: number;   // default 2 — threshold to trigger next fallback
 }
 
 /** Island option for filter dropdown */
@@ -116,6 +124,23 @@ export interface PaginatedListings {
 export interface AREIConfig {
   supabaseUrl: string;
   supabaseAnonKey: string;
+}
+
+/** Market context stats for a single island, relative to one listing */
+export interface IslandContext {
+  island: string;
+  /** Number of active listings on this island (with valid price) */
+  activeListings: number;
+  /** Median asking price for the island (null if < MIN_MEDIAN_SAMPLE) */
+  medianPrice: number | null;
+  /** Median price per sqm for the island (null if insufficient sqm data) */
+  medianPricePerSqm: number | null;
+  /** Number of listings used in sqm calculation */
+  nSqmListings: number;
+  /** Percentile rank of the given price (0-100), null if insufficient data */
+  pricePercentile: number | null;
+  /** ISO timestamp of the most recent last_seen_at among island listings */
+  lastUpdated: string | null;
 }
 
 /** Minimum sample size for showing median */

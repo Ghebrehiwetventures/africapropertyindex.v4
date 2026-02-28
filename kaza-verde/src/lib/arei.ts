@@ -29,6 +29,9 @@ function getClient(): AREIClient {
 export const arei = {
   getListings: (p: Parameters<AREIClient["getListings"]>[0]) => getClient().getListings(p),
   getListing: (id: string) => getClient().getListing(id),
+  getSimilarListings: (p: Parameters<AREIClient["getSimilarListings"]>[0]) => getClient().getSimilarListings(p),
   getMarketStats: () => getClient().getMarketStats(),
   getIslandOptions: () => getClient().getIslandOptions(),
+  getIslandContext: (island: string, listingPrice: number | null) =>
+    getClient().getIslandContext(island, listingPrice),
 };

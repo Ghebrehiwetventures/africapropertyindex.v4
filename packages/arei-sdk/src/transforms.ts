@@ -46,6 +46,7 @@ export function toListingDetail(row: ListingRow): ListingDetail {
     bedrooms: row.bedrooms,
     bathrooms: row.bathrooms,
     land_area_sqm: row.land_area_sqm,
+    property_size_sqm: row.property_size_sqm,
     description: row.description,
     image_urls: row.image_urls ?? [],
     source_id: row.source_id,

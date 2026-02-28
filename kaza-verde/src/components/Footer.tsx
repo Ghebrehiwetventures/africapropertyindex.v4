@@ -24,15 +24,21 @@ export default function Footer() {
           <h4>Company</h4>
           <a onClick={() => navigate("/about")}>About Us</a>
           <a onClick={() => navigate("/market")}>Market Data</a>
-          <a href="#">Blog</a>
+          <a onClick={() => navigate("/blog")}>Blog</a>
           <a href="#">Press</a>
         </div>
         <div className="fc">
           <h4>Connect</h4>
-          <a href="#">Instagram</a>
-          <a href="#">Twitter</a>
-          <a href="#">Email Us</a>
+          <a href="https://instagram.com/kazaverde.cv" target="_blank" rel="noopener noreferrer">Instagram</a>
+          <a href="https://x.com/kazaverdecv" target="_blank" rel="noopener noreferrer">X (Twitter)</a>
+          <a href="mailto:info@kazaverde.com">Email Us</a>
         </div>
+      </div>
+      <div className="fc_">
+        <span>© 2026 Kaza Verde</span>
+        <a href="https://www.africarealestateindex.com/" target="_blank" rel="noopener noreferrer">
+          Powered by Africa Real Estate Index
+        </a>
       </div>
     </footer>
   );

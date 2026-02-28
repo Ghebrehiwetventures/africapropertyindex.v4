@@ -6,8 +6,20 @@
  */
 
 import * as cheerio from "cheerio";
+import sanitize from "sanitize-html";
 import { DetailConfig, SelectorsConfig } from "./configLoader";
 import { CMSType, CMS_PRESETS, detectCMS, getImageAttrs } from "./cmsPresets";
+import { dedupeImageUrls } from "./genericFetcher";
+
+// Strict HTML sanitization: only structural tags allowed
+const SANITIZE_OPTIONS: sanitize.IOptions = {
+  allowedTags: ["h2", "h3", "h4", "p", "ul", "ol", "li", "strong", "em", "a", "br"],
+  allowedAttributes: {
+    a: ["href"],
+  },
+  allowedSchemes: ["https", "http", "mailto"],
+  disallowedTagsMode: "discard",
+};
 
 // ============================================
 // DETAIL EXTRACTION CONFIG (from sources.yml)
@@ -58,6 +70,7 @@ export interface DetailExtractionResult {
   error?: string;
   title?: string;
   description?: string;
+  description_html?: string;
   price?: number;
   imageUrls?: string[];
   bedrooms?: number;
@@ -216,6 +229,15 @@ export function genericDetailExtract(
           const text = descEl.text().trim();
           if (text.length >= 50 && (!result.description || text.length > result.description.length)) {
             result.description = text;
+            // Sanitize the HTML version (strict whitelist)
+            // Join all matched elements to avoid losing content when selector hits multiple nodes
+            const rawHtml = descEl.map((_, el) => $.html(el)).get().join("");
+            if (rawHtml) {
+              const cleaned = sanitize(rawHtml, SANITIZE_OPTIONS).trim();
+              if (cleaned.length > 0) {
+                result.description_html = cleaned;
+              }
+            }
           }
         }
       }
@@ -223,14 +245,26 @@ export function genericDetailExtract(
     // Fallback: find longest paragraph
     if (!result.description || result.description.length < 50) {
       let longestText = "";
+      let longestEl: any = null;
       $("p, .description, [class*='description'], .content").each((_, el) => {
         const text = $(el).text().trim();
         if (text.length > longestText.length && text.length >= 50) {
           longestText = text;
+          longestEl = el;
         }
       });
       if (longestText) {
         result.description = longestText;
+        // Sanitize the HTML version for fallback too
+        if (longestEl) {
+          const rawHtml = $(longestEl).html();
+          if (rawHtml) {
+            const cleaned = sanitize(rawHtml, SANITIZE_OPTIONS).trim();
+            if (cleaned.length > 0) {
+              result.description_html = cleaned;
+            }
+          }
+        }
       }
     }
 
@@ -278,7 +312,7 @@ export function genericDetailExtract(
         }
       });
     }
-    result.imageUrls = imageUrls.slice(0, 15);
+    result.imageUrls = dedupeImageUrls(imageUrls).slice(0, 15);
 
     // ========================================
     // SPEC EXTRACTION (bedrooms, bathrooms, etc.)

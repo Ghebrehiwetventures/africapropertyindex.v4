@@ -11,6 +11,7 @@ import About from "./pages/About";
 import Rent from "./pages/Rent";
 import BlogList from "./pages/BlogList";
 import BlogPost from "./pages/BlogPost";
+import NotFound from "./pages/NotFound";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/rent" element={<Rent />} />
         <Route path="/blog" element={<BlogList />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <Footer />
     </div>

@@ -46,6 +46,13 @@ export default function Navbar() {
         <NavLink to="/market" className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>MARKET DATA</NavLink>
         <NavLink to="/blog" className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>BLOG</NavLink>
         <NavLink to="/about" className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>ABOUT</NavLink>
+        <NavLink to="/saved" className={({ isActive }) => `nav-saved-mobile${isActive ? " on" : ""}`} onClick={closeMenu}>
+          <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" width="18" height="18" stroke="currentColor" fill="none" strokeWidth="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+          SAVED
+          {count > 0 && <span className="saved-badge">{count}</span>}
+        </NavLink>
       </div>
 
       <div className="nr">

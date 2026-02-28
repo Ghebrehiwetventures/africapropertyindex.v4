@@ -124,12 +124,22 @@
   color: var(--tx3);
   margin-bottom: 10px;
 }
+.mp-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+}
 .mp-price {
   font-family: var(--fd);
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--tx);
-  margin-bottom: 4px;
+}
+.mp-qoq {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ac);
 }
 .mp-note {
   font-size: 0.68rem;
@@ -142,6 +152,12 @@
 @media (max-width: 768px) {
   .hero { padding: 48px 0 56px; }
   .hero h1 { font-size: 3.2rem; }
-  .sr { flex-direction: column; gap: 24px; }
-  .mp-grid { grid-template-columns: 1fr; }
+  .sr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px 16px;
+    padding: 32px 0;
+  }
+  .mp-grid { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr !important; }
 }

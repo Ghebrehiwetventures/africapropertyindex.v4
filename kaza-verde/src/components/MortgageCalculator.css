@@ -1,0 +1,281 @@
+/* ═══ Monthly Cost Estimate ═══ */
+.mc {
+  margin-top: 40px;
+  padding-top: 36px;
+  border-top: 1px solid var(--bd);
+}
+
+.mc-title {
+  font-family: var(--fd);
+  font-size: 1.6rem;
+  font-weight: 400;
+  margin-bottom: 20px;
+}
+.mc-title em {
+  font-style: normal;
+  color: var(--ac);
+}
+
+/* ── Desktop: two-column layout ── */
+.mc-grid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 40px;
+  align-items: start;
+  max-width: 860px;
+}
+
+.mc-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Inputs grid ── */
+.mc-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mc-field label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.mc-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--bd);
+  background: var(--bg2);
+  color: var(--tx);
+  font-family: var(--fb);
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: border-color 0.2s;
+  -moz-appearance: textfield;
+}
+.mc-field input::-webkit-inner-spin-button,
+.mc-field input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.mc-field input:focus {
+  outline: none;
+  border-color: var(--ac);
+}
+
+.mc-field-full {
+  grid-column: 1 / -1;
+}
+
+/* ── Advanced toggle ── */
+.mc-adv-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--tx3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  font-family: var(--fb);
+  transition: color 0.2s;
+}
+.mc-adv-toggle:hover { color: var(--ac); }
+.mc-adv-toggle svg {
+  transition: transform 0.2s;
+}
+.mc-adv-open svg {
+  transform: rotate(180deg);
+}
+
+.mc-inputs-adv {
+  animation: mc-fadein 0.15s ease;
+}
+@keyframes mc-fadein { from { opacity: 0; transform: translateY(-4px); } }
+
+/* ── Inline summary (mobile-first, hidden on desktop) ── */
+.mc-inline-summary {
+  display: none;
+}
+
+/* ── Results panel ── */
+.mc-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Hero total — most prominent */
+.mc-hero-total {
+  text-align: center;
+  width: 100%;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--bd);
+}
+.mc-hero-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.mc-hero-value {
+  display: block;
+  font-family: var(--fd);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--ac);
+  line-height: 1;
+}
+
+/* Donut */
+.mc-donut {
+  width: 140px;
+  height: 140px;
+}
+.mc-donut circle {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+.mc-donut-label {
+  font-family: var(--fb);
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.mc-donut-total {
+  font-family: var(--fd);
+  font-size: 16px;
+  font-weight: 700;
+  fill: var(--tx);
+}
+
+/* Legend */
+.mc-legend {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mc-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+}
+.mc-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.mc-legend-label {
+  color: var(--tx2);
+  flex: 1;
+}
+.mc-legend-val {
+  font-weight: 600;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Summary — tertiary info */
+.mc-summary {
+  width: 100%;
+  border-top: 1px solid var(--bd);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mc-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--tx3);
+}
+.mc-summary-row span:last-child {
+  font-weight: 500;
+  color: var(--tx2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ══ Tablet: stack grid, keep inputs 2-col ══ */
+@media (max-width: 1024px) {
+  .mc-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    max-width: none;
+  }
+  .mc-result {
+    max-width: 360px;
+  }
+}
+
+/* ══ Mobile ══ */
+@media (max-width: 768px) {
+  .mc { margin-top: 48px; padding-top: 32px; }
+  .mc-title { margin-bottom: 20px; }
+
+  /* Keep inputs 2-col on mobile — price spans full */
+  .mc-inputs { gap: 10px; }
+  .mc-field input { padding: 9px 10px; font-size: 0.85rem; }
+  .mc-field label { font-size: 0.68rem; margin-bottom: 3px; }
+
+  /* Show inline summary on mobile */
+  .mc-inline-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    background: var(--bg2);
+    border-radius: 12px;
+    border: 1px solid var(--bd);
+  }
+  .mc-inline-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.92rem;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--bd);
+    margin-bottom: 4px;
+  }
+  .mc-inline-total span:first-child {
+    font-weight: 700;
+    color: var(--tx);
+  }
+  .mc-inline-total span:last-child {
+    font-weight: 700;
+    color: var(--ac);
+    font-size: 1rem;
+  }
+  .mc-inline-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--tx2);
+  }
+  .mc-inline-row span:last-child {
+    font-weight: 600;
+    color: var(--tx);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Hide donut + right panel + hero total on mobile */
+  .mc-result { display: none; }
+}

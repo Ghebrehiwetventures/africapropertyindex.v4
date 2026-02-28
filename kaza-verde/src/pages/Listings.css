@@ -44,6 +44,7 @@
 }
 .fs:hover { border-color: var(--bd2); color: var(--tx); }
 .fs:focus { outline: none; border-color: var(--ac); }
+.fs-sm { padding: 8px 32px 8px 12px; font-size: 0.72rem; }
 .fsp { flex: 1; }
 
 .view-toggle {
@@ -83,11 +84,10 @@
 
 .pg {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding-top: 40px;
-  border-top: 1px solid var(--bd);
-  margin-top: 40px;
+  padding-top: 24px;
+  margin-top: 32px;
 }
 .pn { display: flex; gap: 6px; }
 .pnn {
