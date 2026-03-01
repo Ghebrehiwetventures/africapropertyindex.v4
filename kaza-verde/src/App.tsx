@@ -9,6 +9,7 @@ import Market from "./pages/Market";
 import Saved from "./pages/Saved";
 import About from "./pages/About";
 import Rent from "./pages/Rent";
+import Sell from "./pages/Sell";
 import BlogList from "./pages/BlogList";
 import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/saved" element={<Saved />} />
         <Route path="/about" element={<About />} />
         <Route path="/rent" element={<Rent />} />
+        <Route path="/sell" element={<Sell />} />
         <Route path="/blog" element={<BlogList />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="*" element={<NotFound />} />
