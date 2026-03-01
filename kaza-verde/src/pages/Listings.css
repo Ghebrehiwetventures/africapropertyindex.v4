@@ -150,6 +150,12 @@
 }
 
 @media (max-width: 768px) {
-  .fb { flex-wrap: wrap; }
-  .fs { flex: 1; min-width: 140px; }
+  .fb {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 20px 0;
+  }
+  .fs { flex: 1 1 calc(50% - 4px); min-width: 0; font-size: 0.75rem; padding: 10px 32px 10px 12px; }
+  .fsp { display: none; }
+  .view-toggle { display: none; }
 }
