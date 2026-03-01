@@ -141,7 +141,7 @@
 .pc-list .pcb { padding: 0; flex: 1; flex-direction: column; justify-content: center; }
 .pc-list .pcl { display: flex; flex-direction: column; }
 .pc-lprice {
-  font-size: 1.15rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--ac);
   white-space: nowrap;
