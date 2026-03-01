@@ -62,7 +62,7 @@ export default function Detail() {
           city: detail.city,
           price: detail.price,
           currency: detail.currency ?? "",
-          image_urls: detail.image_urls ?? [],
+          image_urls: [...new Set(detail.image_urls ?? [])],
           bedrooms: detail.bedrooms,
           bathrooms: detail.bathrooms,
           property_type: detail.property_type,

@@ -35,6 +35,16 @@
 .nc a:hover,
 .nc a.on,
 .nc a.active { color: var(--tx); }
+.nc-soon {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--tx3);
+  opacity: 0.4;
+  cursor: default;
+  padding: 4px 0;
+}
 
 .nr {
   display: flex;
