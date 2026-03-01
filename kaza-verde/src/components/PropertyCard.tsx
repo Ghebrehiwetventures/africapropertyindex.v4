@@ -45,6 +45,7 @@ export default function PropertyCard({ listing, index = 0, viewMode = "grid" }: 
           )}
           <div className="pct">{listing.title}</div>
           <div className="pca">{formatLocation(listing.city, listing.island)}</div>
+          {!isList && <div className="pc-gprice">{formatPrice(listing.price, listing.currency)}</div>}
           {specs.length > 0 && (
             <div className="pcs">
               {specs.map((s, i) => <span key={i}>{s}</span>)}

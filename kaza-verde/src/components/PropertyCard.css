@@ -91,6 +91,15 @@
   color: var(--tx3);
 }
 
+.pc-gprice {
+  display: none;
+  font-family: var(--fd);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ac);
+  margin-bottom: 6px;
+}
+
 .ca {
   width: 32px;
   height: 32px;
@@ -142,10 +151,11 @@
 
 @media (max-width: 768px) {
   .pci { height: 230px; }
-  .pci .pr { font-size: 1.1rem; padding: 5px 12px; }
+  .pci .pr { display: none; }
+  .pc-gprice { display: block; }
 
   .pc-list { gap: 14px; padding: 12px; }
-  .pc-list .pci { width: 100px; min-width: 100px; height: 80px; border-radius: 8px; }
+  .pc-list .pci { width: 140px; min-width: 140px; height: 110px; border-radius: 8px; }
   .pc-list .pcb { flex-direction: column; align-items: flex-start; gap: 6px; }
   .pc-list .pct { font-size: 0.88rem; }
   .pc-list .pc-lprice { font-size: 1rem; }
