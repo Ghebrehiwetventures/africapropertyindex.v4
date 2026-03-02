@@ -19,6 +19,7 @@ export function cardToDemoListing(card: ListingCard): DemoListing {
     land_area_sqm: card.land_area_sqm,
     property_size_sqm: null,
     description: null,
+    description_html: null,
     first_seen_at: card.first_seen_at,
     source_id: card.source_id,
     source_url: "",
