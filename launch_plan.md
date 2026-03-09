@@ -60,6 +60,7 @@ KazaVerde is considered ready for main stage when all of the following are true:
 - Deploy flow is current and documented.
 - Critical docs are not stale.
 - Launch checklist is owned and tracked from this file.
+- KazaVerde production deploy is only considered successful when the change is verified on `https://kazaverde.com`. A working `*.vercel.app` URL does not count as production verification. See `docs/kazaverde_deploy_contract.md`.
 
 ## 3. Current Snapshot
 
