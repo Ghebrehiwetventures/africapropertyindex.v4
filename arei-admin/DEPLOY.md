@@ -3,7 +3,7 @@
 ## 1. Connect repo
 
 - Vercel → New Project → Import your repo.
-- Set **Root Directory** to `diagnostics` (so build and API use this folder).
+- Set **Root Directory** to `arei-admin` (so build and API use this folder).
 
 ## 2. Environment variables
 
@@ -27,9 +27,9 @@ Optional:
 
 Så att **push till main på GitHub** triggar build och deploy automatiskt:
 
-1. **Vercel** → ditt projekt **africapropertyindexadmin** → **Settings** → **Git**.
+1. **Vercel** → ditt projekt **arei-admin** → **Settings** → **Git**.
 2. Om repot inte är kopplat: **Connect Git Repository** → välj **GitHub** och repot (t.ex. `Ghebrehiwetventures/africapropertyindex.v4`).
-3. Under **Root Directory** ange **`diagnostics`** (projektets rot är `morabesa`, appen ligger i `diagnostics/`). Spara.
+3. Under **Root Directory** ange **`arei-admin`** (projektets rot är `morabesa`, appen ligger i `arei-admin/`). Spara.
 4. **Production Branch** ska vara **main**.
 5. Gör en **push till main** – Vercel bygger och deployar. Status: **Deployments** eller i GitHub (om Vercel-appen är installerad).
 
@@ -37,16 +37,16 @@ Efter det: **Commit & push till main** → Vercel kör build och uppdaterar prod
 
 ### Deploy från CLI
 
-**From CLI (e.g. from Cursor):** Run from the `diagnostics` folder:
+**From CLI (e.g. from Cursor):** Run from the `arei-admin` folder:
 
 ```bash
-cd diagnostics
+cd arei-admin
 npx vercel --prod
 ```
 
-If you get an error like `path "…/diagnostics/diagnostics" does not exist`, the project was set up with Root Directory = `diagnostics` for repo-based deploys. When deploying from inside `diagnostics`, change it: Vercel → Project → **Settings** → **General** → **Root Directory** → set to **`.`** (or leave empty), then save. After that, `npx vercel --prod` from `diagnostics` works.
+If you get an error like `path "…/arei-admin/arei-admin" does not exist`, the project was set up with Root Directory = `arei-admin` for repo-based deploys. When deploying from inside `arei-admin`, change it: Vercel → Project → **Settings** → **General** → **Root Directory** → set to **`.`** (or leave empty), then save. After that, `npx vercel --prod` from `arei-admin` works.
 
-**From Git:** Push to main or trigger deploy in the Vercel dashboard. If the repo root is `morabesa`, keep Root Directory = `diagnostics` in project settings.
+**From Git:** Push to main or trigger deploy in the Vercel dashboard. If the repo root is `morabesa`, keep Root Directory = `arei-admin` in project settings.
 
 The build runs `npm run build` and serves the `dist` folder. The `/api/auth` route is a serverless function for login. On Vercel, `../artifacts` is not available, so the build uses `public/` as fallback; the app still works (sync report will show "no report" until you add one via another channel).
 

@@ -20,6 +20,7 @@ import { runDetailEnrichment } from "./detail/enrich";
 import { getStrategyFactory } from "./detail/strategyFactory";
 import { terraCaboVerdePlugin } from "./detail/plugins/terraCaboVerde";
 import { simplyCapeVerdePlugin } from "./detail/plugins/simplyCapeVerde";
+import { homesCasaVerdePlugin } from "./detail/plugins/homesCasaVerde";
 import { createGenericDetailPlugin } from "./detail/plugins/genericDetail";
 import { DetailEnrichmentInput } from "./detail/types";
 import { upsertListings, SupabaseListing } from "./supabaseWriter";
@@ -606,6 +607,7 @@ export async function runCvIngest(): Promise<IngestReport> {
   // Register source-specific plugins (Terra + Simply have custom extraction logic)
   factory.register(terraCaboVerdePlugin);
   factory.register(simplyCapeVerdePlugin);
+  factory.register(homesCasaVerdePlugin);
 
   // Register generic detail plugins for all other sources with detail.enabled
   // Pass price_format from source config for accurate price parsing
@@ -677,6 +679,7 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
     const factory = getStrategyFactory();
     factory.register(terraCaboVerdePlugin);
     factory.register(simplyCapeVerdePlugin);
+    factory.register(homesCasaVerdePlugin);
 
     // Build enrichment inputs from hidden listings only
     const enrichmentInputs: DetailEnrichmentInput[] = evalResult.classifications
