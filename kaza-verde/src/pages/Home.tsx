@@ -38,10 +38,12 @@ export default function Home() {
   const navigate = useNavigate();
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
+        setError(null);
         const [listingsRes, statsRes, islandsRes] = await Promise.all([
           arei.getListings({ page: 1, pageSize: 3 }),
           arei.getMarketStats(),
@@ -80,6 +82,7 @@ export default function Home() {
         });
       } catch (e) {
         console.error("[Home] Failed to load data:", e);
+        setError(e instanceof Error ? e.message : "Could not load property data.");
       } finally {
         setLoading(false);
       }
@@ -108,7 +111,25 @@ export default function Home() {
           <span className="ac">Island</span><br />
           Living
         </h1>
-        <p className="hero-sub">Cape Verde's real estate aggregator.</p>
+        <p className="hero-sub">
+          {error ? "Live property data could not be loaded." : "Cape Verde's real estate aggregator."}
+        </p>
+        {error && (
+          <div
+            style={{
+              marginTop: 20,
+              maxWidth: 680,
+              padding: "14px 16px",
+              borderRadius: 16,
+              background: "rgba(104, 31, 31, 0.12)",
+              border: "1px solid rgba(104, 31, 31, 0.22)",
+              color: "#5f1d1d",
+            }}
+          >
+            <strong>Data connection error</strong>
+            <p style={{ margin: "8px 0 0" }}>{error}</p>
+          </div>
+        )}
         <div className="hero-acts">
           <button className="bp" onClick={() => navigate("/listings")}>BROWSE PROPERTIES</button>
         </div>
@@ -140,8 +161,8 @@ export default function Home() {
       <div className="sr anim-fu delay-25">
         <div className="si"><div className="sn">{stats.total}</div><div className="sl">Active Listings</div></div>
         <div className="si"><div className="sn">{stats.islandCount}</div><div className="sl">Islands</div></div>
-        <div className="si"><div className="sn">9</div><div className="sl">Sources</div></div>
-        <div className="si"><div className="sn">{stats.medianPrice ? formatMedian(stats.medianPrice) : "—"}</div><div className="sl">Median Price</div></div>
+        <div className="si"><div className="sn">Multiple</div><div className="sl">Tracked Sources</div></div>
+        <div className="si"><div className="sn">{stats.medianPrice ? formatMedian(stats.medianPrice) : "—"}</div><div className="sl">Estimated Median Price</div></div>
       </div>
 
       {/* Island explorer */}

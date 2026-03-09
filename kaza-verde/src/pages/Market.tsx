@@ -139,16 +139,16 @@ export default function Market() {
         <h1>Cape Verde Property Market</h1>
         <p>
           Index-level market data derived from {data.total} tracked public
-          listings across 9 sources.
+          listings across multiple tracked sources.
         </p>
       </div>
 
       {/* KPIs */}
       <div className="mi-kpis anim-fu delay-15">
         <div className="kpi">
-          <div className="kl">Median Asking Price</div>
+          <div className="kl">Estimated Median Price</div>
           <div className="kv">{formatMedian(data.medianPrice)}</div>
-          <div className="kn">Based on listings with verified price</div>
+          <div className="kn">Estimated from island medians with verified price</div>
         </div>
         <div className="kpi">
           <div className="kl">Total Tracked Inventory</div>
@@ -158,7 +158,7 @@ export default function Market() {
         <div className="kpi">
           <div className="kl">Islands Covered</div>
           <div className="kv">{data.islandCount}</div>
-          <div className="kn">9 sources tracked</div>
+          <div className="kn">Across multiple tracked sources</div>
         </div>
       </div>
 

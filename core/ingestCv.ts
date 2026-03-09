@@ -24,6 +24,7 @@ import { createGenericDetailPlugin } from "./detail/plugins/genericDetail";
 import { DetailEnrichmentInput } from "./detail/types";
 import { upsertListings, SupabaseListing } from "./supabaseWriter";
 import { parseLocation } from "./locationMapper";
+import { resolveCvIslandRecovery } from "./cvIslandRecovery";
 
 // Generic config-driven fetcher — replaces all per-source parsers
 import {
@@ -886,6 +887,21 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
       if (descResult.island) {
         island = descResult.island;
         city = descResult.city;
+      }
+    }
+    if (!island) {
+      const recovery = resolveCvIslandRecovery({
+        id: listing.id,
+        sourceId: listing.sourceId,
+        title: listing.title,
+        description: fullListing?.description,
+        sourceUrl: fullListing?.detailUrl || fullListing?.externalUrl || null,
+        rawIsland: listing.location,
+        rawCity: undefined,
+      });
+      if (recovery.kind === "resolved") {
+        island = recovery.island;
+        city = recovery.city ?? undefined;
       }
     }
 

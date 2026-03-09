@@ -64,6 +64,10 @@ export default function Detail() {
   );
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [id]);
+
+  useEffect(() => {
     if (!id) return;
     let cancelled = false;
     setLoading(true);
@@ -377,11 +381,6 @@ export default function Detail() {
             {listing.source_url && (
               <a className="bp" style={{ width: "100%", textAlign: "center", padding: 14, borderRadius: 10, fontSize: "0.82rem", marginBottom: 10, display: "block" }} href={listing.source_url} target="_blank" rel="noopener noreferrer">
                 VIEW ON SOURCE
-              </a>
-            )}
-            {listing.source_url && (
-              <a className="boc" href={listing.source_url} target="_blank" rel="noopener noreferrer">
-                CONTACT AGENT
               </a>
             )}
           </div>

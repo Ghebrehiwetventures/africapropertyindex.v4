@@ -15,17 +15,17 @@ export default function Footer() {
         </div>
         <div className="fc">
           <h4>Discover</h4>
-          <a href="#">New Listings</a>
-          <a href="#">Ocean View</a>
-          <a href="#">Price Drops</a>
-          <a href="#">Sold History</a>
+          <span>New Listings</span>
+          <span>Ocean View</span>
+          <span>Price Drops</span>
+          <span>Sold History</span>
         </div>
         <div className="fc">
           <h4>Company</h4>
           <a onClick={() => navigate("/about")}>About Us</a>
           <a onClick={() => navigate("/market")}>Market Data</a>
           <a onClick={() => navigate("/blog")}>Blog</a>
-          <a href="#">Press</a>
+          <span>Press</span>
         </div>
         <div className="fc">
           <h4>Connect</h4>

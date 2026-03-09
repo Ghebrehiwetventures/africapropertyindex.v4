@@ -487,7 +487,7 @@
 }
 @media (max-width: 768px) {
   .dhi { height: 280px; }
-  .dhi-price { display: block; }
+  .dhi-price { display: none; }
   .dl { margin-bottom: 16px; }
   .dm-price-bar {
     display: flex;

@@ -48,14 +48,14 @@ export default function MarketContext({ island, price }: Props) {
     cards.push({
       value: formatMedian(ctx.medianPrice),
       label: `${island} Median`,
-      note: `Based on ${ctx.activeListings} listings`,
+      note: `Based on ${ctx.activeListings} priced listings`,
     });
   }
 
   if (ctx.activeListings > 0) {
     cards.push({
       value: String(ctx.activeListings),
-      label: "Active Listings",
+      label: "Priced Listings",
       note: `On ${island}`,
     });
   }

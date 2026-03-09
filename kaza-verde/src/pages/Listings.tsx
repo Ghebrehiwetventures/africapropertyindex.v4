@@ -103,7 +103,7 @@ export default function Listings() {
     <>
       <div className="lh">
         <h1>All <em>Properties</em></h1>
-        <p>{total} listings across {islands.length || "multiple"} islands, aggregated from 9 agency sources.</p>
+        <p>{total} listings across {islands.length || "multiple"} islands, aggregated from multiple tracked sources.</p>
       </div>
 
       <div className="fb">

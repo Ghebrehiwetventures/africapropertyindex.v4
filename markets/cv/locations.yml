@@ -14,6 +14,9 @@ islands:
     aliases:
       - "Sal"
       - "Ilha do Sal"
+      - "Melia Tortuga"
+      - "Dunas Beach Resort"
+      - "Ponta Preta"
     cities:
       - name: Santa Maria
         aliases:
@@ -39,6 +42,7 @@ islands:
         aliases:
           - "Sal Rei"
           - "Sal-Rei"
+          - "Sal Rel"
         default: true
       - name: Rabil
         aliases:

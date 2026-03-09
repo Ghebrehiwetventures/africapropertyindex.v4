@@ -1,6 +1,5 @@
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import NewsletterCta from "../components/NewsletterCta";
-import { MARKET_STATS, ISLANDS } from "../lib/demo-data";
 import "./About.css";
 
 const SECTIONS = [
@@ -37,7 +36,6 @@ const BADGES = [
 
 export default function About() {
   useDocumentMeta("About", "How KazaVerde works. Data sources, update cadence, deduplication, and transparency.");
-  const coveredIslands = ISLANDS.filter((i) => i.count > 0).map((i) => i.name);
 
   return (
     <>
@@ -99,12 +97,11 @@ export default function About() {
         <div className="coverage-box">
           <div className="coverage-label">Current Coverage</div>
           <div className="coverage-value">
-            {MARKET_STATS.totalInventory} listings across {MARKET_STATS.sources} sources on{" "}
-            {coveredIslands.length} islands:{" "}
-            <span className="coverage-islands">{coveredIslands.join(", ")}</span>
+            Inventory and island coverage are shown on the Listings and Market pages, based on
+            the current launch feed contract.
           </div>
           <div className="coverage-note">
-            These numbers reflect current index state and update automatically as sources are crawled.
+            We avoid static coverage numbers here to prevent stale reporting.
           </div>
         </div>
       </div>

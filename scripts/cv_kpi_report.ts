@@ -39,6 +39,52 @@ interface Row {
   is_superseded?: boolean | null;
 }
 
+const CANONICAL_ISLANDS = new Set([
+  "Boa Vista",
+  "Brava",
+  "Fogo",
+  "Maio",
+  "Sal",
+  "Santiago",
+  "Santo Antão",
+  "São Nicolau",
+  "São Vicente",
+]);
+
+const STUB_TEST_SOURCES = new Set(["cv_source_1", "cv_source_2"]);
+
+function isNonEmptyImageArray(imageUrls: string[] | null | undefined): boolean {
+  return Array.isArray(imageUrls) && imageUrls.length > 0;
+}
+
+function isCanonicalIsland(island: string | null | undefined): boolean {
+  return !!island && CANONICAL_ISLANDS.has(island);
+}
+
+function printFeedContractSummary(params: {
+  rawVisible: Row[];
+  publicFeed: Row[];
+  excludedNoImage: number;
+  excludedInvalidIsland: number;
+  excludedStubTest: number;
+}) {
+  const { rawVisible, publicFeed, excludedNoImage, excludedInvalidIsland, excludedStubTest } = params;
+  const pct = (n: number, d: number) => (d ? ((n / d) * 100).toFixed(1) : "0");
+  const withPricePublic = publicFeed.filter((r) => r.price != null && r.price > 0).length;
+
+  console.log("\n--- FEED CONTRACT (RAW VISIBLE vs PUBLIC FEED) ---\n");
+  console.log("Raw visible CV rows               ", rawVisible.length.toString().padStart(6));
+  console.log("Public feed CV rows               ", publicFeed.length.toString().padStart(6));
+  console.log("Excluded (no image)               ", excludedNoImage.toString().padStart(6));
+  console.log("Excluded (invalid/missing island) ", excludedInvalidIsland.toString().padStart(6));
+  console.log("Excluded (stub/test source)       ", excludedStubTest.toString().padStart(6));
+  console.log(
+    "Price coverage on public feed     ",
+    withPricePublic.toString().padStart(6),
+    `  ${pct(withPricePublic, publicFeed.length)}%`
+  );
+}
+
 function computeKpis(rows: Row[], cutoff: string) {
   const totalVisible = rows.length;
   const withPrice = rows.filter((r) => r.price != null && r.price > 0);
@@ -181,12 +227,38 @@ async function main() {
   const all = (rows ?? []) as Row[];
   const approved = all.filter((r) => r.approved === true);
   const visible = approved.filter((r) => r.is_superseded !== true);
+  const excludedNoImageRows = visible.filter((r) => !isNonEmptyImageArray(r.image_urls));
+  const imageEligible = visible.filter((r) => isNonEmptyImageArray(r.image_urls));
+  const excludedInvalidIslandRows = imageEligible.filter((r) => !isCanonicalIsland(r.island));
+  const islandEligible = imageEligible.filter((r) => isCanonicalIsland(r.island));
+  const excludedStubTestRows = islandEligible.filter((r) => STUB_TEST_SOURCES.has(r.source_id));
+
+  const { data: publicFeedRows, error: publicFeedError } = await sb
+    .from("v1_feed_cv")
+    .select(
+      "id, source_id, approved, price, island, city, image_urls, property_size_sqm, bedrooms, created_at, updated_at, canonical_id, is_superseded"
+    );
+
+  if (publicFeedError) {
+    console.error("Supabase error (v1_feed_cv):", publicFeedError.message);
+    process.exit(1);
+  }
+
+  const publicFeed = (publicFeedRows ?? []) as Row[];
 
   const coreVisible = visible.filter((r) => CORE_SOURCES.includes(r.source_id));
 
   console.log("\n=== KAZA VERDE – CV KPI REPORT (nuläge) ===\n");
-  console.log("Källa: listings WHERE source_id LIKE 'cv_%' AND approved = true");
-  console.log("(is_superseded = true exkluderad från visible.)");
+  console.log("Källa A (raw visible): listings WHERE source_id LIKE 'cv_%' AND approved = true AND is_superseded != true");
+  console.log("Källa B (public feed): v1_feed_cv");
+
+  printFeedContractSummary({
+    rawVisible: visible,
+    publicFeed,
+    excludedNoImage: excludedNoImageRows.length,
+    excludedInvalidIsland: excludedInvalidIslandRows.length,
+    excludedStubTest: excludedStubTestRows.length,
+  });
 
   // All sources KPI
   const allKpis = computeKpis(visible, cutoff);

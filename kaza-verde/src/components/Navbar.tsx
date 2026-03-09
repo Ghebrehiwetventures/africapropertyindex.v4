@@ -63,7 +63,7 @@ export default function Navbar() {
           SAVED
           <span className={`saved-badge${count === 0 ? " hide" : ""}`}>{count}</span>
         </NavLink>
-        <button className="bp hide-mobile" onClick={() => navigate("/listings")}>LIST PROPERTY</button>
+        <button className="bp hide-mobile" onClick={() => navigate("/sell")}>LIST PROPERTY</button>
       </div>
     </nav>
   );

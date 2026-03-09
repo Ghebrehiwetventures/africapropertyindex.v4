@@ -160,6 +160,15 @@
     gap: 24px 16px;
     padding: 32px 0;
   }
-  .mp-grid { grid-template-columns: 1fr 1fr; }
+  .mp-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .mp-card {
+    padding: 18px;
+  }
+  .mp-price-row {
+    flex-wrap: wrap;
+  }
   .grid-3 { grid-template-columns: 1fr !important; }
 }

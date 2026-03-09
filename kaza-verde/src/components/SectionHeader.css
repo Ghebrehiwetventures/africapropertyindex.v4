@@ -38,3 +38,16 @@
   fill: none;
   stroke-width: 2;
 }
+
+@media (max-width: 768px) {
+  .sh {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .sa {
+    white-space: normal;
+    flex-shrink: 1;
+    max-width: 100%;
+  }
+}

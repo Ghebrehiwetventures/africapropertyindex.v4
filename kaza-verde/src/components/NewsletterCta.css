@@ -92,6 +92,10 @@
 @media (max-width: 768px) {
   .nl-cta { padding: 28px 20px; }
   .nl-cta h2 { font-size: 1.5rem; }
+  .nl-cta h2 em {
+    display: block;
+    margin-top: 2px;
+  }
   .nl-form { flex-direction: column; }
   .nl-submit { width: 100%; }
 }

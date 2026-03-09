@@ -2,8 +2,12 @@
 -- Run in Supabase SQL Editor (Dashboard > SQL Editor > New Query)
 -- Date: 2026-02-26
 --
--- STATUS: View already deployed to production (2026-02-26).
--- This file documents the deployed view definition.
+-- NOTE (2026-03-07):
+-- This is the baseline migration. Canonical feed contract is defined in
+-- migrations/009_canonical_v1_feed_cv.sql.
+-- Price is optional at feed level (Option A).
+--
+-- STATUS: baseline view was deployed to production (2026-02-26).
 -- The arei-sdk reads from this view — never from public.listings directly.
 
 -- 1. The feed view: quality-filtered CV listings (all columns)
@@ -15,8 +19,7 @@ SELECT *
 FROM public.listings
 WHERE approved = true
   AND source_id ILIKE 'cv_%'
-  AND price IS NOT NULL
-  AND price > 0
+  -- price is optional at feed level; price filters are query-level (e.g. buckets/stats)
   AND image_urls != '{}'
   AND source_url IS NOT NULL;
 

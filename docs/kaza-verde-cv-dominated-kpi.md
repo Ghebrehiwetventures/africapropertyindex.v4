@@ -7,10 +7,16 @@ Kör `npx ts-node scripts/cv_kpi_report.ts` för att mäta nuläge mot dessa KPI
 
 ## 1️⃣ DATA
 
+### Feed-kontrakt (måste alltid vara tydligt)
+- **Raw visible CV rows**: `approved = true` och `is_superseded != true` i `public.listings` för `cv_%`.
+- **Public feed CV rows**: rader i `public.v1_feed_cv` efter public gates (bild, canonical island, source_url, stub/test-exkludering).
+- KPI-rapporten ska alltid visa båda siffrorna och skillnaden mellan dem.
+
 ### Volym & unika listings
 | KPI | Mål (dominerad) | Nuläge |
 |-----|------------------|--------|
-| Unika CV-listings (approved, ej superseded) | ≥ 300 | Kör rapport |
+| Raw visible CV-listings (approved, ej superseded) | ≥ 300 | Kör rapport |
+| Public feed CV-listings (`v1_feed_cv`) | Informativt, ska följas över tid | Kör rapport |
 | Listings med `price > 0` | ≥ 95 % | Kör rapport |
 | Listings med giltig location (island + city där det finns) | ≥ 90 % | Kör rapport |
 | Listings med ≥1 giltig bild-URL | ≥ 90 % | Kör rapport |
@@ -21,7 +27,7 @@ Kör `npx ts-node scripts/cv_kpi_report.ts` för att mäta nuläge mot dessa KPI
 
 ### Tolkning
 - **Coverage ofullständig** = under 200 unika listings eller <80 % med price/location/images.
-- **Drop-rate hög** = >15 % av rådata tappas (violations, inga bilder, etc.).
+- **Drop-rate hög** = >15 % av *raw visible* tappas innan public feed (t.ex. inga bilder, ogiltig ö, stub/test-källor).
 - **Production-grade** = alla data-KPIs gröna + inga källor med 0 listings senaste 30 d utan plan.
 
 ---
