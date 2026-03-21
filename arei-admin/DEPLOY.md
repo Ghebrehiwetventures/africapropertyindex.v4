@@ -1,4 +1,20 @@
-# Deploy admin to Vercel
+# Deploy AREI Admin to Vercel
+
+Last updated: 2026-03-21
+
+## Governing reference
+
+This runbook is governed by `docs/06-go-to-market/brand-architecture.md`.
+
+Naming layers for this runbook:
+- canonical parent platform: `AREI`
+- canonical internal product: `AREI Admin`
+- technical repo identifier: `arei-platform`
+- technical app path: `arei-admin/`
+- technical Vercel project: `arei-admin`
+- public branding: internal-only operational surface
+
+`AREI Admin` is the product name. `arei-admin` is the technical app and deployment identifier.
 
 ## 1. Connect repo
 
@@ -30,11 +46,11 @@ Optional:
 Så att **push till main på GitHub** triggar build och deploy automatiskt:
 
 1. **Vercel** → ditt projekt **arei-admin** → **Settings** → **Git**.
-2. Om repot inte är kopplat: **Connect Git Repository** → välj **GitHub** och repot (t.ex. `Ghebrehiwetventures/africapropertyindex.v4`).
-3. Under **Root Directory** ange **`arei-admin`** (projektets rot är `morabesa`, appen ligger i `arei-admin/`). Spara.
+2. Om repot inte är kopplat: **Connect Git Repository** → välj **GitHub** och repot (t.ex. `Ghebrehiwetventures/arei-platform`).
+3. Under **Root Directory** ange **`arei-admin`** (repo root är monorepo-roten, appen ligger i `arei-admin/`). Spara.
 4. Under **Framework Preset** välj **Other**.
 5. **Production Branch** ska vara **main**.
-5. Gör en **push till main** – Vercel bygger och deployar. Status: **Deployments** eller i GitHub (om Vercel-appen är installerad).
+6. Gör en **push till main** – Vercel bygger och deployar. Status: **Deployments** eller i GitHub (om Vercel-appen är installerad).
 
 Efter det: **Commit & push till main** → Vercel kör build och uppdaterar production.
 
@@ -69,7 +85,7 @@ For the `arei-admin` project, keep these values stable:
 | Node.js Version | 20 |
 | Production Branch | `main` |
 
-The repo root has a separate [`vercel.json`](/Users/ghebrehiwet/morabesa/vercel.json) for `kazaverde-web`. If Root Directory is blank for the admin project, Vercel will read the wrong config and build the wrong app.
+The repo root has a separate [`vercel.json`](/Users/ghebrehiwet/morabesa/vercel.json) for KazaVerde, whose technical Vercel project identifier is `kazaverde-web`. If Root Directory is blank for the admin project, Vercel will read the wrong config and build the wrong app.
 
 ## 4. Guardrails
 
@@ -77,6 +93,7 @@ The repo root has a separate [`vercel.json`](/Users/ghebrehiwet/morabesa/vercel.
 - Keep [`arei-admin/vercel.json`](/Users/ghebrehiwet/morabesa/arei-admin/vercel.json) authoritative for admin deploy behavior.
 - Keep `arei-admin` free of Next.js dependencies unless the app is intentionally migrated to Next.js.
 - Treat any rename from `arei-admin` as a Vercel project-settings change, not just a git rename.
+- Do not treat the Vercel project identifier as public branding. `AREI Admin` remains the canonical product name.
 
 ## 5. Password protection
 

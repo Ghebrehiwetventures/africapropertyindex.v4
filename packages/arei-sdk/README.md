@@ -1,6 +1,8 @@
 # arei-sdk
 
-Shared query SDK for Africa Real Estate Index consumer sites.
+Internal shared query SDK for AREI-powered consumer surfaces.
+
+This package is a technical component, not a public-facing brand.
 
 ## What it does
 
@@ -56,11 +58,11 @@ const { total: inventory, islands: stats } = await arei.getMarketStats();
 ## Architecture
 
 ```
-arei (data repo)          arei-sdk (this package)      kazaverde (frontend)
-├── migrations/           ├── src/                     ├── app/
-├── crawlers/             │   ├── types.ts             │   ├── page.tsx
-├── views/                │   ├── transforms.ts        │   ├── listings/
-│   └── v1_feed_cv.sql    │   ├── client.ts            │   └── ...
+monorepo (current repo)   arei-sdk (this package)      kazaverde-web (consumer app)
+├── migrations/           ├── src/                     ├── src/
+├── core/                 │   ├── types.ts             │   ├── pages/
+├── markets/              │   ├── transforms.ts        │   ├── lib/
+├── scripts/              │   ├── client.ts            │   └── ...
 └── ...                   │   └── index.ts             └── uses arei-sdk
                           └── package.json
 ```

@@ -1,24 +1,34 @@
 # Security Baseline
 
-Last updated: 2026-03-18
+Last updated: 2026-03-21
 
 ## Purpose
 
-This document defines the canonical platform security baseline for AREI and KazaVerde.
+This document defines the canonical platform security baseline for AREI, AREI Admin, and KazaVerde.
 
 It covers actual application and infrastructure security expectations for the current repo and current launch scope.
 
 It is separate from AI workflow rules, which belong in `docs/04-platform/ai-development-guardrails.md`.
 
+This document should be read alongside `docs/06-go-to-market/brand-architecture.md`.
+
 ## Current architecture context
 
 The current security baseline must be read against the actual system:
-- public consumer product: `kazaverde-web/`
-- public data access: read-heavy access through `packages/arei-sdk/` to `public.v1_feed_cv`
+- canonical parent platform: `AREI`
+- canonical internal product: `AREI Admin`
+- canonical consumer surface: `KazaVerde`
+- public consumer app path: `kazaverde-web/`
+- public data access: read-heavy access through internal shared package `packages/arei-sdk/` to `public.v1_feed_cv`
 - public newsletter write path: direct insert into `newsletter_subscribers`
 - admin surface: `arei-admin/`
 - admin auth: simple password gate via `arei-admin/api/auth.js`
 - data engine and scripts: `core/` and `scripts/`, often using Supabase env credentials
+
+Naming rule for this document:
+- `kazaverde-web`, `arei-admin`, and `packages/arei-sdk/` are technical identifiers
+- `KazaVerde` and `AREI Admin` are the canonical product names
+- `AREI SDK` is an internal technical component, not a public brand
 
 Current product scope matters:
 - public KazaVerde is read only

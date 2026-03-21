@@ -3,7 +3,13 @@
 // Convert raw DB rows to UI-safe types
 // =============================================================================
 
-import type { ListingRow, ListingCard, ListingDetail } from "./types.js";
+import {
+  PRICE_CEILING,
+  PRICE_FLOOR,
+  type ListingRow,
+  type ListingCard,
+  type ListingDetail,
+} from "./types.js";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -13,6 +19,12 @@ function isNew(firstSeenAt: string): boolean {
   return seen > cutoff;
 }
 
+function sanitizePrice(price: number | null): number | null {
+  if (price == null) return null;
+  if (price < PRICE_FLOOR || price > PRICE_CEILING) return null;
+  return price;
+}
+
 /** Raw row → ListingCard (for grids) */
 export function toListingCard(row: ListingRow): ListingCard {
   return {
@@ -20,7 +32,7 @@ export function toListingCard(row: ListingRow): ListingCard {
     title: row.title,
     island: row.island,
     city: row.city,
-    price: row.price,
+    price: sanitizePrice(row.price),
     currency: row.currency,
     property_type: row.property_type,
     bedrooms: row.bedrooms,
@@ -40,7 +52,7 @@ export function toListingDetail(row: ListingRow): ListingDetail {
     title: row.title,
     island: row.island,
     city: row.city,
-    price: row.price,
+    price: sanitizePrice(row.price),
     currency: row.currency,
     property_type: row.property_type,
     bedrooms: row.bedrooms,

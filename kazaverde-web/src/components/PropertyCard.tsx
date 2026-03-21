@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useSaved } from "../hooks/useSaved";
 import type { DemoListing } from "../lib/demo-data";
 import { formatPrice, formatLocation, formatBedrooms, formatBathrooms, isNewListing } from "../lib/format";
 import "./PropertyCard.css";
@@ -11,7 +12,9 @@ interface Props {
 
 export default function PropertyCard({ listing, index = 0, viewMode = "grid" }: Props) {
   const navigate = useNavigate();
+  const { toggle, isSaved } = useSaved();
   const isNew = isNewListing(listing.first_seen_at);
+  const saved = isSaved(listing.id);
 
   const LAND_TYPES = /^(land|plot|lot|lote|terreno|terrenos|parcela|parcel|terrain)$/i;
   const LAND_TITLE = /\b(land|plot|lot|lote|terreno|terrenos|parcela|parcel|terrain)\b/i;
@@ -40,6 +43,21 @@ export default function PropertyCard({ listing, index = 0, viewMode = "grid" }: 
     >
       <div className="pci">
         <div className="ph" style={heroStyle} />
+        <button
+          type="button"
+          className={`pc-save${saved ? " is-saved" : ""}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggle(listing.id);
+          }}
+          aria-label={saved ? `Remove ${listing.title} from saved properties` : `Save ${listing.title} to saved properties`}
+          aria-pressed={saved}
+          title={saved ? "Saved" : "Save"}
+        >
+          <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
         {isNew && <span className="tg tg-n">NEW</span>}
         {!isList && <div className="pr">{formatPrice(listing.price, listing.currency)}</div>}
       </div>

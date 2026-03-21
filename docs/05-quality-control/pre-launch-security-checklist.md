@@ -1,15 +1,18 @@
 # Pre-Launch Security Checklist
 
-Last updated: 2026-03-18
+Last updated: 2026-03-21
 
 ## Purpose
 
-This document is the canonical pre-launch security checklist for the current AREI / KazaVerde launch scope.
+This document is the canonical pre-launch security checklist for the current AREI / AREI Admin / KazaVerde launch scope.
 
 It is not a generic internet-security checklist. It is tied to:
-- KazaVerde as a read-only public product
-- `arei-admin` as a small protected admin surface
+- `KazaVerde` as the read-only public consumer surface
+- `AREI Admin` as the internal operational product, currently deployed from the technical identifier `arei-admin`
+- internal shared data access through `packages/arei-sdk/`
 - Supabase-backed public reads and narrow public writes
+
+Canonical naming for these surfaces is defined in `docs/06-go-to-market/brand-architecture.md`.
 
 ## Classification scale
 

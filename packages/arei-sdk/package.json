@@ -1,7 +1,7 @@
 {
   "name": "arei-sdk",
   "version": "0.1.0",
-  "description": "Africa Real Estate Index SDK — shared query functions for consumer sites",
+  "description": "Internal shared query functions for AREI-powered consumer surfaces",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": ["dist"],

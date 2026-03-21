@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
+import { useSaved } from "../hooks/useSaved";
 import PropertyCard from "../components/PropertyCard";
 import { arei } from "../lib/arei";
 import type { ListingDetail as ListingDetailType, ListingCard } from "arei-sdk";
@@ -49,6 +50,7 @@ function toTitleCase(str: string): string {
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toggle, isSaved } = useSaved();
   const [listing, setListing] = useState<DemoListing | null>(null);
   const [detailRaw, setDetailRaw] = useState<ListingDetailType | null>(null);
   const [similar, setSimilar] = useState<DemoListing[]>([]);
@@ -218,6 +220,7 @@ export default function Detail() {
   }
 
   const displayTitle = toTitleCase(listing.title);
+  const saved = isSaved(listing.id);
 
   const isLand = LAND_TYPES.test(listing.property_type ?? "") || LAND_TITLE.test(listing.title ?? "");
   const specs: { value: string; label: string }[] = [];
@@ -311,6 +314,24 @@ export default function Detail() {
               <circle cx="12" cy="10" r="3" />
             </svg>
             {formatLocation(listing.city, listing.island)}, Cape Verde
+          </div>
+
+          <div className="detail-save-row">
+            <button
+              type="button"
+              className={`detail-save${saved ? " is-saved" : ""}`}
+              onClick={() => toggle(listing.id)}
+              aria-label={saved ? `Remove ${displayTitle} from saved properties` : `Save ${displayTitle} to saved properties`}
+              aria-pressed={saved}
+            >
+              <span className="detail-save-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                </svg>
+              </span>
+              <span className="detail-save-copy">{saved ? "Saved locally" : "Save property"}</span>
+            </button>
+            <p className="detail-save-note">Stored in this browser. No login required.</p>
           </div>
 
           {/* Mobile-only: price + CTA visible early */}

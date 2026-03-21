@@ -24,10 +24,69 @@
   background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.35) 100%);
 }
 
+.pc-save {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(30, 25, 22, 0.42);
+  color: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: transform 0.2s, color 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+.pc:hover .pc-save,
+.pc:focus-within .pc-save,
+.pc-save.is-saved {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.pc-save:hover {
+  transform: translateY(-1px);
+  color: #fff;
+  background: rgba(30, 25, 22, 0.58);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.22);
+}
+.pc-save svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+.pc-save.is-saved {
+  color: var(--ac);
+  background: rgba(217, 221, 64, 0.16);
+  border-color: rgba(217, 221, 64, 0.34);
+}
+.pc-save.is-saved svg {
+  fill: currentColor;
+}
+.pc-save:focus-visible {
+  outline: 2px solid rgba(217, 221, 64, 0.75);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
 .pci .tg {
   position: absolute;
   top: 14px;
-  right: 16px;
+  left: 16px;
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -154,6 +213,16 @@
   .pci { height: 230px; }
   .pci .pr { display: none; }
   .pc-gprice { display: block; }
+  .pc-save {
+    top: 12px;
+    right: 12px;
+    width: 30px;
+    height: 30px;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+  .pci .tg { left: 12px; }
 
   .pc-list { gap: 14px; padding: 12px; }
   .pc-list .pci { width: 140px; min-width: 140px; height: 110px; border-radius: 8px; }

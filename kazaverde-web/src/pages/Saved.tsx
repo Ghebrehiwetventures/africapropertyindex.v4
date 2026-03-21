@@ -50,7 +50,7 @@ export default function Saved() {
     <>
       <div className="saved-header anim-fu delay-1">
         <h1>Saved <em>Properties</em></h1>
-        <p>Properties you've bookmarked are stored locally in your browser.</p>
+        <p>Properties you bookmark are stored in this browser only. No login required.</p>
       </div>
 
       {loading && (
@@ -89,7 +89,7 @@ export default function Saved() {
             </svg>
           </div>
           <h3>No saved properties yet</h3>
-          <p>Your saved items list is empty in the current launch feed.</p>
+          <p>Use the bookmark icon on any property card to build a list on this device.</p>
           <button className="bp" onClick={() => navigate("/listings")}>BROWSE PROPERTIES</button>
         </div>
       ) : null}

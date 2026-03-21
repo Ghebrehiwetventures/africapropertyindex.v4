@@ -1,6 +1,6 @@
 # Tooling Handoff
 
-Last updated: 2026-03-18
+Last updated: 2026-03-21
 
 ## Purpose
 
@@ -10,13 +10,14 @@ It is intentionally tool agnostic. The repo must remain legible across Codex, Ch
 
 ## First principles
 
-Before changing anything, a new tool should understand five things:
+Before changing anything, a new tool should understand six things:
 
 1. This is not a generic SaaS app.
-2. AREI is a real estate data platform with a consumer proof-of-concept surface.
-3. KazaVerde is the current public launch surface for Cape Verde.
-4. Governance and trust rules outrank convenience.
-5. Important project knowledge should end up in canonical repo docs, not stay in chat residue.
+2. AREI is the parent platform and data engine.
+3. KazaVerde is the current public Cape Verde consumer surface driven by AREI.
+4. AREI Admin is the internal operational product and is not a public consumer brand.
+5. Governance and trust rules outrank convenience.
+6. Important project knowledge should end up in canonical repo docs, not stay in chat residue.
 
 ## Read these files first
 
@@ -25,10 +26,11 @@ In this order:
 1. `docs/GOVERNANCE.md`
 2. `docs/AREI_master_documentation_architecture.md`
 3. `docs/AREI_documentation_audit.md`
-4. `docs/02-data-engine/data-trust-rules.md`
-5. `docs/03-product/mvp-scope.md`
-6. `docs/05-quality-control/launch-risks.md`
-7. `launch_plan.md`
+4. `docs/06-go-to-market/brand-architecture.md`
+5. `docs/02-data-engine/data-trust-rules.md`
+6. `docs/03-product/mvp-scope.md`
+7. `docs/05-quality-control/launch-risks.md`
+8. `launch_plan.md`
 
 If working on strategy or product direction next, also read:
 - `docs/01-strategy/vision.md`
@@ -62,6 +64,8 @@ Key area:
 Purpose:
 - current KazaVerde frontend
 - reads normalized public data through `arei-sdk`
+- public brand: `KazaVerde`
+- technical app identifier: `kazaverde-web/`
 
 ### 3. Shared query layer
 
@@ -71,6 +75,7 @@ Key area:
 Purpose:
 - typed access to `v1_feed_*` views
 - consumer apps should use this rather than direct table access
+- internal technical component, not a public-facing brand
 
 ### 4. Admin / support surfaces
 
@@ -80,12 +85,26 @@ Key area:
 Purpose:
 - internal or admin workflows
 - not the canonical public consumer launch surface
+- canonical product name: `AREI Admin`
+- technical identifier: `arei-admin/`
 
 ## Current app and deploy truth
 
-Canonical public product:
-- app path: `kazaverde-web/`
-- production project: `kazaverde-web`
+Canonical naming:
+- parent platform: `AREI`
+- internal ops product: `AREI Admin`
+- Cape Verde consumer surface: `KazaVerde`
+- default endorsement language: `Powered by AREI`
+
+Technical and deployment identifiers:
+- current repo identifier: `arei-platform`
+- KazaVerde app path: `kazaverde-web/`
+- KazaVerde production project: `kazaverde-web`
+- admin app path and project: `arei-admin/`
+- shared package: `packages/arei-sdk/`
+
+Public brand and domain:
+- public product name: `KazaVerde`
 - production domain: `https://kazaverde.com`
 
 Deploy truth:
@@ -195,6 +214,7 @@ Do not treat them as automatic current truth when a newer canonical doc exists.
 If a future tool needs the shortest possible orientation, it should retain this:
 
 AREI is a data platform, not a generic SaaS.
-KazaVerde is the current Cape Verde read-only index surface.
+KazaVerde is the current Cape Verde read-only index surface driven by AREI.
+AREI Admin is the internal operational surface.
 Governance, trust rules, MVP scope, and launch risks are canonical.
 The repo still contains visible contradictions that should be resolved explicitly, not ignored.
