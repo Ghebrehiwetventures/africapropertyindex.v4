@@ -1,5 +1,5 @@
 import { Routes, Route, useLocation } from "react-router-dom";
-import { useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
@@ -13,7 +13,17 @@ import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
 
 function ScrollToTop() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+
+  useEffect(() => {
+    if (!("scrollRestoration" in window.history)) return;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    return () => {
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
+
   useLayoutEffect(() => {
     // Footer and nav stay mounted across routes, so blur any focused shell link
     // before forcing scroll restoration. Otherwise some browsers keep the
@@ -22,16 +32,40 @@ function ScrollToTop() {
       document.activeElement.blur();
     }
 
+    const html = document.documentElement;
+    const body = document.body;
+    const previousScrollBehavior = html.style.scrollBehavior;
+    html.style.scrollBehavior = "auto";
+
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 
-    const id = window.requestAnimationFrame(() => {
+    const frame1 = window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      html.scrollTop = 0;
+      body.scrollTop = 0;
     });
+    const frame2 = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      html.scrollTop = 0;
+      body.scrollTop = 0;
+      html.style.scrollBehavior = previousScrollBehavior;
+    });
+    const timeout = window.setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      html.scrollTop = 0;
+      body.scrollTop = 0;
+      html.style.scrollBehavior = previousScrollBehavior;
+    }, 80);
 
-    return () => window.cancelAnimationFrame(id);
-  }, [pathname]);
+    return () => {
+      window.cancelAnimationFrame(frame1);
+      window.cancelAnimationFrame(frame2);
+      window.clearTimeout(timeout);
+      html.style.scrollBehavior = previousScrollBehavior;
+    };
+  }, [pathname, search]);
   return null;
 }
 

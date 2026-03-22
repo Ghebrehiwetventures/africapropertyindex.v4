@@ -144,7 +144,7 @@
   font-size: 0.78rem;
   color: var(--tx2);
 }
-.pcs span::before {
+.pcs span + span::before {
   content: "•";
   margin-right: 8px;
   color: var(--tx3);
