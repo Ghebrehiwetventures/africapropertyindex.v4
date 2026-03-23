@@ -145,6 +145,7 @@ export interface GenericParsedListing {
   sourceName: string;
   title?: string;
   price?: number;
+  priceText?: string;
   description?: string;
   imageUrls: string[];
   location?: string;
@@ -484,9 +485,13 @@ function parseListingsFromHtml(
 
     // Extract price
     let price: number | undefined;
+    let priceText: string | undefined;
     if (config.selectors.price) {
-      const priceText = $container.find(config.selectors.price).first().text();
-      price = parsePrice(priceText, config.price_format);
+      const selectorPriceText = $container.find(config.selectors.price).first().text().replace(/\s+/g, " ").trim();
+      if (selectorPriceText) {
+        priceText = selectorPriceText;
+      }
+      price = parsePrice(selectorPriceText, config.price_format);
     }
 
     // Fallback: find price in container text
@@ -499,6 +504,9 @@ function parseListingsFromHtml(
           const parsed = parsePrice(match[0], config.price_format);
           if (parsed && parsed > 10000 && (!price || parsed > price)) {
             price = parsed;
+            if (!priceText) {
+              priceText = match[0].replace(/\s+/g, " ").trim();
+            }
           }
         }
       }
@@ -591,6 +599,7 @@ function parseListingsFromHtml(
       sourceName: config.name,
       title,
       price,
+      priceText,
       description: undefined, // Usually not available on list pages
       imageUrls: dedupeImageUrls(imageUrls).slice(0, 10),
       location: location || undefined,

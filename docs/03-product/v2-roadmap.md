@@ -175,6 +175,23 @@ Likely scope:
 Strategic rule:
 - one coherent beachhead is more valuable than shallow breadth
 
+### P9. Intentional theme support
+
+Goal:
+- decide whether KazaVerde should remain single-theme or support both dark and light mode intentionally
+
+Why it matters:
+- theme choice affects readability, perceived polish, and broader audience comfort
+- adding light mode later is easier if it is tracked as a deliberate product-quality decision rather than an ad hoc styling pass
+
+Likely scope:
+- decide whether theme support is fixed or user-selectable
+- define canonical color tokens for both themes
+- review contrast, charts, cards, and image presentation in both modes
+
+Current rule:
+- this is not a launch blocker and should not displace MVP truth, image reliability, compliance, or SEO work
+
 ## Explicitly deferred beyond current v2
 
 These ideas may be real later, but should not distort the near-term roadmap:
@@ -205,6 +222,7 @@ These are not reasons to abandon v2 planning. They are reasons to keep v2 anchor
 4. Expand filters only after structured data quality justifies them.
 5. Improve detail-page context and saved-state quality.
 6. Align public trust and About surfaces with governance.
+7. Decide whether intentional light mode support belongs in the next quality pass.
 
 ## Exit condition for this roadmap phase
 

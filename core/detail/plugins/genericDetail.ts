@@ -56,17 +56,67 @@ const INVALID_IMAGE_PATTERNS = [
   /wp-includes/i,
 ];
 
-// Size patterns in URLs that indicate small images
-const SMALL_IMAGE_PATTERNS = [
-  /-\d{2,3}x\d{2,3}\./i,
-  /\/\d{2,3}x\d{2,3}\//i,
-  /size=\d{2,3}/i,
-  /width=\d{2,3}(?!\d)/i,
-  /w=\d{2,3}(?!\d)/i,
+const SOCIAL_SHARE_HOST_PATTERNS = [
+  /(^|\.)pinterest\./i,
+  /(^|\.)facebook\./i,
+  /(^|\.)twitter\./i,
+  /(^|\.)x\.com$/i,
+  /(^|\.)linkedin\./i,
+  /(^|\.)t\.me$/i,
+  /(^|\.)telegram\./i,
+  /(^|\.)whatsapp\./i,
+];
+
+const UI_IMAGE_CONTEXT_PATTERNS = [
+  /logo/i,
+  /header/i,
+  /nav/i,
+  /menu/i,
+  /footer/i,
+  /share/i,
+  /social/i,
+  /icon/i,
+  /brand/i,
+  /avatar/i,
+  /breadcrumb/i,
+  /widget/i,
+  /sidebar/i,
+  /search/i,
+];
+
+const IMAGE_DATA_ATTRIBUTES = [
+  "data-src",
+  "data-lazy",
+  "data-lazy-src",
+  "data-original",
+  "data-full",
+  "data-full-url",
+  "data-large_image",
+  "data-orig-file",
+  "data-pin-media",
+  "data-image",
 ];
 
 // Negation words for amenity detection
 const NEGATION_WORDS = ["no", "not", "without", "sem", "não", "nao"];
+
+function detectAvailabilityStatus(
+  sourceId: string,
+  title: string | undefined,
+  priceText: string | undefined,
+  html: string
+): "sold_or_reserved" | undefined {
+  const searchText = `${title || ""} ${priceText || ""}`;
+  if (/\bsold\b|\breserved\b|under offer/i.test(searchText)) {
+    return "sold_or_reserved";
+  }
+
+  if (sourceId === "cv_estatecv" && (/tag -sold/i.test(html) || /tag -reserved/i.test(html))) {
+    return "sold_or_reserved";
+  }
+
+  return undefined;
+}
 
 /**
  * Generic price parser — handles all common formats:
@@ -156,8 +206,149 @@ function isValidImageUrl(url: string): boolean {
   if (!url) return false;
   if (!url.startsWith("http://") && !url.startsWith("https://")) return false;
   for (const p of INVALID_IMAGE_PATTERNS) { if (p.test(url)) return false; }
-  for (const p of SMALL_IMAGE_PATTERNS) { if (p.test(url)) return false; }
   return true;
+}
+
+function looksLikeImageAsset(url: string): boolean {
+  return /(?:\/wp-content\/uploads\/|\.jpe?g(?:$|[?#])|\.png(?:$|[?#])|\.webp(?:$|[?#])|\.gif(?:$|[?#])|\.avif(?:$|[?#]))/i.test(
+    url
+  );
+}
+
+function isSocialShareUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    return SOCIAL_SHARE_HOST_PATTERNS.some((pattern) => pattern.test(hostname));
+  } catch {
+    return false;
+  }
+}
+
+function withUpdatedPath(url: string, pathname: string): string {
+  const parsed = new URL(url);
+  parsed.pathname = pathname;
+  parsed.search = "";
+  parsed.hash = "";
+  return parsed.toString();
+}
+
+function deriveOriginalImageCandidates(url: string): string[] {
+  const variants: string[] = [];
+
+  try {
+    const parsed = new URL(url);
+    const currentPath = parsed.pathname;
+
+    if (currentPath.includes("/wp-content/webp-express/webp-images/uploads/")) {
+      const originalUploadsPath = currentPath
+        .replace("/wp-content/webp-express/webp-images/uploads/", "/wp-content/uploads/")
+        .replace(/\.webp$/i, "");
+      variants.push(withUpdatedPath(url, originalUploadsPath));
+    }
+
+    if (/(\.(?:jpe?g|png|gif|avif))\.webp$/i.test(currentPath)) {
+      variants.push(withUpdatedPath(url, currentPath.replace(/\.webp$/i, "")));
+    }
+
+    if (/(?:-scaled|-\d{2,5}x\d{2,5})(\.[a-z0-9]+)$/i.test(currentPath)) {
+      variants.push(
+        withUpdatedPath(
+          url,
+          currentPath.replace(/(?:-scaled|-\d{2,5}x\d{2,5})(\.[a-z0-9]+)$/i, "$1")
+        )
+      );
+    }
+  } catch {
+    return [];
+  }
+
+  return Array.from(new Set(variants.filter((variant) => variant !== url)));
+}
+
+function extractEmbeddedImageUrls(url: string, baseUrl: string): string[] {
+  const absoluteUrl = makeAbsoluteUrl(url, baseUrl);
+  if (!absoluteUrl) return [];
+
+  try {
+    const parsed = new URL(absoluteUrl);
+    const embeddedUrls: string[] = [];
+    for (const key of ["media", "image", "img", "photo"]) {
+      const raw = parsed.searchParams.get(key);
+      if (!raw) continue;
+      const embedded = makeAbsoluteUrl(raw, baseUrl);
+      if (embedded && looksLikeImageAsset(embedded)) {
+        embeddedUrls.push(embedded);
+      }
+    }
+
+    if (embeddedUrls.length > 0) {
+      return embeddedUrls;
+    }
+
+    if (isSocialShareUrl(absoluteUrl) && !looksLikeImageAsset(absoluteUrl)) {
+      return [];
+    }
+  } catch {
+    return looksLikeImageAsset(absoluteUrl) ? [absoluteUrl] : [];
+  }
+
+  return looksLikeImageAsset(absoluteUrl) ? [absoluteUrl] : [];
+}
+
+function buildImageCandidates(url: string, baseUrl: string): string[] {
+  const results: string[] = [];
+  const seen = new Set<string>();
+
+  const pushCandidate = (candidate: string) => {
+    if (!candidate || seen.has(candidate) || !isValidImageUrl(candidate)) return;
+    seen.add(candidate);
+    results.push(candidate);
+  };
+
+  for (const absolute of extractEmbeddedImageUrls(url, baseUrl)) {
+    for (const derived of deriveOriginalImageCandidates(absolute)) {
+      pushCandidate(derived);
+    }
+    pushCandidate(absolute);
+  }
+
+  return results;
+}
+
+function parseSrcsetUrls(srcset: string | undefined): string[] {
+  if (!srcset) return [];
+
+  return srcset
+    .split(",")
+    .map((part) => {
+      const trimmed = part.trim();
+      const [url, descriptor = "0w"] = trimmed.split(/\s+/, 2);
+      const score = Number.parseInt(descriptor.replace(/[^\d]/g, ""), 10) || 0;
+      return { url, score };
+    })
+    .filter((entry) => Boolean(entry.url))
+    .sort((a, b) => b.score - a.score)
+    .map((entry) => entry.url);
+}
+
+function hasUiImageContext($: cheerio.CheerioAPI, node: any): boolean {
+  let current: any = node;
+  const parts: string[] = [];
+
+  for (let depth = 0; current && depth < 5; depth++) {
+    const $current = $(current);
+    parts.push(
+      String((current as any).tagName || ""),
+      $current.attr("class") || "",
+      $current.attr("id") || "",
+      $current.attr("role") || "",
+      $current.attr("aria-label") || ""
+    );
+    current = $current.parent().get(0);
+  }
+
+  const haystack = parts.join(" ").toLowerCase();
+  return UI_IMAGE_CONTEXT_PATTERNS.some((pattern) => pattern.test(haystack));
 }
 
 function cleanDescription(text: string): string {
@@ -251,10 +442,35 @@ export function createGenericDetailPlugin(
       const amenities = new Set<string>();
 
       function addImage(url: string) {
-        const absUrl = makeAbsoluteUrl(url, baseUrl);
-        if (absUrl && isValidImageUrl(absUrl) && !seenImages.has(absUrl)) {
-          seenImages.add(absUrl);
-          imageUrls.push(absUrl);
+        for (const candidate of buildImageCandidates(url, baseUrl)) {
+          if (!seenImages.has(candidate)) {
+            seenImages.add(candidate);
+            imageUrls.push(candidate);
+          }
+        }
+      }
+
+      function addImageElement(node: any) {
+        if (hasUiImageContext($, node)) return;
+
+        const $node = $(node);
+        const closestAnchorHref = $node.closest("a").attr("href");
+        if (closestAnchorHref) addImage(closestAnchorHref);
+
+        for (const attr of IMAGE_DATA_ATTRIBUTES) {
+          const value = $node.attr(attr);
+          if (value) addImage(value);
+        }
+
+        const src = $node.attr("src");
+        if (src) addImage(src);
+
+        for (const srcsetUrl of parseSrcsetUrls(
+          $node.attr("srcset") ||
+            $node.attr("data-srcset") ||
+            $node.attr("data-lazy-srcset")
+        )) {
+          addImage(srcsetUrl);
         }
       }
 
@@ -339,18 +555,11 @@ export function createGenericDetailPlugin(
         $(imgSelector).each((_, el) => {
           const tagName = (el as any).tagName?.toLowerCase();
           if (tagName === "img") {
-            const src = $(el).attr("src") || $(el).attr("data-src") || $(el).attr("data-lazy");
-            if (src) addImage(src);
-            const srcset = $(el).attr("srcset") || $(el).attr("data-srcset");
-            if (srcset) {
-              for (const part of srcset.split(",")) {
-                const url = part.trim().split(/\s+/)[0];
-                if (url) addImage(url);
-              }
-            }
+            addImageElement(el);
           } else if (tagName === "a") {
             const href = $(el).attr("href");
             if (href) addImage(href);
+            $(el).find("img").each((_, img) => addImageElement(img));
           } else {
             // Maybe a div with background-image
             const style = $(el).attr("style") || "";
@@ -358,8 +567,7 @@ export function createGenericDetailPlugin(
             if (bgMatch?.[1]) addImage(bgMatch[1]);
             // Check for img children
             $(el).find("img").each((_, img) => {
-              const src = $(img).attr("src") || $(img).attr("data-src");
-              if (src) addImage(src);
+              addImageElement(img);
             });
           }
         });
@@ -373,16 +581,19 @@ export function createGenericDetailPlugin(
           if (href) addImage(href);
         });
 
+        $("a[href*='media=']").each((_, el) => {
+          const href = $(el).attr("href");
+          if (href) addImage(href);
+        });
+
         // Try slideshow/carousel images
         $(".swiper-slide img, .slick-slide img, .gallery img, .carousel img").each((_, el) => {
-          const src = $(el).attr("src") || $(el).attr("data-src");
-          if (src) addImage(src);
+          addImageElement(el);
         });
 
         // Try all images with uploads path (WordPress)
         $("img[src*='uploads'], img[data-src*='uploads']").each((_, el) => {
-          const src = $(el).attr("src") || $(el).attr("data-src");
-          if (src) addImage(src);
+          addImageElement(el);
         });
       }
 
@@ -394,7 +605,7 @@ export function createGenericDetailPlugin(
           const width = parseInt($img.attr("width") || "0", 10);
           const height = parseInt($img.attr("height") || "0", 10);
           if ((width > 0 && width < 100) || (height > 0 && height < 100)) return;
-          if (src) addImage(src);
+          if (src) addImageElement(el);
         });
       }
 
@@ -500,16 +711,20 @@ export function createGenericDetailPlugin(
       // F) Extract price (config selector first, then regex fallback)
       // ========================================
       let price: number | undefined;
+      let priceText: string | undefined;
 
       // F.1) Try config price selector first
       if (detailConfig.selectors?.price) {
         const priceEl = $(detailConfig.selectors.price).first();
         if (priceEl.length) {
-          const priceText = priceEl.text().trim();
+          const selectorPriceText = priceEl.text().replace(/\s+/g, " ").trim();
+          if (selectorPriceText) {
+            priceText = selectorPriceText;
+          }
           // Use source price_format if available for precise parsing, otherwise heuristic
           price = priceFormat
-            ? parseConfiguredPrice(priceText, priceFormat)
-            : parseGenericPrice(priceText);
+            ? parseConfiguredPrice(selectorPriceText, priceFormat)
+            : parseGenericPrice(selectorPriceText);
         }
       }
 
@@ -532,18 +747,28 @@ export function createGenericDetailPlugin(
           if (match) {
             const parsed = parseGenericPrice(match[0]);
             // Reasonable property price range: 1,000 to 50,000,000
-            if (parsed && parsed >= 1000 && parsed <= 50000000) { price = parsed; break; }
+            if (parsed && parsed >= 1000 && parsed <= 50000000) {
+              price = parsed;
+              if (!priceText) {
+                priceText = match[0].replace(/\s+/g, " ").trim();
+              }
+              break;
+            }
           }
         }
       }
+
+      const availabilityStatus = detectAvailabilityStatus(sourceId, title, priceText, html);
 
       return {
         success: true,
         title,
         price,
+        priceText,
         description,
         location,
         imageUrls: imageUrls.slice(0, 20),
+        availabilityStatus,
         bedrooms,
         bathrooms,
         parkingSpaces,

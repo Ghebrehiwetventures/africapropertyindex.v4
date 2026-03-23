@@ -5,6 +5,7 @@ import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import { useSaved } from "../hooks/useSaved";
 import PropertyCard from "../components/PropertyCard";
 import { arei } from "../lib/arei";
+import { formatSourceLabel } from "../lib/source";
 import type { ListingDetail as ListingDetailType, ListingCard } from "arei-sdk";
 import type { DemoListing } from "../lib/demo-data";
 import { cardToDemoListing } from "../lib/transforms";
@@ -221,6 +222,9 @@ export default function Detail() {
 
   const displayTitle = toTitleCase(listing.title);
   const saved = isSaved(listing.id);
+  const hasNumericPrice = !!listing.price && listing.price > 0;
+  const numericPrice = hasNumericPrice ? listing.price ?? 0 : 0;
+  const sourceLabel = formatSourceLabel(listing.source_id, listing.source_url);
 
   const isLand = LAND_TYPES.test(listing.property_type ?? "") || LAND_TITLE.test(listing.title ?? "");
   const specs: { value: string; label: string }[] = [];
@@ -319,10 +323,12 @@ export default function Detail() {
           {/* Mobile-only: price + CTA visible early */}
           <div className="dm-price-bar">
             <div>
-              <div className="dm-price">{formatPrice(listing.price, listing.currency)}</div>
-              {listing.price && listing.currency === "EUR" && (
+              <div className={`dm-price${hasNumericPrice ? "" : " dm-price-request"}`}>
+                {hasNumericPrice ? formatPrice(listing.price, listing.currency) : "Price on request"}
+              </div>
+              {hasNumericPrice && listing.currency === "EUR" && (
                 <div className="dm-price-cve">
-                  Approx. {(listing.price * 110.265).toLocaleString("en-US", { maximumFractionDigits: 0 })} CVE
+                  Approx. {(numericPrice * 110.265).toLocaleString("en-US", { maximumFractionDigits: 0 })} CVE
                 </div>
               )}
             </div>
@@ -372,7 +378,7 @@ export default function Detail() {
               </p>
             )}
             <p className="dd-source">
-              Sourced from <strong>{listing.source_id}</strong>. Information is extracted from
+              Sourced from <strong>{sourceLabel}</strong>. Information is extracted from
               the public listing and may not reflect the current state.
             </p>
             {listing.last_seen_at && (
@@ -386,11 +392,13 @@ export default function Detail() {
         <aside className="ds">
           <div className="cc">
             <h4>Interested in this property?</h4>
-            <div className="src">Listed by {listing.source_id}</div>
-            <div className="dp">{formatPrice(listing.price, listing.currency)}</div>
-            {listing.price && listing.currency === "EUR" && (
+            <div className="src">Listed by {sourceLabel}</div>
+            <div className={`dp${hasNumericPrice ? "" : " dp-request"}`}>
+              {hasNumericPrice ? formatPrice(listing.price, listing.currency) : "Price on request"}
+            </div>
+            {hasNumericPrice && listing.currency === "EUR" && (
               <div className="dpn">
-                Approx. {(listing.price * 110.265).toLocaleString("en-US", { maximumFractionDigits: 0 })} CVE
+                Approx. {(numericPrice * 110.265).toLocaleString("en-US", { maximumFractionDigits: 0 })} CVE
               </div>
             )}
             <div className="cc-actions">

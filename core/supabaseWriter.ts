@@ -33,6 +33,20 @@ export interface SupabaseListing {
   first_seen_at?: string | null;
   last_seen_at?: string | null;
   is_superseded?: boolean;
+  price_status?: string;
+  location_confidence?: string;
+  has_valid_image?: boolean;
+  cover_image_url?: string | null;
+  cover_image_hash?: string | null;
+  duplicate_risk?: string;
+  identity_fingerprint?: string | null;
+  cross_source_match_key?: string | null;
+  canonical_listing_id?: string | null;
+  trust_tier?: string;
+  trust_gate_passed?: boolean;
+  indexable?: boolean;
+  review_reasons?: string[];
+  multi_domain_gallery?: boolean;
 }
 
 function makeDedupKey(title?: string, price?: number, url?: string | null): string {
@@ -68,33 +82,20 @@ export async function upsertListings(listings: SupabaseListing[]): Promise<void>
     l.is_superseded = false;
   }
 
-  // Deduplicate by id, then by dedup_key (keep first seen)
+  // Deduplicate by id only.
+  // Legacy dedup_key is now informational; trust-stage canonicalization controls
+  // publishability and duplicate handling.
   const byId = new Map(listings.map((l) => [l.id, l]));
-  const byKey = new Map<string, SupabaseListing>();
-  for (const l of byId.values()) {
-    if (!byKey.has(l.dedup_key!)) byKey.set(l.dedup_key!, l);
-  }
-  const uniqueListings = Array.from(byKey.values());
+  const uniqueListings = Array.from(byId.values());
   const idDupes = listings.length - byId.size;
-  const keyDupes = byId.size - uniqueListings.length;
 
   const { error } = await supabase
     .from("listings")
     .upsert(uniqueListings, { onConflict: "id" });
 
   if (error) {
-    if (error.message.includes("dedup_key")) {
-      console.warn(`[Supabase] dedup_key conflict — upserting individually`);
-      for (const l of uniqueListings) {
-        const { error: e } = await supabase.from("listings").upsert(l, { onConflict: "id" });
-        if (e && !e.message.includes("dedup_key")) {
-          console.error(`[Supabase] Failed ${l.id}: ${e.message}`);
-        }
-      }
-    } else {
-      throw new Error(`Supabase upsert failed: ${error.message}`);
-    }
+    throw new Error(`Supabase upsert failed: ${error.message}`);
   }
 
-  console.log(`[Supabase] Upserted ${uniqueListings.length} listings (${idDupes} id dupes, ${keyDupes} dedup_key dupes removed)`);
+  console.log(`[Supabase] Upserted ${uniqueListings.length} listings (${idDupes} id dupes removed)`);
 }

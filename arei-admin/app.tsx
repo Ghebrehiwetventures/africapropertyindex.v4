@@ -282,12 +282,26 @@ function GradeBadge({ grade }: { grade: "A" | "B" | "C" | "D" }) {
 /** Optional GitHub Actions URL for "Latest sync logs" link. Set in env or leave empty. */
 const GITHUB_ACTIONS_URL = import.meta.env.VITE_GITHUB_ACTIONS_URL ?? "";
 
-type SourceQualitySortKey = "sourceName" | "marketId" | "listing_count" | "approved_pct" | "with_image_pct" | "with_price_pct" | "grade";
+type SourceQualitySortKey =
+  | "sourceName"
+  | "marketId"
+  | "listing_count"
+  | "approved_pct"
+  | "with_image_pct"
+  | "with_price_pct"
+  | "tier_a_count"
+  | "tier_b_count"
+  | "tier_c_count"
+  | "without_price_pct"
+  | "without_location_pct"
+  | "multi_domain_gallery_rate"
+  | "duplicate_cover_rate"
+  | "grade";
 
 function DashboardView() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [latestSync, setLatestSync] = useState<{ at: string; marketName: string; totalListings: number; visibleCount: number } | null>(null);
+  const [latestSync, setLatestSync] = useState<LatestSyncLog | null>(null);
   const [exportingRunReport, setExportingRunReport] = useState(false);
   const [sortKey, setSortKey] = useState<SourceQualitySortKey>("listing_count");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -475,10 +489,22 @@ function DashboardView() {
             </span>
             {latestSync && (
               <span className="text-muted-foreground text-xs ml-2">
-                ({latestSync.marketName}: {latestSync.totalListings} total, {latestSync.visibleCount} visible)
+                ({latestSync.marketName}: {latestSync.totalListings} total, {latestSync.visibleCount} public{latestSync.indexableCount != null ? `, ${latestSync.indexableCount} indexable` : ""})
               </span>
             )}
           </p>
+          {latestSync?.deltaPct != null && (
+            <p className="text-muted-foreground text-xs mb-2">
+              Run delta:{" "}
+              <span className={Math.abs(latestSync.deltaPct) > 10 ? "text-red font-bold" : "text-foreground font-mono"}>
+                {latestSync.deltaPct > 0 ? "+" : ""}
+                {latestSync.deltaPct.toFixed(2)}%
+              </span>
+              {latestSync.warningFlags && latestSync.warningFlags.length > 0 && (
+                <span className="text-red ml-2">{latestSync.warningFlags.join(", ")}</span>
+              )}
+            </p>
+          )}
           {!latestSync && (
             <p className="text-muted-foreground text-xs mb-2">
               Runs are logged in CI/CD. Serve the app with <code className="bg-background px-1">artifacts/cv_ingest_report.json</code> in place to see last sync from the report.
@@ -518,10 +544,10 @@ function DashboardView() {
           Source quality
         </h2>
         <p className="label-style mb-4">
-          Per source: count, approved %, images, prices, grade
+          Per source: trust tiers, data gaps, image integrity and quality score
         </p>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] border-collapse">
+          <table className="w-full min-w-[1180px] border-collapse">
             <thead>
               <tr className="border-b border-border">
                 {(
@@ -529,9 +555,13 @@ function DashboardView() {
                     { key: "sourceName" as const, label: "Source" },
                     { key: "marketId" as const, label: "Market" },
                     { key: "listing_count" as const, label: "Count" },
-                    { key: "approved_pct" as const, label: "Approved %" },
-                    { key: "with_image_pct" as const, label: "With image %" },
-                    { key: "with_price_pct" as const, label: "With price %" },
+                    { key: "tier_a_count" as const, label: "Tier A" },
+                    { key: "tier_b_count" as const, label: "Tier B" },
+                    { key: "tier_c_count" as const, label: "Tier C" },
+                    { key: "without_price_pct" as const, label: "No price %" },
+                    { key: "without_location_pct" as const, label: "No location %" },
+                    { key: "multi_domain_gallery_rate" as const, label: "Multi-domain %" },
+                    { key: "duplicate_cover_rate" as const, label: "Dup cover %" },
                     { key: "grade" as const, label: "Grade" },
                   ] as const
                 ).map(({ key, label }) => (
@@ -560,9 +590,13 @@ function DashboardView() {
                   <td className="py-2 px-3 text-muted-foreground tabular-nums">
                     {Number(r.listing_count).toLocaleString()}
                   </td>
-                  <td className="py-2 px-3 text-muted-foreground">{r.approved_pct}%</td>
-                  <td className="py-2 px-3 text-muted-foreground">{r.with_image_pct}%</td>
-                  <td className="py-2 px-3 text-muted-foreground">{r.with_price_pct}%</td>
+                  <td className="py-2 px-3 text-muted-foreground tabular-nums">{Number(r.tier_a_count ?? 0).toLocaleString()}</td>
+                  <td className="py-2 px-3 text-muted-foreground tabular-nums">{Number(r.tier_b_count ?? 0).toLocaleString()}</td>
+                  <td className="py-2 px-3 text-muted-foreground tabular-nums">{Number(r.tier_c_count ?? 0).toLocaleString()}</td>
+                  <td className="py-2 px-3 text-muted-foreground">{Number(r.without_price_pct ?? 0).toFixed(1)}%</td>
+                  <td className="py-2 px-3 text-muted-foreground">{Number(r.without_location_pct ?? 0).toFixed(1)}%</td>
+                  <td className="py-2 px-3 text-muted-foreground">{Number(r.multi_domain_gallery_rate ?? 0).toFixed(1)}%</td>
+                  <td className="py-2 px-3 text-muted-foreground">{Number(r.duplicate_cover_rate ?? 0).toFixed(1)}%</td>
                   <td className="py-2 px-3">
                     <GradeBadge grade={r.grade} />
                   </td>

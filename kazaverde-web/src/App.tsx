@@ -1,7 +1,8 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect, useLayoutEffect } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import NewsletterPopup from "./components/NewsletterPopup";
 import Home from "./pages/Home";
 import Listings from "./pages/Listings";
 import Detail from "./pages/Detail";
@@ -76,6 +77,7 @@ export default function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/buy" element={<Navigate to="/listings" replace />} />
         <Route path="/listings" element={<Listings />} />
         <Route path="/listing/:id" element={<Detail />} />
         <Route path="/market" element={<Market />} />
@@ -85,6 +87,7 @@ export default function App() {
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <NewsletterPopup />
       <Footer />
     </div>
   );

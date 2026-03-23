@@ -1,4 +1,13 @@
-import { Market, Source, Listing, SourceStatus, DashboardStats, SourceQualityRow, SourceQualityRowRaw } from "./types";
+import {
+  Market,
+  Source,
+  Listing,
+  SourceStatus,
+  DashboardStats,
+  SourceQualityRow,
+  SourceQualityRowRaw,
+  SourceStaleRow,
+} from "./types";
 import { supabase } from "./supabase";
 
 // ============================================
@@ -74,9 +83,40 @@ export interface LatestSyncLog {
   marketName: string;
   totalListings: number;
   visibleCount: number;
+  indexableCount?: number;
+  deltaPct?: number | null;
+  warningFlags?: string[];
 }
 
 export async function getLatestSyncLog(): Promise<LatestSyncLog | null> {
+  try {
+    const { data, error } = await supabase.rpc("get_latest_ingest_run_summary", {
+      p_market: "cv",
+    });
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const row = data[0] as {
+        market: string;
+        completed_at: string | null;
+        total_listings: number;
+        public_count: number;
+        indexable_count?: number;
+        run_delta_pct?: number | null;
+        warning_flags?: string[] | null;
+      };
+      return {
+        at: row.completed_at || new Date().toISOString(),
+        marketName: row.market?.toUpperCase?.() || "CV",
+        totalListings: Number(row.total_listings) || 0,
+        visibleCount: Number(row.public_count) || 0,
+        indexableCount: row.indexable_count != null ? Number(row.indexable_count) : undefined,
+        deltaPct: row.run_delta_pct != null ? Number(row.run_delta_pct) : null,
+        warningFlags: row.warning_flags || [],
+      };
+    }
+  } catch {
+    // Fall back to artifact-based log below.
+  }
+
   const report = await loadIngestReport();
   if (!report?.generatedAt) return null;
   return {
@@ -466,6 +506,12 @@ function computeGrade(approvedPct: number, imagePct: number, pricePct: number): 
   return { score, grade };
 }
 
+function computeGradeFromQualityScore(score: number): { score: number; grade: "A" | "B" | "C" | "D" } {
+  const grade: "A" | "B" | "C" | "D" =
+    score >= 90 ? "A" : score >= 75 ? "B" : score >= 60 ? "C" : "D";
+  return { score: Math.round(score), grade };
+}
+
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
     const { data: rows, error } = await supabase.rpc("get_source_quality_stats");
@@ -492,7 +538,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       const approvedPct = (Number(r.approved_count) / n) * 100;
       const imagePct = (Number(r.with_image_count) / n) * 100;
       const pricePct = (Number(r.with_price_count) / n) * 100;
-      const { score, grade } = computeGrade(approvedPct, imagePct, pricePct);
+      const { score, grade } =
+        r.quality_score != null
+          ? computeGradeFromQualityScore(Number(r.quality_score))
+          : computeGrade(approvedPct, imagePct, pricePct);
       return {
         ...r,
         approved_pct: Math.round(approvedPct * 10) / 10,
@@ -527,6 +576,36 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       marketCount: 0,
       sourceRows: [],
     };
+  }
+}
+
+export async function getSourceStaleStats(): Promise<SourceStaleRow[]> {
+  try {
+    const { data: rows, error } = await supabase.rpc("get_source_stale_stats", {
+      p_market: "cv",
+    });
+    if (error) {
+      console.warn("[Admin] RPC get_source_stale_stats failed:", error.message);
+      return [];
+    }
+
+    const raw = (rows || []) as Array<{
+      source_id: string;
+      listing_count: number;
+      stale_count: number;
+      newly_stale_count: number;
+      reactivated_count: number;
+      stale_share_pct: number;
+      latest_run_started_at: string;
+    }>;
+
+    return raw.map((row) => ({
+      ...row,
+      sourceName: sourceIdToName(row.source_id),
+      marketId: row.source_id.match(/^([a-z]{2})_/)?.[1] || "?",
+    }));
+  } catch {
+    return [];
   }
 }
 

@@ -1,42 +1,12 @@
--- Run this in Supabase Dashboard → SQL Editor to enable dashboard source-quality stats.
--- Requires table "listings" with columns: source_id, approved, image_urls, price.
-
--- Version for image_urls as jsonb (common when using Supabase JS client):
-create or replace function get_source_quality_stats()
-returns table (
-  source_id text,
-  listing_count bigint,
-  approved_count bigint,
-  with_image_count bigint,
-  with_price_count bigint
-) as $$
-  select
-    l.source_id::text,
-    count(*)::bigint,
-    count(*) filter (where l.approved)::bigint,
-    count(*) filter (where l.image_urls is not null and jsonb_array_length(l.image_urls::jsonb) > 0)::bigint,
-    count(*) filter (where l.price is not null)::bigint
-  from listings l
-  where l.source_id is not null
-  group by l.source_id
-$$ language sql stable;
-
--- If you get an error (e.g. "cannot cast type text[] to jsonb"), run this version instead:
--- create or replace function get_source_quality_stats()
--- returns table (
---   source_id text,
---   listing_count bigint,
---   approved_count bigint,
---   with_image_count bigint,
---   with_price_count bigint
--- ) as $$
---   select
---     l.source_id::text,
---     count(*)::bigint,
---     count(*) filter (where l.approved)::bigint,
---     count(*) filter (where l.image_urls is not null and coalesce(array_length(l.image_urls, 1), 0) > 0)::bigint,
---     count(*) filter (where l.price is not null)::bigint
---   from listings l
---   where l.source_id is not null
---   group by l.source_id
--- $$ language sql stable;
+-- KazaVerde trust metrics RPCs now live in migrations/013_kazaverde_trust_views.sql.
+-- Run migrations 012-014 in order in Supabase SQL Editor.
+--
+-- This file is kept as a pointer so existing docs/tooling do not silently drift.
+--
+-- The key objects created by migration 013 are:
+--   - public.v1_feed_cv
+--   - public.v1_feed_cv_indexable
+--   - public.get_source_quality_stats()
+--   - public.get_latest_ingest_run_summary(p_market text default null)
+-- Migration 017 also adds:
+--   - public.get_source_stale_stats(p_market text default 'cv')

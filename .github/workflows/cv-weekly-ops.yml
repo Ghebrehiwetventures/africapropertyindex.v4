@@ -1,0 +1,47 @@
+name: CV Weekly Ops
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  cv-weekly-ops:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Weekly ops summary
+        run: npm run weekly:cv
+
+      - name: Upload weekly summary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cv-weekly-ops-summary
+          path: |
+            artifacts/ops/cv_weekly_ops_summary.json
+            artifacts/ops/cv_weekly_ops_summary.txt
+
+      - name: Action summary
+        run: |
+          if [ -f artifacts/ops/cv_weekly_ops_summary.txt ]; then
+            {
+              echo "## CV Weekly Ops"
+              echo
+              echo '```'
+              cat artifacts/ops/cv_weekly_ops_summary.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

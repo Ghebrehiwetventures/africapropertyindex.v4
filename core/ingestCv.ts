@@ -26,6 +26,18 @@ import { DetailEnrichmentInput } from "./detail/types";
 import { upsertListings, SupabaseListing } from "./supabaseWriter";
 import { parseLocation } from "./locationMapper";
 import { resolveCvIslandRecovery } from "./cvIslandRecovery";
+import {
+  runTrustStage,
+  LocationConfidence,
+  TrustStageInput,
+} from "./trustStage";
+import { computeTrustMetrics } from "./trustMetrics";
+import {
+  persistRunAndSourceMetrics,
+  replaceDuplicateMatches,
+  replaceListingImages,
+} from "./trustPersistence";
+import { sanitizeArtifactPayload } from "./redactSecrets";
 
 // Generic config-driven fetcher — replaces all per-source parsers
 import {
@@ -45,12 +57,14 @@ interface IngestListing {
   sourceName: string;
   title?: string;
   price?: number;
+  priceText?: string;
   description?: string;
   imageUrls?: string[];
   location?: string;
   detailUrl?: string;
   externalUrl?: string;
   createdAt: Date;
+  availabilityStatus?: "available" | "sold_or_reserved";
   // Structured property data
   bedrooms?: number | null;
   bathrooms?: number | null;
@@ -62,6 +76,71 @@ interface IngestListing {
   detail_enriched?: boolean;
   detail_error?: string | null;
   detail_skipped_reason?: string | null;
+}
+
+interface ResolvedLocationData {
+  island?: string;
+  city?: string;
+  locationConfidence: LocationConfidence;
+}
+
+function resolveDetailDelayMs(defaultDelayMs: number): number {
+  const override = Number.parseInt(process.env.DETAIL_DELAY_MS_OVERRIDE || "", 10);
+  if (Number.isFinite(override) && override >= 0) {
+    return override;
+  }
+  return defaultDelayMs;
+}
+
+function resolveListingLocationData(listing: IngestListing): ResolvedLocationData {
+  let island: string | undefined;
+  let city: string | undefined;
+  let locationConfidence: LocationConfidence = "missing";
+
+  const locResult = parseLocation(listing.location, "cv");
+  if (locResult.island) {
+    island = locResult.island;
+    city = locResult.city;
+    locationConfidence = "mapped";
+    return { island, city, locationConfidence };
+  }
+
+  if (listing.title) {
+    const titleResult = parseLocation(listing.title, "cv");
+    if (titleResult.island) {
+      island = titleResult.island;
+      city = titleResult.city;
+      locationConfidence = "mapped";
+      return { island, city, locationConfidence };
+    }
+  }
+
+  if (listing.description) {
+    const descResult = parseLocation(listing.description.substring(0, 500), "cv");
+    if (descResult.island) {
+      island = descResult.island;
+      city = descResult.city;
+      locationConfidence = "mapped";
+      return { island, city, locationConfidence };
+    }
+  }
+
+  const recovery = resolveCvIslandRecovery({
+    id: listing.id,
+    sourceId: listing.sourceId,
+    title: listing.title,
+    description: listing.description,
+    sourceUrl: listing.detailUrl || listing.externalUrl || null,
+    rawIsland: listing.location,
+    rawCity: undefined,
+  });
+  if (recovery.kind === "resolved") {
+    island = recovery.island;
+    city = recovery.city ?? undefined;
+    locationConfidence = "recovered";
+  }
+
+  return { island, city, locationConfidence };
 }
 
 // ============================================
@@ -198,6 +277,40 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function resolveSourceDetailConcurrency(): number {
+  const raw = Number.parseInt(process.env.SOURCE_DETAIL_CONCURRENCY || "", 10);
+  if (Number.isFinite(raw) && raw > 0) {
+    return raw;
+  }
+  return 1;
+}
+
+async function mapWithConcurrency<T, U>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<U>
+): Promise<U[]> {
+  if (items.length === 0) return [];
+
+  const results = new Array<U>(items.length);
+  let nextIndex = 0;
+
+  const worker = async () => {
+    while (true) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      if (currentIndex >= items.length) {
+        return;
+      }
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  };
+
+  const workerCount = Math.min(Math.max(concurrency, 1), items.length);
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
+}
+
 /**
  * Config-driven detail enrichment for any source with detail.enabled: true
  * Replaces the old hardcoded enrichTerraDescriptions().
@@ -219,66 +332,74 @@ async function enrichDetailPages(
     );
     if (sourceListings.length === 0) continue;
 
-    const delayMs = source.detail.delay_ms || 2500;
+    const configuredDelayMs = source.detail.delay_ms || 2500;
+    const delayMs = resolveDetailDelayMs(configuredDelayMs);
     const policy = source.detail.policy || "always";
     const useHeadless = source.fetch_method === "headless";
+    const detailConcurrency = resolveSourceDetailConcurrency();
+    const plugin = factory.getPlugin(source.id);
+    if (!plugin) continue;
 
-    console.log(`[${source.id} Detail] Enriching ${sourceListings.length} listings (policy: ${policy}, method: ${useHeadless ? "headless" : "http"})...`);
+    console.log(
+      `[${source.id} Detail] Enriching ${sourceListings.length} listings (policy: ${policy}, method: ${useHeadless ? "headless" : "http"}, concurrency: ${detailConcurrency})...`
+    );
 
-    let enrichedCount = 0;
-    let failedCount = 0;
-
-    for (const listing of sourceListings) {
-      if (!listing.detailUrl) continue;
-
-      // Policy check: "on_violation" only enriches if listing is missing critical fields
-      if (policy === "on_violation") {
-        const hasEnoughImages = (listing.imageUrls?.length || 0) >= 3;
-        const hasDescription = (listing.description?.length || 0) >= 50;
-        const hasPrice = listing.price != null && listing.price > 0;
-        const hasSpecs = (listing.bedrooms != null && listing.bedrooms > 0) ||
-          (listing.area_sqm != null && listing.area_sqm > 0);
-        const hasLocation = !!(listing.location?.trim());
-        if (hasEnoughImages && hasDescription && hasPrice && hasSpecs && hasLocation) {
-          listing.detail_skipped_reason = "all_critical_fields_ok";
-          continue;
-        }
-      }
-
-      // Rate limit
-      await sleep(delayMs + Math.floor(Math.random() * 1000));
-
-      try {
-        const DETAIL_FETCH_TIMEOUT_MS = 45_000;
-        const fetchResult = useHeadless
-          ? await Promise.race([
-              fetchHeadless(listing.detailUrl),
-              new Promise<{ success: false; error: string }>((_, reject) =>
-                setTimeout(() => reject(new Error(`detail fetch timeout after ${DETAIL_FETCH_TIMEOUT_MS / 1000}s`)), DETAIL_FETCH_TIMEOUT_MS)
-              ),
-            ])
-          : await fetchHtml(listing.detailUrl);
-
-        if (!fetchResult.success || !fetchResult.html) {
-          failedCount++;
-          listing.detail_error = fetchResult.error || "fetch failed";
-          console.log(`[${source.id} Detail] ✗ ${listing.id} fetch failed`);
-          continue;
+    const detailResults = await mapWithConcurrency(
+      sourceListings,
+      detailConcurrency,
+      async (listing) => {
+        if (!listing.detailUrl) {
+          return { enriched: 0, failed: 0 };
         }
 
-        const plugin = factory.getPlugin(source.id);
-        if (!plugin) continue;
-
-        const extractResult = plugin.extract(fetchResult.html, listing.detailUrl);
-
-        if (!extractResult.success) {
-          failedCount++;
-          listing.detail_error = "extraction failed";
-          console.log(`[${source.id} Detail] ✗ ${listing.id} extraction failed`);
-          continue;
+        // Policy check: "on_violation" only enriches if listing is missing critical fields
+        if (policy === "on_violation") {
+          const hasEnoughImages = (listing.imageUrls?.length || 0) >= 3;
+          const hasDescription = (listing.description?.length || 0) >= 50;
+          const hasPrice = listing.price != null && listing.price > 0;
+          const hasSpecs = (listing.bedrooms != null && listing.bedrooms > 0) ||
+            (listing.area_sqm != null && listing.area_sqm > 0);
+          const hasLocation = !!(listing.location?.trim());
+          if (hasEnoughImages && hasDescription && hasPrice && hasSpecs && hasLocation) {
+            listing.detail_skipped_reason = "all_critical_fields_ok";
+            return { enriched: 0, failed: 0 };
+          }
         }
 
-        let wasEnriched = false;
+        // Rate limit
+        if (delayMs > 0) {
+          const jitterMs = delayMs === configuredDelayMs
+            ? Math.floor(Math.random() * 1000)
+            : 0;
+          await sleep(delayMs + jitterMs);
+        }
+
+        try {
+          const DETAIL_FETCH_TIMEOUT_MS = 45_000;
+          const fetchResult = useHeadless
+            ? await Promise.race([
+                fetchHeadless(listing.detailUrl),
+                new Promise<{ success: false; error: string }>((_, reject) =>
+                  setTimeout(() => reject(new Error(`detail fetch timeout after ${DETAIL_FETCH_TIMEOUT_MS / 1000}s`)), DETAIL_FETCH_TIMEOUT_MS)
+                ),
+              ])
+            : await fetchHtml(listing.detailUrl);
+
+          if (!fetchResult.success || !fetchResult.html) {
+            listing.detail_error = fetchResult.error || "fetch failed";
+            console.log(`[${source.id} Detail] ✗ ${listing.id} fetch failed`);
+            return { enriched: 0, failed: 1 };
+          }
+
+          const extractResult = plugin.extract(fetchResult.html, listing.detailUrl);
+
+          if (!extractResult.success) {
+            listing.detail_error = "extraction failed";
+            console.log(`[${source.id} Detail] ✗ ${listing.id} extraction failed`);
+            return { enriched: 0, failed: 1 };
+          }
+
+          let wasEnriched = false;
 
         // Update description if better
         if (extractResult.description && extractResult.description.length >= 50) {
@@ -291,13 +412,13 @@ async function enrichDetailPages(
         // Merge images
         if (extractResult.imageUrls && extractResult.imageUrls.length > 0) {
           const currentImages = listing.imageUrls || [];
-          for (const img of extractResult.imageUrls) {
-            if (!currentImages.includes(img)) {
-              currentImages.push(img);
-              wasEnriched = true;
-            }
+          const prioritizedImages = Array.from(
+            new Set([...extractResult.imageUrls, ...currentImages])
+          );
+          if (prioritizedImages.join("|") !== currentImages.join("|")) {
+            wasEnriched = true;
           }
-          listing.imageUrls = currentImages;
+          listing.imageUrls = prioritizedImages;
         }
 
         // Update price if listing has no price but detail page does
@@ -327,19 +448,23 @@ async function enrichDetailPages(
           console.log(`[${source.id} Detail]   location recovered: ${extractResult.location}`);
         }
 
-        listing.detail_enriched = wasEnriched;
-        if (wasEnriched) {
-          enrichedCount++;
-          console.log(`[${source.id} Detail] ✓ ${listing.id} enriched (desc: ${listing.description?.length || 0} chars, imgs: ${listing.imageUrls?.length || 0})`);
-        } else {
-          console.log(`[${source.id} Detail] ~ ${listing.id} no new data`);
+          listing.detail_enriched = wasEnriched;
+          if (wasEnriched) {
+            console.log(`[${source.id} Detail] ✓ ${listing.id} enriched (desc: ${listing.description?.length || 0} chars, imgs: ${listing.imageUrls?.length || 0})`);
+          } else {
+            console.log(`[${source.id} Detail] ~ ${listing.id} no new data`);
+          }
+          return { enriched: wasEnriched ? 1 : 0, failed: 0 };
+        } catch (err) {
+          listing.detail_error = err instanceof Error ? err.message : String(err);
+          console.log(`[${source.id} Detail] ✗ ${listing.id} error: ${listing.detail_error}`);
+          return { enriched: 0, failed: 1 };
         }
-      } catch (err) {
-        failedCount++;
-        listing.detail_error = err instanceof Error ? err.message : String(err);
-        console.log(`[${source.id} Detail] ✗ ${listing.id} error: ${listing.detail_error}`);
       }
-    }
+    );
+
+    const enrichedCount = detailResults.reduce((sum, result) => sum + result.enriched, 0);
+    const failedCount = detailResults.reduce((sum, result) => sum + result.failed, 0);
 
     console.log(`[${source.id} Detail] Complete: ${enrichedCount} enriched, ${failedCount} failed`);
   }
@@ -388,6 +513,7 @@ async function fetchRealSource(
       sourceName: p.sourceName,
       title: p.title,
       price: p.price,
+      priceText: p.priceText,
       description: p.description,
       imageUrls: p.imageUrls,
       location: p.location,
@@ -445,7 +571,7 @@ interface ListingReport {
 }
 
 interface HiddenListingReport extends ListingReport {
-  violations: RuleViolation[];
+  violations: string[];
 }
 
 interface IngestReport {
@@ -471,6 +597,7 @@ interface IngestReport {
 export async function runCvIngest(): Promise<IngestReport> {
   const marketId = "cv";
   const marketName = "Cape Verde";
+  const ingestStartedAt = new Date().toISOString();
 
   console.log(`\n=== Starting ingest for market: ${marketId} ===\n`);
 
@@ -524,6 +651,7 @@ export async function runCvIngest(): Promise<IngestReport> {
   }
 
   const sources = sourcesResult.data.sources;
+  const sourceConfigById = new Map(sources.map((source) => [source.id, source]));
   console.log(`Found ${sources.length} sources in config\n`);
 
   // Initialize source states
@@ -725,19 +853,20 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
         listing.detail_error = null;
         listing.detail_skipped_reason = null;
 
-        // Apply enriched data
-        if (result.enriched) {
-          listing.imageUrls = result.imageUrls;
-          if (result.description) listing.description = result.description;
-          if (result.title) listing.title = result.title;
-          if (result.price !== undefined && result.price >= 500) listing.price = result.price;
-          // Map structured property data from enrichment
-          if (result.bedrooms !== undefined) listing.bedrooms = result.bedrooms;
-          if (result.bathrooms !== undefined) listing.bathrooms = result.bathrooms;
-          if (result.parkingSpaces !== undefined) listing.parkingSpaces = result.parkingSpaces;
-          if (result.terraceArea !== undefined) listing.terraceArea = result.terraceArea;
-          if (result.amenities !== undefined) listing.amenities = result.amenities;
-        }
+        // Apply extracted data even when enrichment was "lightweight" and only
+        // recovered trust signals such as price text or availability status.
+        listing.imageUrls = result.imageUrls;
+        if (result.description) listing.description = result.description;
+        if (result.title) listing.title = result.title;
+        if (result.price !== undefined && result.price >= 500) listing.price = result.price;
+        if (result.priceText) listing.priceText = result.priceText;
+        if (result.availabilityStatus) listing.availabilityStatus = result.availabilityStatus;
+        // Map structured property data from enrichment
+        if (result.bedrooms !== undefined) listing.bedrooms = result.bedrooms;
+        if (result.bathrooms !== undefined) listing.bathrooms = result.bathrooms;
+        if (result.parkingSpaces !== undefined) listing.parkingSpaces = result.parkingSpaces;
+        if (result.terraceArea !== undefined) listing.terraceArea = result.terraceArea;
+        if (result.amenities !== undefined) listing.amenities = result.amenities;
       }
     }
 
@@ -756,21 +885,41 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
     }
   }
 
-  // Re-evaluate after enrichment (rebuild marketListings with updated data)
-  const updatedMarketListings: MarketListingInput[] = allListings.map((l) => ({
-    id: l.id,
-    sourceId: l.sourceId,
-    title: l.title,
-    price: l.price,
-    description: l.description,
-    imageUrls: l.imageUrls,
-    location: l.location,
-    sourceUrl: l.detailUrl || l.externalUrl || null,
-    sourceStatus: sourceStates.get(l.sourceId)?.status || SourceStatus.OK,
-    createdAt: l.createdAt,
-  }));
+  const resolvedLocationById = new Map<string, ResolvedLocationData>();
+  const trustInputs: TrustStageInput[] = allListings.map((listing) => {
+    const resolvedLocation = resolveListingLocationData(listing);
+    resolvedLocationById.set(listing.id, resolvedLocation);
+    const sourceConfig = sourceConfigById.get(listing.sourceId);
 
-  const finalEvalResult = batchEvaluateMarket(marketId, updatedMarketListings, sourceStatusMap);
+    return {
+      id: listing.id,
+      sourceId: listing.sourceId,
+      sourceName: listing.sourceName,
+      title: listing.title,
+      description: listing.description,
+      price: listing.price,
+      priceText: listing.priceText,
+      sourceUrl: listing.detailUrl || listing.externalUrl || null,
+      imageUrls: listing.imageUrls || [],
+      island: resolvedLocation.island,
+      city: resolvedLocation.city,
+      locationConfidence: resolvedLocation.locationConfidence,
+      createdAt: listing.createdAt,
+      availabilityStatus: listing.availabilityStatus,
+      allowedImageHosts: sourceConfig?.allowed_image_hosts,
+      allowedImageUrlPatterns: sourceConfig?.allowed_image_url_patterns,
+    };
+  });
+
+  console.log(`\n[Trust] Validating ${trustInputs.length} listings...`);
+  const trustStage = await runTrustStage(trustInputs);
+  const trustById = new Map(trustStage.listings.map((result) => [result.listingId, result]));
+
+  for (const listing of allListings) {
+    const trust = trustById.get(listing.id);
+    if (!trust) continue;
+    listing.imageUrls = trust.valid_image_urls;
+  }
 
   // Build reports
   for (const source of sources) {
@@ -789,9 +938,13 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
   const hiddenListings: HiddenListingReport[] = [];
   let duplicatesRemoved = 0;
 
-  for (const classification of finalEvalResult.classifications) {
-    const listing = allListings.find((l) => l.id === classification.listingId);
+  for (const trust of trustStage.listings) {
+    const listing = allListings.find((l) => l.id === trust.listingId);
     if (!listing) continue;
+    const resolvedLocation = resolvedLocationById.get(listing.id);
+    const resolvedLocationLabel = resolvedLocation?.island
+      ? [resolvedLocation.city, resolvedLocation.island].filter(Boolean).join(", ")
+      : listing.location;
 
     const baseReport: ListingReport = {
       id: listing.id,
@@ -801,8 +954,13 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
       title: listing.title,
       description: listing.description,
       price: listing.price,
-      priceText: listing.price ? `${listing.price} EUR` : undefined,
-      location: listing.location,
+      priceText:
+        trust.price_status === "on_request"
+          ? "Price on request"
+          : listing.price
+            ? `${listing.price} EUR`
+            : undefined,
+      location: resolvedLocationLabel,
       images: listing.imageUrls || [],
       // Structured property data
       bedrooms: listing.bedrooms,
@@ -817,27 +975,34 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
       detail_skipped_reason: listing.detail_skipped_reason,
     };
 
-    if (classification.visibility === ListingVisibility.VISIBLE) {
+    if (trust.trust_gate_passed) {
       visibleListings.push(baseReport);
     } else {
       hiddenListings.push({
         ...baseReport,
-        violations: classification.violations,
+        violations: trust.review_reasons,
       });
-      if (classification.violations.includes(RuleViolation.DUPLICATE)) {
+      if (
+        trust.review_reasons.includes("IDENTITY_DUPLICATE") ||
+        trust.review_reasons.includes("CROSS_SOURCE_DUPLICATE_LOSER")
+      ) {
         duplicatesRemoved++;
       }
     }
   }
 
+  const visibleCount = trustStage.listings.filter((result) => result.trust_gate_passed).length;
+  const hiddenCount = trustStage.listings.length - visibleCount;
+  const reportGeneratedAt = new Date().toISOString();
+
   const report: IngestReport = {
     marketId,
     marketName,
-    generatedAt: new Date().toISOString(),
+    generatedAt: reportGeneratedAt,
     summary: {
-      totalListings: finalEvalResult.totalListings,
-      visibleCount: finalEvalResult.visibleCount,
-      hiddenCount: finalEvalResult.hiddenCount,
+      totalListings: trustStage.listings.length,
+      visibleCount,
+      hiddenCount,
       duplicatesRemoved,
       sourceCount: sources.length,
     },
@@ -855,7 +1020,7 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
 
 
   const outputPath = path.join(artifactsDir, "cv_ingest_report.json");
-  fs.writeFileSync(outputPath, JSON.stringify(report, null, 2));
+  fs.writeFileSync(outputPath, JSON.stringify(sanitizeArtifactPayload(report), null, 2));
 
   console.log(`\n=== Ingest Complete ===`);
   console.log(`Report written to: ${outputPath}`);
@@ -866,47 +1031,9 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
   console.log(`\n[Supabase] Writing ${allReportListings.length} listings...`);
   const supabaseListings: SupabaseListing[] = allReportListings.map((listing) => {
     const fullListing = allListings.find((l) => l.id === listing.id);
-    const classification = finalEvalResult.classifications.find((c) => c.listingId === listing.id);
-    const violations = classification?.violations || [];
-
-    // Parse location into island and city using config-driven locationMapper.
-    // Try multiple text sources: location field → title → description (first 500 chars)
-    let island: string | undefined;
-    let city: string | undefined;
-    const locResult = parseLocation(listing.location, "cv");
-    if (locResult.island) {
-      island = locResult.island;
-      city = locResult.city;
-    }
-    if (!island && listing.title) {
-      const titleResult = parseLocation(listing.title, "cv");
-      if (titleResult.island) {
-        island = titleResult.island;
-        city = titleResult.city;
-      }
-    }
-    if (!island && fullListing?.description) {
-      const descResult = parseLocation(fullListing.description.substring(0, 500), "cv");
-      if (descResult.island) {
-        island = descResult.island;
-        city = descResult.city;
-      }
-    }
-    if (!island) {
-      const recovery = resolveCvIslandRecovery({
-        id: listing.id,
-        sourceId: listing.sourceId,
-        title: listing.title,
-        description: fullListing?.description,
-        sourceUrl: fullListing?.detailUrl || fullListing?.externalUrl || null,
-        rawIsland: listing.location,
-        rawCity: undefined,
-      });
-      if (recovery.kind === "resolved") {
-        island = recovery.island;
-        city = recovery.city ?? undefined;
-      }
-    }
+    const trust = trustById.get(listing.id);
+    const resolvedLocation = resolvedLocationById.get(listing.id);
+    const reviewReasons = trust?.review_reasons || [];
 
     return {
       id: listing.id,
@@ -917,25 +1044,52 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
       price: listing.price,
       currency: "EUR",
       country: "Cape Verde",
-      island,
-      city,
+      island: resolvedLocation?.island,
+      city: resolvedLocation?.city,
       bedrooms: listing.bedrooms ?? null,
       bathrooms: listing.bathrooms ?? null,
       property_size_sqm: listing.area_sqm ?? null,
       land_area_sqm: null,
-      image_urls: fullListing?.imageUrls || [],
-      status: "observe",
-      violations: violations,
-      // INVALID_PRICE is non-blocking: "price on request" listings are valid
-      // Other violations (MISSING_TITLE, INSUFFICIENT_IMAGES, etc.) still block
-      approved: violations.filter(v => v !== "INVALID_PRICE").length === 0,
+      image_urls: trust?.valid_image_urls || [],
+      status: trust?.trust_tier || "C",
+      violations: reviewReasons,
+      approved: trust?.trust_gate_passed ?? false,
       property_type: undefined,
       amenities: fullListing?.amenities || [],
       price_period: "sale",
+      price_status: trust?.price_status,
+      location_confidence: trust?.location_confidence,
+      has_valid_image: trust?.has_valid_image,
+      cover_image_url: trust?.cover_image_url,
+      cover_image_hash: trust?.cover_image_hash,
+      duplicate_risk: trust?.duplicate_risk,
+      identity_fingerprint: trust?.identity_fingerprint,
+      cross_source_match_key: trust?.cross_source_match_key,
+      canonical_listing_id: trust?.canonical_listing_id,
+      trust_tier: trust?.trust_tier,
+      trust_gate_passed: trust?.trust_gate_passed,
+      indexable: trust?.indexable,
+      review_reasons: reviewReasons,
+      multi_domain_gallery: trust?.multi_domain_gallery,
     };
   });
 
   await upsertListings(supabaseListings);
+  await replaceListingImages(trustStage.listingImages);
+  await replaceDuplicateMatches(
+    allListings.map((listing) => listing.id),
+    trustStage.duplicateMatches
+  );
+
+  const { runRecord, sourceMetrics } = computeTrustMetrics({
+    market: marketId,
+    startedAt: ingestStartedAt,
+    completedAt: reportGeneratedAt,
+    listings: trustInputs,
+    trustResults: trustStage.listings,
+  });
+  const ingestRunId = await persistRunAndSourceMetrics(runRecord, sourceMetrics);
+  console.log(`[Trust] Persisted run metrics${ingestRunId != null ? ` (run ${ingestRunId})` : ""}`);
 
   // Verification: Compare 3 listing IDs between upsert payload and report
   console.log(`\n[Verification] Comparing description lengths between Supabase payload and report...`);
@@ -953,7 +1107,7 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
 
 console.log("ABOUT TO WRITE DROP REPORT");
 const dropPath = path.join(artifactsDir, "cv_drop_report.json");
-fs.writeFileSync(dropPath, JSON.stringify(dropReport, null, 2));
+fs.writeFileSync(dropPath, JSON.stringify(sanitizeArtifactPayload(dropReport), null, 2));
 console.log(`Drop report written to: ${dropPath}`);
 
 

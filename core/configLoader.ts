@@ -98,6 +98,8 @@ export interface SourceConfig {
   location_patterns?: string[];
   id_prefix?: string;
   detail?: DetailConfig;
+  allowed_image_hosts?: string[];
+  allowed_image_url_patterns?: string[];
 
   selectors: SelectorsConfig;
 }

@@ -31,6 +31,7 @@ import {
 import { genericDetailExtract, DetailExtractionConfig } from "./genericDetailExtractor";
 import { upsertListings, SupabaseListing } from "./supabaseWriter";
 import { parseLocation, getCurrency, getCountry } from "./locationMapper";
+import { sanitizeArtifactPayload } from "./redactSecrets";
 import {
   genericPaginatedFetcher,
   GenericParsedListing,
@@ -555,7 +556,7 @@ export async function runMarketIngest(marketId: string): Promise<IngestReport> {
   }
 
   const outputPath = path.join(artifactsDir, `${marketId}_ingest_report.json`);
-  fs.writeFileSync(outputPath, JSON.stringify(report, null, 2));
+  fs.writeFileSync(outputPath, JSON.stringify(sanitizeArtifactPayload(report), null, 2));
 
   console.log(`\n=== GENERIC Ingest Complete ===`);
   console.log(`Report written to: ${outputPath}`);
@@ -582,8 +583,8 @@ export async function runMarketIngest(marketId: string): Promise<IngestReport> {
       source_id: listing.sourceId,
       source_url: fullListing?.detailUrl || fullListing?.externalUrl || null,
       title: listing.title,
-      description: fullListing?.description ?? null,
-      description_html: fullListing?.description_html ?? null,
+      description: fullListing?.description ?? undefined,
+      description_html: fullListing?.description_html ?? undefined,
       price: listing.price,
       currency,
       country,
@@ -598,7 +599,7 @@ export async function runMarketIngest(marketId: string): Promise<IngestReport> {
       violations: violations,
       // INVALID_PRICE is non-blocking: "price on request" listings are valid
       approved: violations.filter(v => v !== "INVALID_PRICE").length === 0,
-      property_type: fullListing?.property_type ?? null,
+      property_type: fullListing?.property_type ?? undefined,
       amenities: fullListing?.amenities || [],
       price_period: "sale",
     };
@@ -608,7 +609,7 @@ export async function runMarketIngest(marketId: string): Promise<IngestReport> {
 
   // Write drop report
   const dropPath = path.join(artifactsDir, `${marketId}_drop_report.json`);
-  fs.writeFileSync(dropPath, JSON.stringify(dropReport, null, 2));
+  fs.writeFileSync(dropPath, JSON.stringify(sanitizeArtifactPayload(dropReport), null, 2));
   console.log(`Drop report written to: ${dropPath}`);
 
   return report;

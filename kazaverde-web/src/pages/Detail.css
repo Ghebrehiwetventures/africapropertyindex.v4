@@ -289,6 +289,22 @@
   margin: 24px 0 6px;
   line-height: 1;
 }
+.cc .dp-request {
+  display: inline-flex;
+  align-items: center;
+  margin: 22px 0 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(217, 221, 64, 0.2);
+  background: rgba(217, 221, 64, 0.08);
+  color: hsl(58 72% 70%);
+  font-family: var(--fb);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+ }
 .cc .dpn {
   font-size: 0.78rem;
   color: var(--tx3);
@@ -534,6 +550,21 @@
     font-weight: 700;
     color: var(--ac);
     line-height: 1;
+  }
+  .dm-price-request {
+    display: inline-flex;
+    align-items: center;
+    padding: 9px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(217, 221, 64, 0.18);
+    background: rgba(217, 221, 64, 0.08);
+    color: hsl(58 72% 70%);
+    font-family: var(--fb);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    text-transform: uppercase;
   }
   .dm-price-cve {
     font-size: 0.72rem;

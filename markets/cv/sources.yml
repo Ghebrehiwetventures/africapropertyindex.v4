@@ -180,7 +180,7 @@ sources:
       delay_ms: 5000
       selectors:
         description: ".property-description p, .wpsight-listing-description p, [class*='description'] p"
-        images: ".property-gallery img, .slick-slide img, .swiper-slide img, img.wp-post-image"
+        images: ".property-gallery a, .property-gallery img, .slick-slide a, .slick-slide img, .swiper-slide a, .swiper-slide img, img.wp-post-image"
         price: ".item-price .price, .es-price"
       spec_patterns:
         bedrooms:
@@ -318,6 +318,9 @@ sources:
         parking: ["parking", "garage", "estacionamento"]
         furnished: ["furnished", "mobilado"]
 
+    allowed_image_url_patterns:
+      - "^https://spcdn\\.shortpixel\\.ai/.*/www\\.homescasaverde\\.com/wp-content/uploads/"
+
   # ============================================
   # CAPE VERDE PROPERTY 24
   # ============================================
@@ -421,7 +424,7 @@ sources:
       delay_ms: 3000
       selectors:
         description: ".mh-estate__description p, .property-description p, [class*='description'] p"
-        images: ".mh-estate__gallery img, .swiper-slide img, .property-gallery img, img.wp-post-image"
+        images: ".mh-popup-group__element, .mh-estate__gallery a, .mh-estate__gallery img, .swiper-slide a, .swiper-slide img, .property-gallery a, .property-gallery img, img.wp-post-image"
       spec_patterns:
         bedrooms:
           - "(\\d+)\\s*(?:Bedrooms?|Beds?|Quartos?|Chambres?)"
@@ -485,7 +488,7 @@ sources:
       delay_ms: 3000
       selectors:
         description: ".property__description p, .entry-content p, [class*='description'] p"
-        images: ".property__gallery img, .swiper-slide img, .gallery img, img[src*='uploads']"
+        images: ".property__gallery a, .property__gallery img, .gallery a, .gallery img, .swiper-slide a, .swiper-slide img, img[src*='uploads']"
         # Price in detail pages: "Price: 479 491 €" format in spans
         price: ".property__content p span:first-child"
       spec_patterns:
@@ -550,7 +553,7 @@ sources:
       delay_ms: 3000
       selectors:
         description: ".wpestate_property_description p, .property-description p, [class*='description'] p"
-        images: ".property-slider img, .carousel-inner img, .property_slider img, img[src*='uploads']"
+        images: ".property-slider a.prettygalery, .property-slider img, .carousel-inner a, .carousel-inner img, .property_slider a.prettygalery, .property_slider img, img[src*='uploads']"
       spec_patterns:
         bedrooms:
           - "(\\d+)\\s*(?:Bedrooms?|Beds?|Quartos?|Chambres?)"

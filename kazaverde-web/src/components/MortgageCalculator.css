@@ -160,6 +160,11 @@
   width: 140px;
   height: 140px;
 }
+.mc-donut-wrap {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+}
 .mc-donut circle {
   transform: rotate(-90deg);
   transform-origin: 50% 50%;

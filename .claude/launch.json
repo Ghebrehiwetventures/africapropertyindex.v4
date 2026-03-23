@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "prototypes",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4310", "--directory", "web"],
+      "port": 4310,
+      "autoPort": false
+    },
+    {
+      "name": "arei-admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3099,
+      "autoPort": false
+    },
+    {
+      "name": "kazaverde-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:kaza"],
+      "port": 5173
+    }
+  ]
+}

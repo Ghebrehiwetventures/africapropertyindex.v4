@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import { sanitizeArtifactPayload } from "./redactSecrets";
 import { fetchHtml } from "./fetchHtml";
 import { parseGenericHtml, ParsedListing } from "./parseGenericHtml";
 import { loadSourcesConfig, SourceConfig } from "./configLoader";
@@ -311,7 +312,7 @@ function persistReport(report: PreflightReport): string {
   const baseFilename = generateTimestampFilename();
   const filepath = findAvailableFilename(reportsDir, baseFilename);
 
-  fs.writeFileSync(filepath, JSON.stringify(report, null, 2), "utf-8");
+  fs.writeFileSync(filepath, JSON.stringify(sanitizeArtifactPayload(report), null, 2), "utf-8");
   return filepath;
 }
 

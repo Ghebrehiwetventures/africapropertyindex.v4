@@ -65,8 +65,18 @@
   margin-bottom: 64px;
   overflow-x: auto;
   padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ac) rgba(0, 0, 0, 0.08);
 }
-.is::-webkit-scrollbar { display: none; }
+.is::-webkit-scrollbar { height: 8px; }
+.is::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+}
+.is::-webkit-scrollbar-thumb {
+  background: var(--ac);
+  border-radius: 999px;
+}
 .ic {
   min-width: 180px;
   height: 220px;
@@ -101,6 +111,15 @@
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.6);
   font-weight: 500;
+}
+.is-hint {
+  margin-top: -48px;
+  margin-bottom: 56px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tx3);
 }
 
 /* ═══ MEDIAN PRICE CARDS ═══ */

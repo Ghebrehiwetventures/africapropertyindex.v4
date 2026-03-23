@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { calcMortgage, type MortgageInput } from "../lib/calcMortgage";
 import "./MortgageCalculator.css";
 
@@ -62,6 +62,14 @@ function DonutChart({ segments }: { segments: DonutSegment[] }) {
 
   return (
     <svg viewBox="0 0 160 160" className="mc-donut">
+      <circle
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill="none"
+        stroke="rgba(255, 255, 255, 0.06)"
+        strokeWidth={24}
+      />
       {segments
         .filter((s) => s.value > 0)
         .map((seg) => {
@@ -281,7 +289,9 @@ export default function MortgageCalculator({ price }: Props) {
             <span className="mc-hero-sub">/month</span>
           </div>
 
-          <DonutChart segments={segments} />
+          <div className="mc-donut-wrap">
+            <DonutChart segments={segments} />
+          </div>
 
           <div className="mc-legend">
             {segments

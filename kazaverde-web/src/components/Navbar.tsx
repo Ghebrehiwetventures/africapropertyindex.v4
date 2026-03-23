@@ -1,20 +1,19 @@
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useSaved } from "../hooks/useSaved";
 import "./Navbar.css";
 
 export default function Navbar() {
   const { count } = useSaved();
-  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
 
   return (
     <nav className="nav anim-fd">
-      <a className="logo" onClick={() => navigate("/")} role="button" tabIndex={0}>
+      <Link className="logo" to="/" onClick={closeMenu}>
         KAZA<span>VERDE</span>
-      </a>
+      </Link>
 
       <div className="nc hide-mobile">
         <NavLink to="/listings" className={({ isActive }) => (isActive ? "on" : "")}>BUY</NavLink>

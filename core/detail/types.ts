@@ -30,10 +30,12 @@ export interface DetailEnrichmentResult {
   canonicalId?: string;
   title?: string;
   price?: number;
+  priceText?: string;
   description?: string;
   imageUrls: string[];
   location?: string;
   error?: string;
+  availabilityStatus?: "available" | "sold_or_reserved";
   // Structured property data
   bedrooms?: number | null;
   bathrooms?: number | null;
@@ -57,10 +59,12 @@ export interface DetailExtractResult {
   success: boolean;
   title?: string;
   price?: number;
+  priceText?: string;
   description?: string;
   imageUrls: string[];
   location?: string;
   error?: string;
+  availabilityStatus?: "available" | "sold_or_reserved";
   // Structured property data
   bedrooms?: number | null;
   bathrooms?: number | null;

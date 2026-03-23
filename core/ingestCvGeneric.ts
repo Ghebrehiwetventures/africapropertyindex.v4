@@ -28,6 +28,7 @@ import {
 // Generic detail extractor - config-driven, replaces all plugins
 import { genericDetailExtract, DetailExtractionConfig } from "./genericDetailExtractor";
 import { upsertListings, SupabaseListing } from "./supabaseWriter";
+import { sanitizeArtifactPayload } from "./redactSecrets";
 
 // Generic location mapper - config-driven, no hardcoded logic
 import { parseLocation, getCurrency } from "./locationMapper";
@@ -689,7 +690,7 @@ export async function runCvIngestGeneric(): Promise<IngestReport> {
   }
 
   const outputPath = path.join(artifactsDir, "cv_ingest_report.json");
-  fs.writeFileSync(outputPath, JSON.stringify(report, null, 2));
+  fs.writeFileSync(outputPath, JSON.stringify(sanitizeArtifactPayload(report), null, 2));
 
   console.log(`\n=== GENERIC Ingest Complete ===`);
   console.log(`Report written to: ${outputPath}`);
@@ -734,7 +735,7 @@ export async function runCvIngestGeneric(): Promise<IngestReport> {
 
   // Write drop report
   const dropPath = path.join(artifactsDir, "cv_drop_report.json");
-  fs.writeFileSync(dropPath, JSON.stringify(dropReport, null, 2));
+  fs.writeFileSync(dropPath, JSON.stringify(sanitizeArtifactPayload(dropReport), null, 2));
   console.log(`Drop report written to: ${dropPath}`);
 
   return report;

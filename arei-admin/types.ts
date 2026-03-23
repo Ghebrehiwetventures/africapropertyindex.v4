@@ -60,6 +60,22 @@ export interface SourceQualityRowRaw {
   approved_count: number;
   with_image_count: number;
   with_price_count: number;
+  tier_a_count?: number;
+  tier_b_count?: number;
+  tier_c_count?: number;
+  without_price_pct?: number;
+  without_location_pct?: number;
+  multi_domain_gallery_rate?: number;
+  duplicate_cover_rate?: number;
+  price_completeness?: number;
+  location_completeness?: number;
+  image_validity_rate?: number;
+  duplicate_rate?: number;
+  freshness?: number;
+  title_cleanliness?: number;
+  quality_score?: number;
+  latest_run_delta_pct?: number | null;
+  latest_run_warning?: boolean;
 }
 
 // Dashboard: with computed ratios and grade
@@ -79,4 +95,16 @@ export interface DashboardStats {
   sourceCount: number;
   marketCount: number;
   sourceRows: SourceQualityRow[];
+}
+
+export interface SourceStaleRow {
+  source_id: string;
+  listing_count: number;
+  stale_count: number;
+  newly_stale_count: number;
+  reactivated_count: number;
+  stale_share_pct: number;
+  latest_run_started_at: string;
+  sourceName: string;
+  marketId: string;
 }

@@ -46,13 +46,43 @@ const INVALID_IMAGE_PATTERNS = [
   /wp-includes/i,
 ];
 
-// Size patterns in URLs that indicate small images
-const SMALL_IMAGE_PATTERNS = [
-  /-\d{2,3}x\d{2,3}\./i, // e.g., -32x32. -100x100.
-  /\/\d{2,3}x\d{2,3}\//i, // e.g., /32x32/ /100x100/
-  /size=\d{2,3}/i,
-  /width=\d{2,3}(?!\d)/i,
-  /w=\d{2,3}(?!\d)/i,
+const SOCIAL_SHARE_HOST_PATTERNS = [
+  /(^|\.)pinterest\./i,
+  /(^|\.)facebook\./i,
+  /(^|\.)twitter\./i,
+  /(^|\.)x\.com$/i,
+  /(^|\.)linkedin\./i,
+  /(^|\.)whatsapp\./i,
+];
+
+const UI_IMAGE_CONTEXT_PATTERNS = [
+  /logo/i,
+  /header/i,
+  /nav/i,
+  /menu/i,
+  /footer/i,
+  /share/i,
+  /social/i,
+  /icon/i,
+  /brand/i,
+  /avatar/i,
+  /breadcrumb/i,
+  /widget/i,
+  /sidebar/i,
+  /search/i,
+];
+
+const IMAGE_DATA_ATTRIBUTES = [
+  "data-src",
+  "data-lazy",
+  "data-lazy-src",
+  "data-original",
+  "data-full",
+  "data-full-url",
+  "data-large_image",
+  "data-orig-file",
+  "data-pin-media",
+  "data-image",
 ];
 
 // Negation words for amenity detection
@@ -177,12 +207,153 @@ function isValidImageUrl(url: string): boolean {
     if (pattern.test(url)) return false;
   }
 
-  // Check for small image size indicators
-  for (const pattern of SMALL_IMAGE_PATTERNS) {
-    if (pattern.test(url)) return false;
+  return true;
+}
+
+function looksLikeImageAsset(url: string): boolean {
+  return /(?:\/wp-content\/uploads\/|\.jpe?g(?:$|[?#])|\.png(?:$|[?#])|\.webp(?:$|[?#])|\.gif(?:$|[?#])|\.avif(?:$|[?#]))/i.test(
+    url
+  );
+}
+
+function isSocialShareUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    return SOCIAL_SHARE_HOST_PATTERNS.some((pattern) => pattern.test(hostname));
+  } catch {
+    return false;
+  }
+}
+
+function withUpdatedPath(url: string, pathname: string): string {
+  const parsed = new URL(url);
+  parsed.pathname = pathname;
+  parsed.search = "";
+  parsed.hash = "";
+  return parsed.toString();
+}
+
+function deriveOriginalImageCandidates(url: string): string[] {
+  const variants: string[] = [];
+
+  try {
+    const parsed = new URL(url);
+    const currentPath = parsed.pathname;
+
+    if (currentPath.includes("/wp-content/webp-express/webp-images/uploads/")) {
+      variants.push(
+        withUpdatedPath(
+          url,
+          currentPath
+            .replace("/wp-content/webp-express/webp-images/uploads/", "/wp-content/uploads/")
+            .replace(/\.webp$/i, "")
+        )
+      );
+    }
+
+    if (/(\.(?:jpe?g|png|gif|avif))\.webp$/i.test(currentPath)) {
+      variants.push(withUpdatedPath(url, currentPath.replace(/\.webp$/i, "")));
+    }
+
+    if (/(?:-scaled|-\d{2,5}x\d{2,5})(\.[a-z0-9]+)$/i.test(currentPath)) {
+      variants.push(
+        withUpdatedPath(
+          url,
+          currentPath.replace(/(?:-scaled|-\d{2,5}x\d{2,5})(\.[a-z0-9]+)$/i, "$1")
+        )
+      );
+    }
+  } catch {
+    return [];
   }
 
-  return true;
+  return Array.from(new Set(variants.filter((variant) => variant !== url)));
+}
+
+function extractEmbeddedImageUrls(url: string, baseUrl: string): string[] {
+  const absoluteUrl = makeAbsoluteUrl(url, baseUrl);
+  if (!absoluteUrl) return [];
+
+  try {
+    const parsed = new URL(absoluteUrl);
+    const embeddedUrls: string[] = [];
+    for (const key of ["media", "image", "img", "photo"]) {
+      const raw = parsed.searchParams.get(key);
+      if (!raw) continue;
+      const embedded = makeAbsoluteUrl(raw, baseUrl);
+      if (embedded && looksLikeImageAsset(embedded)) {
+        embeddedUrls.push(embedded);
+      }
+    }
+
+    if (embeddedUrls.length > 0) {
+      return embeddedUrls;
+    }
+
+    if (isSocialShareUrl(absoluteUrl) && !looksLikeImageAsset(absoluteUrl)) {
+      return [];
+    }
+  } catch {
+    return looksLikeImageAsset(absoluteUrl) ? [absoluteUrl] : [];
+  }
+
+  return looksLikeImageAsset(absoluteUrl) ? [absoluteUrl] : [];
+}
+
+function buildImageCandidates(url: string, baseUrl: string): string[] {
+  const results: string[] = [];
+  const seen = new Set<string>();
+
+  const pushCandidate = (candidate: string) => {
+    if (!candidate || seen.has(candidate) || !isValidImageUrl(candidate)) return;
+    seen.add(candidate);
+    results.push(candidate);
+  };
+
+  for (const absolute of extractEmbeddedImageUrls(url, baseUrl)) {
+    for (const derived of deriveOriginalImageCandidates(absolute)) {
+      pushCandidate(derived);
+    }
+    pushCandidate(absolute);
+  }
+
+  return results;
+}
+
+function parseSrcsetUrls(srcset: string | undefined): string[] {
+  if (!srcset) return [];
+
+  return srcset
+    .split(",")
+    .map((part) => {
+      const trimmed = part.trim();
+      const [url, descriptor = "0w"] = trimmed.split(/\s+/, 2);
+      const score = Number.parseInt(descriptor.replace(/[^\d]/g, ""), 10) || 0;
+      return { url, score };
+    })
+    .filter((entry) => Boolean(entry.url))
+    .sort((a, b) => b.score - a.score)
+    .map((entry) => entry.url);
+}
+
+function hasUiImageContext($: cheerio.CheerioAPI, node: any): boolean {
+  let current: any = node;
+  const parts: string[] = [];
+
+  for (let depth = 0; current && depth < 5; depth++) {
+    const $current = $(current);
+    parts.push(
+      String((current as any).tagName || ""),
+      $current.attr("class") || "",
+      $current.attr("id") || "",
+      $current.attr("role") || "",
+      $current.attr("aria-label") || ""
+    );
+    current = $current.parent().get(0);
+  }
+
+  const haystack = parts.join(" ").toLowerCase();
+  return UI_IMAGE_CONTEXT_PATTERNS.some((pattern) => pattern.test(haystack));
 }
 
 /**
@@ -225,6 +396,17 @@ function parsePrice(priceText: string): number | undefined {
 
   if (isNaN(num) || num <= 0) return undefined;
   return num;
+}
+
+function detectAvailabilityStatus(
+  title: string | undefined,
+  priceText: string | undefined
+): "sold_or_reserved" | undefined {
+  const searchText = `${title || ""} ${priceText || ""}`;
+  if (/\bsold\b|\breserved\b|under offer/i.test(searchText)) {
+    return "sold_or_reserved";
+  }
+  return undefined;
 }
 
 /**
@@ -276,10 +458,12 @@ export const simplyCapeVerdePlugin: DetailPlugin = {
     // C) Extract price
     // ========================================
     let price: number | undefined;
+    let priceText: string | undefined;
 
     // Try .es-price class first
     const priceElement = $(".es-price").first().text().trim();
     if (priceElement) {
+      priceText = priceElement.replace(/\s+/g, " ").trim();
       price = parsePrice(priceElement);
     }
 
@@ -288,9 +472,14 @@ export const simplyCapeVerdePlugin: DetailPlugin = {
       const bodyText = $("body").text();
       const priceMatch = bodyText.match(/€[\d,]+/);
       if (priceMatch) {
+        if (!priceText) {
+          priceText = priceMatch[0].replace(/\s+/g, " ").trim();
+        }
         price = parsePrice(priceMatch[0]);
       }
     }
+
+    const availabilityStatus = detectAvailabilityStatus(title, priceText);
 
     // ========================================
     // D) Extract property specs
@@ -423,41 +612,63 @@ export const simplyCapeVerdePlugin: DetailPlugin = {
 
     // Helper to add image
     function addImage(url: string) {
-      const absUrl = makeAbsoluteUrl(url, effectiveUrl);
-      if (absUrl && isValidImageUrl(absUrl) && !seenImages.has(absUrl)) {
-        seenImages.add(absUrl);
-        imageUrls.push(absUrl);
+      for (const candidate of buildImageCandidates(url, effectiveUrl)) {
+        if (!seenImages.has(candidate)) {
+          seenImages.add(candidate);
+          imageUrls.push(candidate);
+        }
       }
     }
 
-    // 1) Try slideshow/carousel images first
-    $(".es-p-slideshow img, .slick-slide img, .swiper-slide img, .gallery img").each((_, el) => {
-      const $img = $(el);
-      const src = $img.attr("src") || $img.attr("data-src") || $img.attr("data-lazy");
+    function addImageElement(node: any) {
+      if (hasUiImageContext($, node)) return;
+
+      const $img = $(node);
+      const closestAnchorHref = $img.closest("a").attr("href");
+      if (closestAnchorHref) addImage(closestAnchorHref);
+
+      for (const attr of IMAGE_DATA_ATTRIBUTES) {
+        const value = $img.attr(attr);
+        if (value) addImage(value);
+      }
+
+      const src = $img.attr("src");
       if (src) addImage(src);
 
-      // Check srcset for higher quality images
-      const srcset = $img.attr("srcset") || $img.attr("data-srcset");
-      if (srcset) {
-        const parts = srcset.split(",");
-        for (const part of parts) {
-          const urlMatch = part.trim().split(/\s+/)[0];
-          if (urlMatch) addImage(urlMatch);
-        }
+      for (const srcsetUrl of parseSrcsetUrls(
+        $img.attr("srcset") ||
+          $img.attr("data-srcset") ||
+          $img.attr("data-lazy-srcset")
+      )) {
+        addImage(srcsetUrl);
       }
+    }
+
+    // 1) Try slideshow/carousel and gallery anchors first
+    $(
+      ".property-gallery a, .property-gallery img, .es-p-slideshow a, .es-p-slideshow img, .slick-slide a, .slick-slide img, .swiper-slide a, .swiper-slide img, .gallery a, .gallery img"
+    ).each((_, el) => {
+      const tagName = (el as any).tagName?.toLowerCase();
+      if (tagName === "a") {
+        const href = $(el).attr("href");
+        if (href) addImage(href);
+        $(el).find("img").each((__, img) => addImageElement(img));
+        return;
+      }
+      addImageElement(el);
     });
 
-    // 2) Try lightbox links
-    $("a[href*='.jpg'], a[href*='.jpeg'], a[href*='.png'], a[href*='.webp']").each((_, el) => {
+    // 2) Try lightbox links and social share links with media params
+    $(
+      "a[href*='.jpg'], a[href*='.jpeg'], a[href*='.png'], a[href*='.webp'], a[href*='media=']"
+    ).each((_, el) => {
       const href = $(el).attr("href");
       if (href) addImage(href);
     });
 
     // 3) Try all property images
     $("img[src*='uploads'], img[data-src*='uploads']").each((_, el) => {
-      const $img = $(el);
-      const src = $img.attr("src") || $img.attr("data-src");
-      if (src) addImage(src);
+      addImageElement(el);
     });
 
     // 4) Fallback: all images with reasonable size
@@ -473,7 +684,7 @@ export const simplyCapeVerdePlugin: DetailPlugin = {
           return;
         }
 
-        if (src) addImage(src);
+        if (src) addImageElement(el);
       });
     }
 
@@ -508,8 +719,10 @@ export const simplyCapeVerdePlugin: DetailPlugin = {
       success: true,
       title,
       price,
+      priceText,
       description,
       imageUrls: finalImages,
+      availabilityStatus,
       bedrooms,
       bathrooms,
       terraceArea,

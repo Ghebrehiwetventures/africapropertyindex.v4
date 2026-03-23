@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import PropertyCard from "../components/PropertyCard";
 import SectionHeader from "../components/SectionHeader";
@@ -168,13 +168,13 @@ export default function Home() {
       {/* Island explorer */}
       <SectionHeader
         action={
-          <a className="sa" onClick={() => navigate("/listings")}>
+          <Link className="sa" to="/listings">
             View all
             <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
               <line x1="5" y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />
             </svg>
-          </a>
+          </Link>
         }
       >
         Explore by <em>Island</em>
@@ -195,13 +195,14 @@ export default function Home() {
           </div>
         ))}
       </div>
+      {islands.length > 4 && <div className="is-hint">Scroll to explore every island.</div>}
 
       {/* Median price teaser */}
       <SectionHeader
         action={
-          <a onClick={() => navigate("/market")} className="sa">
+          <Link className="sa" to="/market">
             <span className="bo" style={{ padding: "8px 18px", fontSize: "0.72rem" }}>FULL MARKET DATA →</span>
-          </a>
+          </Link>
         }
       >
         Median Price by <em>Island</em>
@@ -224,13 +225,13 @@ export default function Home() {
       {/* Featured properties */}
       <SectionHeader
         action={
-          <a className="sa" onClick={() => navigate("/listings")}>
+          <Link className="sa" to="/listings">
             See all
             <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
               <line x1="5" y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />
             </svg>
-          </a>
+          </Link>
         }
       >
         Featured <em>Properties</em>

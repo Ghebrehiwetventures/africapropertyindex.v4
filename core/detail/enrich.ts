@@ -245,6 +245,11 @@ export async function runDetailEnrichment(
 
     const wasEnriched =
       allImages.length > input.currentImageUrls.length ||
+      Boolean(extractResult.priceText) ||
+      Boolean(extractResult.availabilityStatus) ||
+      Boolean(extractResult.price && (!input.currentPrice || input.currentPrice <= 0)) ||
+      Boolean(extractResult.title && extractResult.title !== input.currentTitle) ||
+      Boolean(extractResult.location && extractResult.location !== input.currentLocation) ||
       (extractResult.description?.length || 0) > (input.currentDescription?.length || 0);
 
     const canonicalId = generateCanonicalId(
@@ -262,9 +267,11 @@ export async function runDetailEnrichment(
       canonicalId,
       title: extractResult.title || input.currentTitle,
       price: extractResult.price || input.currentPrice,
+      priceText: extractResult.priceText,
       description: extractResult.description || input.currentDescription,
       imageUrls: allImages,
       location: extractResult.location || input.currentLocation,
+      availabilityStatus: extractResult.availabilityStatus,
       // Structured property data from extraction
       bedrooms: extractResult.bedrooms,
       bathrooms: extractResult.bathrooms,
