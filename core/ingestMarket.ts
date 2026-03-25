@@ -15,6 +15,7 @@
 import { fetchHeadless } from "./fetchHeadless";
 import { fetchHtml, FetchResult } from "./fetchHtml";
 import { initSourceStats, normalizeOrDrop } from "./dropReport";
+import * as cheerio from "cheerio";
 
 import * as fs from "fs";
 import * as path from "path";
@@ -62,6 +63,19 @@ interface IngestListing {
   terraceArea?: number | null;
   amenities?: string[];
   property_type?: string;
+}
+
+function extractAmicvDetailLocation(html: string): string | undefined {
+  const $ = cheerio.load(html);
+  const address = $("#property-address-wrap .list-lined-item")
+    .first()
+    .find("span")
+    .first()
+    .text()
+    .trim()
+    .replace(/\s+/g, " ");
+
+  return address.length >= 3 ? address : undefined;
 }
 
 // ============================================
@@ -279,6 +293,12 @@ async function genericDetailEnrichment(
           listing.description_html = extractResult.description_html;
         }
         wasEnriched = true;
+      }
+      if (source.id === "cv_amicv") {
+        const detailLocation = extractAmicvDetailLocation(fetchResult.html);
+        if (detailLocation) {
+          listing.location = detailLocation;
+        }
       }
 
       if (extractResult.bedrooms !== undefined) listing.bedrooms = extractResult.bedrooms;

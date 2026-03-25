@@ -361,6 +361,23 @@ function parsePrice(priceText: string, config?: SourceFetchConfig["price_format"
   return num * multiplier;
 }
 
+function parseAmicvPrice(priceText: string): number | undefined {
+  if (!priceText) return undefined;
+
+  const normalized = priceText.replace(/[\u00A0\s]+/g, " ").trim();
+  if (!normalized || /reserved|sold/i.test(normalized)) return undefined;
+
+  const eurMatch = normalized.match(/€\s*[\d.]+(?:,\d+)?/);
+  if (!eurMatch) return undefined;
+
+  return parsePrice(eurMatch[0], {
+    currency_symbol: "€",
+    thousands_separator: ".",
+    decimal_separator: ",",
+    multiplier: 1,
+  });
+}
+
 // ============================================
 // IMAGE EXTRACTION FROM CSS STYLE BLOCKS
 // ============================================
@@ -484,19 +501,26 @@ function parseListingsFromHtml(
 
     // Extract price
     let price: number | undefined;
+    let rawPriceText = "";
     if (config.selectors.price) {
-      const priceText = $container.find(config.selectors.price).first().text();
-      price = parsePrice(priceText, config.price_format);
+      rawPriceText = $container.find(config.selectors.price).first().text().trim();
+      price = config.id === "cv_amicv"
+        ? parseAmicvPrice(rawPriceText)
+        : parsePrice(rawPriceText, config.price_format);
     }
 
     // Fallback: find price in container text
     if (!price) {
       const containerText = $container.text();
-      const pricePatterns = [/€\s*[\d.\s,]+/g, /[\d.\s,]+\s*€/g];
+      const pricePatterns = config.id === "cv_amicv"
+        ? [/€\s*[\d.]+(?:,\d+)?/g]
+        : [/€\s*[\d.\s,]+/g, /[\d.\s,]+\s*€/g];
       for (const pattern of pricePatterns) {
         const matches = containerText.matchAll(pattern);
         for (const match of matches) {
-          const parsed = parsePrice(match[0], config.price_format);
+          const parsed = config.id === "cv_amicv"
+            ? parseAmicvPrice(match[0])
+            : parsePrice(match[0], config.price_format);
           if (parsed && parsed > 10000 && (!price || parsed > price)) {
             price = parsed;
           }
@@ -582,6 +606,11 @@ function parseListingsFromHtml(
     // Skip invalid entries
     if (!title || title.length < 5) return;
     if (title.toLowerCase() === "en" || title.toLowerCase() === "pt") return;
+
+    if (config.id === "cv_amicv") {
+      const weakPriceText = rawPriceText.trim();
+      if (!price || !weakPriceText || /reserved|sold/i.test(weakPriceText)) return;
+    }
 
     const idPrefix = config.id_prefix || config.id.replace(/^cv_/, "");
 

@@ -3,7 +3,7 @@
 **Status:** ✅ LIVE  
 **Visible %:** 94%  
 **Listings:** 139  
-**Sources:** 7 active
+**Sources:** 8 active
 
 ## Sources
 
@@ -16,6 +16,7 @@
 | `cv_cabohouseproperty` | Cabo House Property | IN | headless | MyHome theme |
 | `cv_estatecv` | Estate CV | IN | headless | Multi-island |
 | `cv_oceanproperty24` | Ocean Property 24 | IN | http | WP Residence |
+| `cv_amicv` | AMICV | IN | http | Houzez, English for-sale archive |
 
 ## Dropped Sources
 

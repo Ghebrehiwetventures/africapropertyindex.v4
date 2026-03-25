@@ -252,7 +252,7 @@ sources:
     url: https://www.homescasaverde.com/properties-for-sale/
     type: html
     lifecycleOverride: IN
-    fetch_method: headless  # Houzez theme
+    fetch_method: http
 
     pagination:
       type: path_segment
@@ -445,14 +445,14 @@ sources:
   # ============================================
   # ESTATE CV - Cape Verde Real Estate
   # Multi-island coverage (Santiago, Sal, Boa Vista, etc.)
-  # Uses AJAX-loaded content, requires headless
+  # Server-rendered archive is available over HTTP
   # ============================================
   - id: cv_estatecv
     name: "Estate CV"
     url: https://estatecv.com/en/properties/
     type: html
     lifecycleOverride: IN
-    fetch_method: headless  # AJAX-loaded content
+    fetch_method: http
 
     pagination:
       type: path_segment
@@ -570,6 +570,86 @@ sources:
         balcony: ["balcony", "varanda"]
         parking: ["parking", "garage"]
         furnished: ["furnished", "mobilado"]
+
+  # ============================================
+  # AMICV - Houzez WordPress Theme
+  # Strong multi-island local agency on English sale surface
+  # ============================================
+  - id: cv_amicv
+    name: "AMICV"
+    url: https://amicv.cv/en/status/for-sale/
+    type: html
+    lifecycleOverride: IN
+    cms_type: wordpress
+    fetch_method: http
+
+    pagination:
+      type: path_segment
+      pattern: "/page/{page}/"
+      start: 1
+      first_no_param: true
+
+    delay_ms: 2500
+    jitter_ms: 750
+    max_items: 200
+    max_pages: 20
+    stop_condition: empty_listings
+
+    selectors:
+      listing: ".listing-view.grid-view > .item-listing-wrap.item-wrap-v6"
+      link: ".item-title a[href*='/en/property/']"
+      title: ".item-title a"
+      price: ".item-price-wrap .item-price"
+      location: ".item-address span, .item-address"
+      image: ".listing-featured-thumb img"
+
+    reject_url_patterns:
+      - "/status/for-sale/?$"
+      - "/status/for-sale/page/"
+
+    min_path_segments: 3
+
+    price_format:
+      currency_symbol: "€"
+      thousands_separator: "."
+      decimal_separator: ","
+      multiplier: 1
+
+    id_prefix: "amicv"
+
+    detail:
+      enabled: true
+      policy: always
+      delay_ms: 2500
+      selectors:
+        description: "#property-description-wrap .description-content"
+        images: ".property-banner img"
+        price: "#property-detail-wrap .list-lined-item strong:contains('Price') + span"
+        location: "#property-address-wrap .list-lined-item strong:contains('Address:') + span"
+        bedrooms: "#property-detail-wrap .list-lined-item strong:contains('Quartos') + span"
+        bathrooms: "#property-detail-wrap .list-lined-item strong:contains('Bathrooms') + span"
+      spec_patterns:
+        bedrooms:
+          - "(\\d+)\\s*(?:Bedrooms?|Beds?|Quartos?|Chambres?)"
+          - "(?:Bedrooms?|Beds?|Quartos?)\\s*[:\\-]?\\s*(\\d+)"
+          - "\\bT(\\d+)\\b"
+          - "(?:T|Tipologia)\\s*(\\d+)"
+        bathrooms:
+          - "(\\d+)\\s*(?:Bathrooms?|Baths?|Banheiros?|Casas?\\s*de\\s*banho)"
+          - "(?:Bathrooms?|Baths?)\\s*[:\\-]?\\s*(\\d+)"
+        parking:
+          - "(\\d+)\\s*(?:Parking|Garage|Vagas?|Estacionamento|Garagem)"
+          - "(?:Parking|Garage|Garagem)\\s*[:\\-]?\\s*(\\d+)"
+        area:
+          - "(\\d+(?:[.,]\\d+)?)\\s*(?:m[²2]|sqm|M2|metros?\\s*quadrados?)"
+          - "(?:Tamanho da propriedade|area|size|superf[ií]cie|[aá]rea)\\s*[:\\-]?\\s*(\\d+(?:[.,]\\d+)?)\\s*(?:m[²2]|sqm|sq|$)"
+      amenity_keywords:
+        terrace: ["terrace", "terraço"]
+        parking: ["parking", "garage", "garagem"]
+        furnished: ["furnished", "without furniture", "mobilado", "mobilia"]
+        sea_view: ["sea view", "vista mar", "ocean view"]
+        pool: ["pool", "piscina"]
+        balcony: ["balcony", "varanda"]
 
   # ============================================
   # DROPPED SOURCES
