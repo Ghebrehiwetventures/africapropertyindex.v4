@@ -7,6 +7,12 @@
 export interface ListingRow {
   id: string;
   title: string;
+  rendered_title_en: string | null;
+  rendered_translation_source: string | null;
+  rendered_translation_source_language: string | null;
+  rendered_translation_target_language: string | null;
+  rendered_translation_is_source_truth: boolean | null;
+  rendered_translation_updated_at: string | null;
   island: string;
   city: string | null;
   price: number | null;
@@ -19,7 +25,9 @@ export interface ListingRow {
   property_size_sqm: number | null;
   land_area_sqm: number | null;
   description: string | null;
+  rendered_description_en: string | null;
   description_html: string | null;
+  rendered_description_html_en: string | null;
   image_urls: string[] | null;
   source_id: string;
   source_url: string;
@@ -51,6 +59,8 @@ export interface ListingCard {
 export interface ListingDetail {
   id: string;
   title: string;
+  source_title: string;
+  rendered_title_en: string | null;
   island: string;
   city: string | null;
   price: number | null;
@@ -62,12 +72,21 @@ export interface ListingDetail {
   property_size_sqm: number | null;
   description: string | null;
   description_html: string | null;
+  source_description: string | null;
+  source_description_html: string | null;
+  rendered_description_en: string | null;
+  rendered_description_html_en: string | null;
   image_urls: string[];
   source_id: string;
   source_url: string;
   first_seen_at: string;
   last_seen_at: string | null;
   is_new: boolean;
+  rendered_translation_source: string | null;
+  rendered_translation_source_language: string | null;
+  rendered_translation_target_language: string | null;
+  rendered_translation_is_source_truth: boolean | null;
+  rendered_translation_updated_at: string | null;
 }
 
 /** Parameters for getSimilarListings() */
@@ -80,6 +99,12 @@ export interface GetSimilarParams {
 /** Island option for filter dropdown */
 export interface IslandOption {
   island: string;
+  count: number;
+}
+
+/** Source option for coverage/counts */
+export interface SourceOption {
+  sourceId: string;
   count: number;
 }
 

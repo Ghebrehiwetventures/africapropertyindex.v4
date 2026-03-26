@@ -11,6 +11,7 @@ import type {
   GetSimilarParams,
   PaginatedListings,
   IslandOption,
+  SourceOption,
   IslandMedianStat,
   IslandContext,
   ListingRow,
@@ -34,7 +35,7 @@ const VIEW = "v1_feed_cv";
 // ---------------------------------------------------------------------------
 // Card columns — only fetch what the card needs
 // ---------------------------------------------------------------------------
-const CARD_COLUMNS = [
+const CARD_COLUMNS_BASE = [
   "id",
   "title",
   "island",
@@ -48,7 +49,10 @@ const CARD_COLUMNS = [
   "image_urls",
   "source_id",
   "first_seen_at",
-].join(",");
+];
+const CARD_COLUMNS_OPTIONAL = ["rendered_title_en"];
+const CARD_COLUMNS = [...CARD_COLUMNS_BASE, ...CARD_COLUMNS_OPTIONAL].join(",");
+const CARD_COLUMNS_FALLBACK = CARD_COLUMNS_BASE.join(",");
 
 // ---------------------------------------------------------------------------
 // Detail columns — full row
@@ -74,8 +78,17 @@ const DETAIL_COLUMNS_BASE = [
 ];
 
 // Optional columns that may not exist yet (added by later migrations)
-const DETAIL_COLUMNS_OPTIONAL = ["description_html"];
-
+const DETAIL_COLUMNS_OPTIONAL = [
+  "description_html",
+  "rendered_title_en",
+  "rendered_description_en",
+  "rendered_description_html_en",
+  "rendered_translation_source",
+  "rendered_translation_source_language",
+  "rendered_translation_target_language",
+  "rendered_translation_is_source_truth",
+  "rendered_translation_updated_at",
+];
 const DETAIL_COLUMNS = [...DETAIL_COLUMNS_BASE, ...DETAIL_COLUMNS_OPTIONAL].join(",");
 const DETAIL_COLUMNS_FALLBACK = DETAIL_COLUMNS_BASE.join(",");
 
@@ -106,9 +119,11 @@ export class AREIClient {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query = this.sb
+    const buildQuery = (columns: string) => this.sb
       .from(VIEW)
-      .select(CARD_COLUMNS, { count: "exact" });
+      .select(columns, { count: "exact" });
+
+    let query = buildQuery(CARD_COLUMNS);
 
     // Island filter
     if (island) {
@@ -129,7 +144,29 @@ export class AREIClient {
       .order("first_seen_at", { ascending: false })
       .range(from, to);
 
-    const { data, count, error } = await query;
+    let { data, count, error } = await query;
+
+    if (error && error.code === "42703") {
+      query = buildQuery(CARD_COLUMNS_FALLBACK);
+
+      if (island) {
+        query = query.eq("island", island);
+      }
+
+      if (priceBucket) {
+        const bucket = PRICE_BUCKETS[priceBucket];
+        query = query
+          .gt("price", 0)
+          .gte("price", bucket.min)
+          .lte("price", bucket.max);
+      }
+
+      query = query
+        .order("first_seen_at", { ascending: false })
+        .range(from, to);
+
+      ({ data, count, error } = await query);
+    }
 
     if (error) throw new Error(`getListings failed: ${error.message}`);
 
@@ -195,6 +232,27 @@ export class AREIClient {
 
     return Array.from(counts.entries())
       .map(([island, count]) => ({ island, count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  // =========================================================================
+  // getSourceOptions — for source coverage/count
+  // =========================================================================
+  async getSourceOptions(): Promise<SourceOption[]> {
+    const { data, error } = await this.sb
+      .from(VIEW)
+      .select("source_id");
+
+    if (error) throw new Error(`getSourceOptions failed: ${error.message}`);
+
+    const counts = new Map<string, number>();
+    for (const row of data ?? []) {
+      const sourceId = (row as { source_id: string }).source_id;
+      counts.set(sourceId, (counts.get(sourceId) ?? 0) + 1);
+    }
+
+    return Array.from(counts.entries())
+      .map(([sourceId, count]) => ({ sourceId, count }))
       .sort((a, b) => b.count - a.count);
   }
 
@@ -268,6 +326,24 @@ export class AREIClient {
 
     let lastResults: ListingCard[] = [];
 
+    const mergeUniqueCards = (
+      base: ListingCard[],
+      extra: ListingCard[],
+      maxItems: number
+    ): ListingCard[] => {
+      const merged = [...base];
+      const seen = new Set(base.map((card) => card.id));
+
+      for (const card of extra) {
+        if (merged.length >= maxItems) break;
+        if (seen.has(card.id)) continue;
+        merged.push(card);
+        seen.add(card.id);
+      }
+
+      return merged;
+    };
+
     for (const strategy of strategies) {
       let query = this.sb
         .from(VIEW)
@@ -308,12 +384,48 @@ export class AREIClient {
 
       lastResults = cards.slice(0, limit);
 
-      if (lastResults.length >= minResults) {
+      if (lastResults.length >= limit) {
         return lastResults;
+      }
+
+      if (lastResults.length >= minResults) {
+        break;
       }
     }
 
-    return lastResults;
+    if (lastResults.length < limit) {
+      let islandFillQuery = this.sb
+        .from(VIEW)
+        .select(CARD_COLUMNS)
+        .eq("island", listing.island)
+        .gt("price", 0)
+        .neq("id", listing.id)
+        .order("first_seen_at", { ascending: false })
+        .limit(limit + 8);
+
+      const { data, error } = await islandFillQuery;
+      if (!error) {
+        const islandFill = ((data ?? []) as unknown as ListingRow[]).map(toListingCard);
+        lastResults = mergeUniqueCards(lastResults, islandFill, limit);
+      }
+    }
+
+    if (lastResults.length < limit) {
+      const { data, error } = await this.sb
+        .from(VIEW)
+        .select(CARD_COLUMNS)
+        .gt("price", 0)
+        .neq("id", listing.id)
+        .order("first_seen_at", { ascending: false })
+        .limit(limit + 12);
+
+      if (!error) {
+        const broadFill = ((data ?? []) as unknown as ListingRow[]).map(toListingCard);
+        lastResults = mergeUniqueCards(lastResults, broadFill, limit);
+      }
+    }
+
+    return lastResults.slice(0, limit);
   }
 
   // =========================================================================

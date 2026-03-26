@@ -106,34 +106,6 @@
 .dg-arrow-prev { left: 16px; }
 .dg-arrow-next { right: 16px; }
 
-.dg-thumbs {
-  position: absolute;
-  bottom: 20px;
-  left: 28px;
-  display: flex;
-  gap: 8px;
-  z-index: 2;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  max-width: calc(100% - 160px);
-}
-.dg-thumb {
-  width: 56px;
-  height: 56px;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  background-size: cover;
-  background-position: center;
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  padding: 0;
-}
-.dg-thumb:hover { border-color: rgba(255,255,255,0.6); }
-.dg-thumb.on {
-  border-color: #fff;
-  box-shadow: 0 0 0 2px var(--ac);
-}
-
 .dg {
   display: grid;
   grid-template-columns: 1fr 380px;

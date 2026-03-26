@@ -82,6 +82,24 @@
   font-family: "SF Mono", "Courier New", monospace;
 }
 
+.listings-alert {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 20px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(191, 126, 96, 0.28);
+  background: rgba(191, 126, 96, 0.1);
+  color: var(--tx2);
+  font-size: 0.82rem;
+}
+
+.listings-alert strong {
+  color: var(--tx);
+  font-weight: 600;
+}
+
 .pg {
   display: flex;
   justify-content: center;
@@ -149,6 +167,10 @@
   font-size: 0.9rem;
 }
 
+.empty-action {
+  margin-top: 16px;
+}
+
 @media (max-width: 768px) {
   .fb {
     flex-wrap: wrap;
@@ -158,4 +180,11 @@
   .fs { flex: 1 1 calc(50% - 4px); min-width: 0; font-size: 0.75rem; padding: 10px 32px 10px 12px; }
   .fsp { display: none; }
   .view-toggle { display: none; }
+  .listings-alert {
+    display: flex;
+    margin-bottom: 16px;
+    border-radius: 14px;
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
 }

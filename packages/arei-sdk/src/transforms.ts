@@ -25,11 +25,23 @@ function sanitizePrice(price: number | null): number | null {
   return price;
 }
 
+function getDisplayTitle(row: ListingRow): string {
+  return row.rendered_title_en?.trim() || row.title;
+}
+
+function getDisplayDescription(row: ListingRow): string | null {
+  return row.rendered_description_en ?? row.description;
+}
+
+function getDisplayDescriptionHtml(row: ListingRow): string | null {
+  return row.rendered_description_html_en ?? row.description_html;
+}
+
 /** Raw row → ListingCard (for grids) */
 export function toListingCard(row: ListingRow): ListingCard {
   return {
     id: row.id,
-    title: row.title,
+    title: getDisplayTitle(row),
     island: row.island,
     city: row.city,
     price: sanitizePrice(row.price),
@@ -49,7 +61,9 @@ export function toListingCard(row: ListingRow): ListingCard {
 export function toListingDetail(row: ListingRow): ListingDetail {
   return {
     id: row.id,
-    title: row.title,
+    title: getDisplayTitle(row),
+    source_title: row.title,
+    rendered_title_en: row.rendered_title_en,
     island: row.island,
     city: row.city,
     price: sanitizePrice(row.price),
@@ -59,13 +73,22 @@ export function toListingDetail(row: ListingRow): ListingDetail {
     bathrooms: row.bathrooms,
     land_area_sqm: row.land_area_sqm,
     property_size_sqm: row.property_size_sqm,
-    description: row.description,
-    description_html: row.description_html,
+    description: getDisplayDescription(row),
+    description_html: getDisplayDescriptionHtml(row),
+    source_description: row.description,
+    source_description_html: row.description_html,
+    rendered_description_en: row.rendered_description_en,
+    rendered_description_html_en: row.rendered_description_html_en,
     image_urls: row.image_urls ?? [],
     source_id: row.source_id,
     source_url: row.source_url,
     first_seen_at: row.first_seen_at,
     last_seen_at: row.last_seen_at,
     is_new: isNew(row.first_seen_at),
+    rendered_translation_source: row.rendered_translation_source,
+    rendered_translation_source_language: row.rendered_translation_source_language,
+    rendered_translation_target_language: row.rendered_translation_target_language,
+    rendered_translation_is_source_truth: row.rendered_translation_is_source_truth,
+    rendered_translation_updated_at: row.rendered_translation_updated_at,
   };
 }

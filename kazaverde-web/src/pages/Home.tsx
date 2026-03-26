@@ -6,9 +6,16 @@ import SectionHeader from "../components/SectionHeader";
 import NewsletterCta from "../components/NewsletterCta";
 import { arei } from "../lib/arei";
 import type { DemoListing } from "../lib/demo-data";
-import { cardToDemoListing } from "../lib/transforms";
+import { cardToDemoListing, detailToDemoListing } from "../lib/transforms";
+import { mergeCuratedFeaturedListings, selectFeaturedListings } from "../lib/featured";
 import { formatMedian } from "../lib/format";
 import "./Home.css";
+
+const CURATED_FEATURED_IDS = [
+  "tcv_08491fc587b1",
+  "tcv_90471aee58ab",
+  "cv_gabetticasecapoverde:CV-TER355",
+];
 
 /* Static gradients for island explorer cards */
 const ISLAND_BG: Record<string, string> = {
@@ -28,6 +35,7 @@ interface HomeData {
   stats: {
     total: number;
     islandCount: number;
+    sourceCount: number;
     medianPrice: number | null;
     islands: { name: string; median: number | null; count: number; totalListings: number }[];
   };
@@ -44,13 +52,25 @@ export default function Home() {
     async function load() {
       try {
         setError(null);
-        const [listingsRes, statsRes, islandsRes] = await Promise.all([
-          arei.getListings({ page: 1, pageSize: 3 }),
+        const [listingsRes, statsRes, islandsRes, sourceRes, curatedRes] = await Promise.all([
+          arei.getListings({ page: 1, pageSize: 24 }),
           arei.getMarketStats(),
           arei.getIslandOptions(),
+          arei.getSourceOptions(),
+          Promise.all(CURATED_FEATURED_IDS.map(async (id) => {
+            try {
+              return await arei.getListing(id);
+            } catch {
+              return null;
+            }
+          })),
         ]);
 
-        const featured = listingsRes.data.map(cardToDemoListing);
+        const fallbackFeatured = selectFeaturedListings(listingsRes.data.map(cardToDemoListing), 3);
+        const curatedFeatured = curatedRes
+          .filter((listing): listing is NonNullable<typeof listing> => listing !== null)
+          .map(detailToDemoListing);
+        const featured = mergeCuratedFeaturedListings(curatedFeatured, fallbackFeatured, 3);
 
         const islands = islandsRes.map((i) => ({
           name: i.island,
@@ -71,6 +91,7 @@ export default function Home() {
           stats: {
             total: statsRes.total,
             islandCount: islandsRes.length,
+            sourceCount: sourceRes.length,
             medianPrice,
             islands: statsRes.islands.map((i) => ({
               name: i.island,
@@ -161,7 +182,7 @@ export default function Home() {
       <div className="sr anim-fu delay-25">
         <div className="si"><div className="sn">{stats.total}</div><div className="sl">Active Listings</div></div>
         <div className="si"><div className="sn">{stats.islandCount}</div><div className="sl">Islands</div></div>
-        <div className="si"><div className="sn">Multiple</div><div className="sl">Tracked Sources</div></div>
+        <div className="si"><div className="sn">{stats.sourceCount}+</div><div className="sl">Market Sources</div></div>
         <div className="si"><div className="sn">{stats.medianPrice ? formatMedian(stats.medianPrice) : "—"}</div><div className="sl">Estimated Median Price</div></div>
       </div>
 
@@ -235,7 +256,7 @@ export default function Home() {
       >
         Featured <em>Properties</em>
       </SectionHeader>
-      <div className="grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 }}>
+      <div className="featured-grid">
         {featured.map((l, i) => (
           <PropertyCard key={l.id} listing={l} index={i} />
         ))}

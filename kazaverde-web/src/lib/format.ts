@@ -4,6 +4,10 @@
  */
 
 const NEW_LISTING_DAYS = 7;
+const SOURCE_LABELS: Record<string, string> = {
+  cv_terracaboverde: "Terra Cabo Verde",
+  cv_gabetticasecapoverde: "Gabetti Case Cape Verde",
+};
 
 export function formatPrice(price: number | null, currency = "EUR"): string {
   if (!price || price <= 0) return "Price on request";
@@ -41,4 +45,13 @@ export function formatMedian(value: number | null): string {
 export function formatPricePerSqm(value: number | null): string {
   if (value === null) return "—";
   return `€${Math.round(value).toLocaleString("en-US")}`;
+}
+
+export function formatSourceLabel(sourceId: string | null | undefined): string {
+  if (!sourceId) return "Partner listing";
+  return SOURCE_LABELS[sourceId]
+    ?? sourceId
+      .replace(/^[a-z]{2}_/i, "")
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
 }

@@ -20,14 +20,22 @@ const PAGE_SIZES = [24, 48, 96];
 const DEFAULT_PAGE_SIZE = 24;
 
 type ViewMode = "grid" | "list";
+type PriceBucketValue = "" | "under_100k" | "100k_250k" | "250k_500k" | "over_500k";
+
+function isPriceBucketValue(value: string): value is Exclude<PriceBucketValue, ""> {
+  return value === "under_100k" || value === "100k_250k" || value === "250k_500k" || value === "over_500k";
+}
 
 export default function Listings() {
   useDocumentMeta("All Properties", "Browse KazaVerde's read-only index of Cape Verde property listings by island and price range.");
   const [searchParams, setSearchParams] = useSearchParams();
   const initialIsland = searchParams.get("island") || "";
   const initialPage = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+  const initialPriceBucket = searchParams.get("priceBucket") || "";
   const [island, setIsland] = useState(initialIsland);
-  const [priceBucket, setPriceBucket] = useState("");
+  const [priceBucket, setPriceBucket] = useState<PriceBucketValue>(
+    isPriceBucketValue(initialPriceBucket) ? initialPriceBucket : ""
+  );
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(initialPage);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -50,8 +58,12 @@ export default function Listings() {
     const next = new URLSearchParams(searchParams);
     if (page === 1) next.delete("page");
     else next.set("page", String(page));
+    if (!island) next.delete("island");
+    else next.set("island", island);
+    if (!priceBucket) next.delete("priceBucket");
+    else next.set("priceBucket", priceBucket);
     setSearchParams(next, { replace: true });
-  }, [page]);
+  }, [page, island, priceBucket, searchParams, setSearchParams]);
 
   useEffect(() => {
     async function load() {
@@ -62,7 +74,7 @@ export default function Listings() {
           page,
           pageSize,
           island: island || undefined,
-          priceBucket: priceBucket ? (priceBucket as "under_100k" | "100k_250k" | "250k_500k" | "over_500k") : undefined,
+          priceBucket: isPriceBucketValue(priceBucket) ? priceBucket : undefined,
         });
         setListings(result.data.map(cardToDemoListing));
         setTotal(result.total);
@@ -84,21 +96,6 @@ export default function Listings() {
 
   if (loading) return <div>Loading properties...</div>;
 
-  if (error) {
-    return (
-      <div className="lh" style={{ padding: "2rem", maxWidth: 560 }}>
-        <h1>All <em>Properties</em></h1>
-        <div style={{ marginTop: 16, padding: 16, background: "#fef2f2", borderRadius: 8, color: "#991b1b" }}>
-          <strong>Kunde inte ladda listor</strong>
-          <p style={{ margin: "8px 0 0", fontSize: 14 }}>{error}</p>
-          <p style={{ margin: "12px 0 0", fontSize: 13, opacity: 0.9 }}>
-            Kontrollera att <code>.env</code> innehåller VITE_SUPABASE_URL och VITE_SUPABASE_ANON_KEY, och att Supabase-projektet är tillgängligt.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="lh">
@@ -113,7 +110,11 @@ export default function Listings() {
             <option key={i.island} value={i.island}>{i.island} ({i.count})</option>
           ))}
         </select>
-        <select className="fs" value={priceBucket} onChange={(e) => setPriceBucket(e.target.value)}>
+        <select
+          className="fs"
+          value={priceBucket}
+          onChange={(e) => setPriceBucket(isPriceBucketValue(e.target.value) ? e.target.value : "")}
+        >
           {PRICE_BUCKETS.map((b) => (
             <option key={b.value} value={b.value}>{b.label}</option>
           ))}
@@ -147,6 +148,13 @@ export default function Listings() {
         <span className="rc hide-mobile">Showing {from}–{to} of {total}</span>
       </div>
 
+      {error && (
+        <div className="listings-alert" role="status">
+          <strong>Couldn’t refresh listings.</strong>
+          <span> Try again or clear filters.</span>
+        </div>
+      )}
+
       <div className={viewMode === "list" ? "list-view" : "grid-3"} style={viewMode === "grid" ? { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 } : undefined}>
         {listings.map((l) => (
           <PropertyCard key={l.id} listing={l} viewMode={viewMode} />
@@ -155,8 +163,19 @@ export default function Listings() {
 
       {listings.length === 0 && (
         <div className="empty-state">
-          <h3>No properties match your filters</h3>
-          <p>Try adjusting your search criteria.</p>
+          <h3>{error ? "No listings available right now" : "No properties match your filters"}</h3>
+          <p>{error ? "Try another filter or refresh in a moment." : "Try adjusting your search criteria."}</p>
+          <button
+            type="button"
+            className="empty-action bo"
+            onClick={() => {
+              setIsland("");
+              setPriceBucket("");
+              setPage(1);
+            }}
+          >
+            Clear filters
+          </button>
         </div>
       )}
 

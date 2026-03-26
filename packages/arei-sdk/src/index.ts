@@ -10,6 +10,7 @@ export type {
   ListingDetail,
   ListingRow,
   IslandOption,
+  SourceOption,
   IslandMedianStat,
   IslandContext,
   PriceBucket,

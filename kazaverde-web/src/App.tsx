@@ -2,6 +2,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import { useLayoutEffect } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import NewsletterPopup from "./components/NewsletterPopup";
 import Home from "./pages/Home";
 import Listings from "./pages/Listings";
 import Detail from "./pages/Detail";
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <NewsletterPopup />
       <Footer />
     </div>
   );

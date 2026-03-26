@@ -148,8 +148,15 @@
   color: var(--tx3);
 }
 
+.featured-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
 @media (max-width: 1024px) {
   .mp-grid { grid-template-columns: repeat(2, 1fr); }
+  .featured-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 768px) {
   .hero { padding: 48px 0 56px; }
@@ -170,5 +177,5 @@
   .mp-price-row {
     flex-wrap: wrap;
   }
-  .grid-3 { grid-template-columns: 1fr !important; }
+  .featured-grid { grid-template-columns: 1fr; }
 }
