@@ -6,3 +6,4 @@ artifacts/
 reports/
 .vercel
 dist/
+web/prototypes/

@@ -6,9 +6,16 @@ import SectionHeader from "../components/SectionHeader";
 import NewsletterCta from "../components/NewsletterCta";
 import { arei } from "../lib/arei";
 import type { DemoListing } from "../lib/demo-data";
-import { cardToDemoListing } from "../lib/transforms";
+import { cardToDemoListing, detailToDemoListing } from "../lib/transforms";
+import { mergeCuratedFeaturedListings, selectFeaturedListings } from "../lib/featured";
 import { formatMedian } from "../lib/format";
 import "./Home.css";
+
+const CURATED_FEATURED_IDS = [
+  "tcv_08491fc587b1",
+  "tcv_90471aee58ab",
+  "cv_gabetticasecapoverde:CV-TER355",
+];
 
 /* Static gradients for island explorer cards */
 const ISLAND_BG: Record<string, string> = {
@@ -33,6 +40,8 @@ interface HomeData {
   };
 }
 
+// Production homepage for `/`. Keep temporary experiments and draft flows off
+// this component so they cannot accidentally override the live product home.
 export default function Home() {
   useDocumentMeta("KazaVerde — Cape Verde Real Estate");
   const navigate = useNavigate();
@@ -44,13 +53,26 @@ export default function Home() {
     async function load() {
       try {
         setError(null);
-        const [listingsRes, statsRes, islandsRes] = await Promise.all([
-          arei.getListings({ page: 1, pageSize: 3 }),
+        const [listingsRes, statsRes, islandsRes, curatedRes] = await Promise.all([
+          arei.getListings({ page: 1, pageSize: 24 }),
           arei.getMarketStats(),
           arei.getIslandOptions(),
+          Promise.all(
+            CURATED_FEATURED_IDS.map(async (id) => {
+              try {
+                return await arei.getListing(id);
+              } catch {
+                return null;
+              }
+            })
+          ),
         ]);
 
-        const featured = listingsRes.data.map(cardToDemoListing);
+        const fallbackFeatured = selectFeaturedListings(listingsRes.data.map(cardToDemoListing), 3);
+        const curatedFeatured = curatedRes
+          .filter((listing): listing is NonNullable<typeof listing> => listing !== null)
+          .map(detailToDemoListing);
+        const featured = mergeCuratedFeaturedListings(curatedFeatured, fallbackFeatured, 3);
 
         const islands = islandsRes.map((i) => ({
           name: i.island,
@@ -236,8 +258,8 @@ export default function Home() {
         Featured <em>Properties</em>
       </SectionHeader>
       <div className="grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 }}>
-        {featured.map((l, i) => (
-          <PropertyCard key={l.id} listing={l} index={i} />
+        {featured.map((listing, index) => (
+          <PropertyCard key={listing.id} listing={listing} index={index} />
         ))}
       </div>
 

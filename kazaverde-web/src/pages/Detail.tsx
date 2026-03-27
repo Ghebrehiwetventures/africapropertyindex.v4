@@ -8,7 +8,7 @@ import { arei } from "../lib/arei";
 import type { ListingDetail as ListingDetailType, ListingCard } from "arei-sdk";
 import type { DemoListing } from "../lib/demo-data";
 import { cardToDemoListing } from "../lib/transforms";
-import { formatPrice, formatLocation, formatBedrooms, formatBathrooms } from "../lib/format";
+import { formatPrice, formatLocation, formatBedrooms, formatBathrooms, formatSourceLabel } from "../lib/format";
 import { looksItalian, stripHtml, translateItalianToEnglish } from "../lib/translation";
 import NotFound from "./NotFound";
 import MortgageCalculator from "../components/MortgageCalculator";
@@ -387,7 +387,7 @@ export default function Detail() {
               </p>
             )}
             <p className="dd-source">
-              Sourced from <strong>{listing.source_id}</strong>. Information is extracted from
+              Sourced from <strong>{formatSourceLabel(listing.source_id)}</strong>. Information is extracted from
               the public listing and may not reflect the current state.
             </p>
             {listing.last_seen_at && (
@@ -401,7 +401,7 @@ export default function Detail() {
         <aside className="ds">
           <div className="cc">
             <h4>Interested in this property?</h4>
-            <div className="src">Listed by {listing.source_id}</div>
+            <div className="src">Listed by {formatSourceLabel(listing.source_id)}</div>
             <div className="dp">{formatPrice(listing.price, listing.currency)}</div>
             {listing.price && listing.currency === "EUR" && (
               <div className="dpn">
