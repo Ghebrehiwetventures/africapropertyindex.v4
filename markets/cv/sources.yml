@@ -319,6 +319,82 @@ sources:
         furnished: ["furnished", "mobilado"]
 
   # ============================================
+  # BUY IN CAPE VERDE
+  # Angular SSR listings. Properties are onboarded here; Projects/Grounds stay separate.
+  # Uses a custom CV adapter for pagination and detail parsing.
+  # ============================================
+  - id: cv_buyincapeverde
+    name: "Buy in Cape Verde"
+    url: https://buyincapeverde.com/properties
+    type: html
+    lifecycleOverride: IN
+    fetch_method: http
+
+    pagination:
+      type: query_param
+      param: "page"
+      start: 1
+      first_no_param: true
+
+    delay_ms: 1500
+    max_items: 200
+    max_pages: 12
+
+    selectors:
+      listing: ".single-container"
+      link: "a[href*='/properties/']"
+      title: ".ground-type"
+      price: ".ground-price"
+      location: ".location-line"
+      image: ".image-container img"
+
+    price_format:
+      currency_symbol: "€"
+      thousands_separator: " "
+      decimal_separator: ","
+
+    id_prefix: "bicv"
+
+    detail:
+      enabled: false
+
+  # ============================================
+  # NOS ILHAS REAL ESTATE - NEW DEVELOPMENTS
+  # Project source with optional unit inventory extracted from project detail pages.
+  # Uses a custom CV adapter because the hub is editorial, not a standard listing grid.
+  # ============================================
+  - id: cv_nosilhasprojects
+    name: "Nos Ilhas Real Estate"
+    url: https://nosilhasrealestate.com/new-developments/
+    type: html
+    lifecycleOverride: IN
+    fetch_method: http
+
+    pagination:
+      type: none
+
+    delay_ms: 1500
+    max_items: 100
+    max_pages: 1
+
+    selectors:
+      listing: "a[href*='/new-developments/']"
+      link: "a[href*='/new-developments/']"
+      title: "h2"
+      price: "p"
+      image: "img"
+
+    price_format:
+      currency_symbol: "€"
+      thousands_separator: "."
+      decimal_separator: ","
+
+    id_prefix: "nir"
+
+    detail:
+      enabled: false
+
+  # ============================================
   # CAPE VERDE PROPERTY 24
   # ============================================
   - id: cv_capeverdeproperty24

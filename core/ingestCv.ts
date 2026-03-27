@@ -34,6 +34,7 @@ import {
   GenericFetchResult,
 } from "./genericFetcher";
 import { sourceConfigToFetchConfig } from "./configLoader";
+import { fetchCvCustomSource } from "./cvCustomSources";
 
 // ============================================
 // LISTING TYPES
@@ -55,6 +56,9 @@ interface IngestListing {
   bedrooms?: number | null;
   bathrooms?: number | null;
   area_sqm?: number | null;
+  property_type?: string;
+  source_ref?: string;
+  project_flag?: boolean;
   parkingSpaces?: number | null;
   terraceArea?: number | null;
   amenities?: string[];
@@ -62,6 +66,23 @@ interface IngestListing {
   detail_enriched?: boolean;
   detail_error?: string | null;
   detail_skipped_reason?: string | null;
+}
+
+function extractCvPropertyType(title?: string, url?: string): string | undefined {
+  const text = `${title || ""} ${url || ""}`.toLowerCase();
+
+  if (/\bproject|development|condominium|condominio|multiple apartments\b/.test(text)) return "project";
+  if (/\bvilla|villas\b/.test(text)) return "villa";
+  if (/\bpenthouse|penthouses\b/.test(text)) return "penthouse";
+  if (/\bapartment|apartments|flat|flats|condo\b/.test(text)) return "apartment";
+  if (/\bhouse|houses|home|homes\b/.test(text)) return "house";
+  if (/\btownhouse|townhouses\b/.test(text)) return "townhouse";
+  if (/\bduplex|duplexes\b/.test(text)) return "duplex";
+  if (/\bstudio|studios\b/.test(text)) return "studio";
+  if (/\bground|grounds|land|plot|plots|lot|lots|terrain\b/.test(text)) return "land";
+  if (/\bcommercial|office|shop|warehouse\b/.test(text)) return "commercial";
+
+  return undefined;
 }
 
 // ============================================
@@ -359,6 +380,23 @@ async function fetchRealSource(
   const state = { ...sourceState };
   state.scrapeAttempts = 1;
 
+  const customListings = await fetchCvCustomSource(source);
+  if (customListings) {
+    if (customListings.length === 0) {
+      state.status = SourceStatus.PARTIAL_OK;
+      state.lastError = "No listings found via custom source adapter";
+    } else {
+      state.status = SourceStatus.OK;
+    }
+    return {
+      listings: customListings.map((listing) => ({
+        ...listing,
+        property_type: listing.property_type || extractCvPropertyType(listing.title, listing.detailUrl),
+      })),
+      state,
+    };
+  }
+
   console.log(`[${source.id}] Fetching via genericPaginatedFetcher (method: ${source.fetch_method || "http"}, pagination: ${source.pagination?.type || "none"})...`);
 
   try {
@@ -396,6 +434,7 @@ async function fetchRealSource(
       bedrooms: p.bedrooms,
       bathrooms: p.bathrooms,
       area_sqm: p.area_sqm,
+      property_type: extractCvPropertyType(p.title, p.detailUrl),
     }));
 
     return { listings, state };
@@ -425,6 +464,7 @@ interface ListingReport {
   sourceId: string;
   sourceName: string;
   sourceUrl?: string;
+  source_ref?: string;
   title?: string;
   description?: string;
   price?: number;
@@ -435,6 +475,8 @@ interface ListingReport {
   bedrooms?: number | null;
   bathrooms?: number | null;
   area_sqm?: number | null;
+  property_type?: string;
+  project_flag?: boolean;
   parkingSpaces?: number | null;
   terraceArea?: number | null;
   amenities?: string[];
@@ -798,6 +840,7 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
       sourceId: listing.sourceId,
       sourceName: listing.sourceName,
       sourceUrl: listing.detailUrl || listing.externalUrl || "",
+      source_ref: fullListing?.source_ref,
       title: listing.title,
       description: listing.description,
       price: listing.price,
@@ -808,6 +851,8 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
       bedrooms: listing.bedrooms,
       bathrooms: listing.bathrooms,
       area_sqm: listing.area_sqm,
+      property_type: fullListing?.property_type ?? extractCvPropertyType(listing.title, fullListing?.detailUrl || fullListing?.externalUrl),
+      project_flag: fullListing?.project_flag,
       parkingSpaces: listing.parkingSpaces,
       terraceArea: listing.terraceArea,
       amenities: listing.amenities,
@@ -929,7 +974,7 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
       // INVALID_PRICE is non-blocking: "price on request" listings are valid
       // Other violations (MISSING_TITLE, INSUFFICIENT_IMAGES, etc.) still block
       approved: violations.filter(v => v !== "INVALID_PRICE").length === 0,
-      property_type: undefined,
+      property_type: fullListing?.property_type ?? extractCvPropertyType(listing.title, fullListing?.detailUrl || fullListing?.externalUrl),
       amenities: fullListing?.amenities || [],
       price_period: "sale",
     };
