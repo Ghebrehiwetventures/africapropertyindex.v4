@@ -4,6 +4,10 @@ This file is the quick orientation map for the AREI repo.
 
 ## Active Apps
 
+- `arei-landing/`
+  - AREI landing site.
+  - Canonical source for `africarealestateindex.com`
+  - Deploy/config surface: `arei-landing/package.json`, `arei-landing/vercel.json`
 - `arei-admin/`
   - Internal admin and operations surface.
   - Deploy/config surface: `arei-admin/package.json`, `arei-admin/vercel.json`
@@ -63,4 +67,4 @@ This file is the quick orientation map for the AREI repo.
 
 ## Practical Rule
 
-If something is not under `arei-admin/`, `kazaverde-web/`, `core/`, `markets/`, `migrations/`, `packages/arei-sdk/`, `scripts/`, or `.github/`, do not assume it is active or authoritative without checking first.
+If something is not under `arei-landing/`, `arei-admin/`, `kazaverde-web/`, `core/`, `markets/`, `migrations/`, `packages/arei-sdk/`, `scripts/`, or `.github/`, do not assume it is active or authoritative without checking first.
