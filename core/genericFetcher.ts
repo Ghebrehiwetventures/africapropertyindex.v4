@@ -473,8 +473,6 @@ function parseListingsFromHtml(
         }
       }
 
-      processedUrls.add(absoluteUrl);
-
       // Extract title
       let title = "";
       if (config.selectors.title) {
@@ -624,6 +622,7 @@ function parseListingsFromHtml(
         detailUrl: absoluteUrl?.replace(/\/+$/, "") || absoluteUrl,
         createdAt: now,
       });
+      processedUrls.add(absoluteUrl);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       const contextParts = [
