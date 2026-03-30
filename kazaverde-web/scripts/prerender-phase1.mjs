@@ -6,7 +6,7 @@ import { AREIClient } from "../../packages/arei-sdk/dist/index.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(__dirname, "../dist");
 const baseHtmlPath = path.join(distDir, "index.html");
-const homePrerenderPath = path.join(distDir, "__prerender", "home", "index.html");
+const spaFallbackPath = path.join(distDir, "__spa", "fallback", "index.html");
 const blogDataPath = path.resolve(__dirname, "../src/lib/blog-data.ts");
 const prerenderListingsPath = path.resolve(__dirname, "../src/lib/prerender-listings.ts");
 const siteUrl = "https://www.kazaverde.com";
@@ -232,11 +232,14 @@ async function main() {
   const routes = [...getStaticRoutes(blogArticles), ...getBlogArticleRoutes(blogArticles), ...listingRoutes];
   const baseHtml = await readFile(baseHtmlPath, "utf8");
 
+  await mkdir(path.dirname(spaFallbackPath), { recursive: true });
+  await writeFile(spaFallbackPath, baseHtml, "utf8");
+
   for (const route of routes) {
     const routeHtml = renderRouteHtml(baseHtml, route);
     const outputPath =
       route.route === "/"
-        ? homePrerenderPath
+        ? baseHtmlPath
         : path.join(distDir, route.route.replace(/^\//, ""), "index.html");
 
     await mkdir(path.dirname(outputPath), { recursive: true });
