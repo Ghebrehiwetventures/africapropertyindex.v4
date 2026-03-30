@@ -2481,16 +2481,12 @@ function normalizeRoute(hash: string): RoutePath {
   return DEFAULT_ROUTE;
 }
 
-function navigateTo(route: RoutePath) {
-  window.location.hash = route;
-}
-
 function useHashRoute(): RoutePath {
   const [route, setRoute] = useState<RoutePath>(() => normalizeRoute(window.location.hash));
 
   useEffect(() => {
     if (!window.location.hash) {
-      navigateTo(DEFAULT_ROUTE);
+      window.location.hash = DEFAULT_ROUTE;
       return;
     }
 
@@ -2522,18 +2518,18 @@ function RouteButton({
   route: RoutePath;
 }) {
   return (
-    <button
-      type="button"
-      onClick={() => navigateTo(route)}
+    <a
+      href={`#${route}`}
+      aria-current={active ? "page" : undefined}
       className={
-        "border border-foreground px-4 py-2 text-sm font-mono uppercase tracking-widest transition-colors " +
+        "inline-block border border-foreground px-4 py-2 text-sm font-mono uppercase tracking-widest transition-colors no-underline " +
         (active
           ? "bg-foreground text-background"
           : "hover:bg-foreground hover:text-background")
       }
     >
       {label}
-    </button>
+    </a>
   );
 }
 
@@ -2987,8 +2983,8 @@ function App() {
 
         <nav className="flex flex-wrap gap-2 mt-4">
           <RouteButton active={section === "overview"} label="Overview" route="/overview" />
-          <RouteButton active={section === "data"} label="Data" route="/data/listings" />
-          <RouteButton active={section === "agents"} label="Agents" route="/agents/overview" />
+          <RouteButton active={section === "data"} label="Data" route="/data" />
+          <RouteButton active={section === "agents"} label="Agents" route="/agents" />
         </nav>
       </header>
 
