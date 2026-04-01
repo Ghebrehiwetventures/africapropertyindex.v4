@@ -297,7 +297,7 @@ export const simplyCapeVerdePlugin: DetailPlugin = {
     // ========================================
     let bedrooms: number | null = null;
     let bathrooms: number | null = null;
-    let terraceArea: number | null = null;
+    let areaSqm: number | null = null;
 
     // Look for meta items with beds/baths
     $(".es-listing__meta-bedrooms, [class*='bedrooms']").each((_, el) => {
@@ -321,7 +321,7 @@ export const simplyCapeVerdePlugin: DetailPlugin = {
       const text = $(el).text().trim();
       const parsed = parseArea(text);
       if (parsed !== null) {
-        terraceArea = parsed;
+        areaSqm = parsed;
       }
     });
 
@@ -493,7 +493,7 @@ export const simplyCapeVerdePlugin: DetailPlugin = {
             price,
             bedrooms,
             bathrooms,
-            terraceArea,
+            areaSqm,
             description_length: description?.length || 0,
             image_count: finalImages.length,
             amenities: Array.from(amenities),
@@ -510,9 +510,9 @@ export const simplyCapeVerdePlugin: DetailPlugin = {
       price,
       description,
       imageUrls: finalImages,
+      areaSqm,
       bedrooms,
       bathrooms,
-      terraceArea,
       amenities: Array.from(amenities),
     };
   },
