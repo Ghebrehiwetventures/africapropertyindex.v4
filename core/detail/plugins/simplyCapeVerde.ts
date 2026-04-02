@@ -29,6 +29,10 @@ const UI_TEXT_PATTERNS = [
 
 // Image URL patterns to filter out
 const INVALID_IMAGE_PATTERNS = [
+  /pinterest\.com\/pin\/create\/button/i,
+  /share_(?:pinterest|facebook|twitter|linkedin)/i,
+  /simplycv\.png/i,
+  /group-18-copy\.png/i,
   /logo/i,
   /icon/i,
   /sprite/i,
@@ -183,6 +187,29 @@ function isValidImageUrl(url: string): boolean {
   }
 
   return true;
+}
+
+function collectImageCandidates(
+  $: cheerio.CheerioAPI,
+  selectors: string[],
+  addImage: (url: string) => void
+): void {
+  for (const selector of selectors) {
+    $(selector).each((_, el) => {
+      const $img = $(el);
+      const src = $img.attr("src") || $img.attr("data-src") || $img.attr("data-lazy");
+      if (src) addImage(src);
+
+      const srcset = $img.attr("srcset") || $img.attr("data-srcset");
+      if (srcset) {
+        const parts = srcset.split(",");
+        for (const part of parts) {
+          const urlMatch = part.trim().split(/\s+/)[0];
+          if (urlMatch) addImage(urlMatch);
+        }
+      }
+    });
+  }
 }
 
 /**
@@ -430,38 +457,39 @@ export const simplyCapeVerdePlugin: DetailPlugin = {
       }
     }
 
-    // 1) Try slideshow/carousel images first
-    $(".es-p-slideshow img, .slick-slide img, .swiper-slide img, .gallery img").each((_, el) => {
-      const $img = $(el);
-      const src = $img.attr("src") || $img.attr("data-src") || $img.attr("data-lazy");
-      if (src) addImage(src);
+    // 1) Prefer the property gallery/lightbox containers. These hold the actual
+    // listing media without page-level share links or branding assets.
+    collectImageCandidates(
+      $,
+      [
+        ".property-lightbox .lightbox-slider img",
+        ".property-lightbox .lightbox-gallery img",
+        ".es-p-slideshow img",
+        ".listing-wrap .slick-slide img",
+        ".listing-wrap .swiper-slide img",
+        ".listing-wrap .gallery img",
+      ],
+      addImage
+    );
 
-      // Check srcset for higher quality images
-      const srcset = $img.attr("srcset") || $img.attr("data-srcset");
-      if (srcset) {
-        const parts = srcset.split(",");
-        for (const part of parts) {
-          const urlMatch = part.trim().split(/\s+/)[0];
-          if (urlMatch) addImage(urlMatch);
-        }
-      }
-    });
+    // 2) Only broaden the scrape if the gallery containers failed.
+    if (imageUrls.length === 0) {
+      $("a[href*='.jpg'], a[href*='.jpeg'], a[href*='.png'], a[href*='.webp']").each((_, el) => {
+        const href = $(el).attr("href");
+        if (href) addImage(href);
+      });
+    }
 
-    // 2) Try lightbox links
-    $("a[href*='.jpg'], a[href*='.jpeg'], a[href*='.png'], a[href*='.webp']").each((_, el) => {
-      const href = $(el).attr("href");
-      if (href) addImage(href);
-    });
+    if (imageUrls.length === 0) {
+      $("img[src*='uploads'], img[data-src*='uploads']").each((_, el) => {
+        const $img = $(el);
+        const src = $img.attr("src") || $img.attr("data-src");
+        if (src) addImage(src);
+      });
+    }
 
-    // 3) Try all property images
-    $("img[src*='uploads'], img[data-src*='uploads']").each((_, el) => {
-      const $img = $(el);
-      const src = $img.attr("src") || $img.attr("data-src");
-      if (src) addImage(src);
-    });
-
-    // 4) Fallback: all images with reasonable size
-    if (imageUrls.length < 3) {
+    // 3) Final fallback: all images with reasonable size
+    if (imageUrls.length === 0) {
       $("img").each((_, el) => {
         const $img = $(el);
         const src = $img.attr("src") || $img.attr("data-src");
