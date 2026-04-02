@@ -269,10 +269,17 @@ function parseCleanInteger(value: string): number | null {
  */
 function parseArea(value: string): number | null {
   if (!value) return null;
-  // Remove commas and extract number
-  const match = value.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
+  const normalized = value.replace(/,/g, "").trim();
+  const match = normalized.match(/(\d+(?:\.\d+)?)/);
   if (!match) return null;
-  return parseFloat(match[1]);
+  const parsed = parseFloat(match[1]);
+  if (isNaN(parsed) || parsed <= 0) return null;
+
+  if (/\bsq\s*ft\b|\bsqft\b|\bsquare\s*feet\b/i.test(normalized)) {
+    return Math.round(parsed * 0.092903 * 100) / 100;
+  }
+
+  return parsed;
 }
 
 export const simplyCapeVerdePlugin: DetailPlugin = {
