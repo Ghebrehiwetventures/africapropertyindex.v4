@@ -418,16 +418,28 @@ async function enrichDetailPages(
           }
         }
 
-        // Merge images
+        // HomesCasaVerde detail images should replace low-res list-page seeds.
         if (extractResult.imageUrls && extractResult.imageUrls.length > 0) {
-          const currentImages = listing.imageUrls || [];
-          for (const img of extractResult.imageUrls) {
-            if (!currentImages.includes(img)) {
-              currentImages.push(img);
+          if (source.id === "cv_homescasaverde") {
+            const currentImages = listing.imageUrls || [];
+            const shouldReplace =
+              currentImages.length !== extractResult.imageUrls.length ||
+              currentImages.some((img, index) => img !== extractResult.imageUrls[index]);
+
+            if (shouldReplace) {
+              listing.imageUrls = [...extractResult.imageUrls];
               wasEnriched = true;
             }
+          } else {
+            const currentImages = listing.imageUrls || [];
+            for (const img of extractResult.imageUrls) {
+              if (!currentImages.includes(img)) {
+                currentImages.push(img);
+                wasEnriched = true;
+              }
+            }
+            listing.imageUrls = currentImages;
           }
-          listing.imageUrls = currentImages;
         }
 
         // Update price if listing has no price but detail page does
