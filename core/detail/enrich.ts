@@ -256,9 +256,14 @@ export async function runDetailEnrichment(
       continue;
     }
 
-    const allImages = [...input.currentImageUrls];
-    for (const img of extractResult.imageUrls) {
-      if (!allImages.includes(img)) allImages.push(img);
+    const allImages =
+      input.sourceId === "cv_homescasaverde" && extractResult.imageUrls.length > 0
+        ? [...extractResult.imageUrls]
+        : [...input.currentImageUrls];
+    if (input.sourceId !== "cv_homescasaverde") {
+      for (const img of extractResult.imageUrls) {
+        if (!allImages.includes(img)) allImages.push(img);
+      }
     }
 
     const wasEnriched =
