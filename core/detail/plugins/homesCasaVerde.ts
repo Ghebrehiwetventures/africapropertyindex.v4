@@ -129,6 +129,45 @@ function normalizeImageField(value: unknown, baseUrl: string): string[] {
   return [];
 }
 
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function collectJsonLdDescription($: cheerio.CheerioAPI): string | undefined {
+  let best: string | undefined;
+
+  $('script[type="application/ld+json"]').each((_, el) => {
+    const raw = $(el).html();
+    if (!raw) return;
+
+    try {
+      const parsed = JSON.parse(raw);
+      const nodes = flattenJsonLdNodes(parsed);
+      for (const node of nodes) {
+        if (!isRelevantRealEstateNode(node)) continue;
+        if (typeof node.description !== "string") continue;
+
+        const cleaned = decodeHtmlEntities(node.description);
+        if (cleaned.length >= 50 && (!best || cleaned.length > best.length)) {
+          best = cleaned;
+        }
+      }
+    } catch {
+      // Ignore malformed JSON-LD blobs.
+    }
+  });
+
+  return best;
+}
+
 function collectJsonLdImages($: cheerio.CheerioAPI, baseUrl: string): string[] {
   const candidates: string[] = [];
 
@@ -216,11 +255,14 @@ export const homesCasaVerdePlugin: DetailPlugin = {
   sourceId: "cv_homescasaverde",
 
   extract(html: string, baseUrl: string): DetailExtractResult {
+    const $ = cheerio.load(html);
     const extracted = extractHomesCasaVerdeImages(html, baseUrl);
+    const description = collectJsonLdDescription($);
     return {
-      success: extracted.acceptedCount > 0,
+      success: extracted.acceptedCount > 0 || description !== undefined,
       imageUrls: extracted.imageUrls,
-      error: extracted.acceptedCount > 0 ? undefined : "No valid gallery images extracted",
+      description,
+      error: extracted.acceptedCount > 0 || description !== undefined ? undefined : "No images or description extracted",
     };
   },
 };
