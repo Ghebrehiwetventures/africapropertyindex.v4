@@ -519,8 +519,13 @@ export async function runCvIngestGeneric(): Promise<IngestReport> {
   // Collect all listings
   const allListings: IngestListing[] = [];
 
+  // Optional single-source filter for targeted runs (e.g. CV_SOURCE_FILTER=cv_estatecv)
+  const cvSourceFilter = process.env.CV_SOURCE_FILTER || null;
+
   // Process each source - NO IF/ELSE FOR SOURCE TYPE!
   for (const source of sources) {
+    if (cvSourceFilter && source.id !== cvSourceFilter) continue;
+
     const lifecycle = lifecycleMap.get(source.id);
 
     // DROP: skip
