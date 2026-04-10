@@ -52,6 +52,8 @@ export interface Listing {
   amenities?: string[];
   price_period?: string;
   project_flag?: boolean | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface Market {
@@ -94,6 +96,10 @@ export type IngestRunPhase = "post_fetch_snapshot" | "final_post_enrichment";
 
 export type ContentDraftStatus = "pending" | "approved" | "rejected" | "revision_requested";
 
+export type PublishChannel = "instagram" | "facebook" | "linkedin" | "blog" | "other";
+export type PublishMode = "publish_now" | "schedule_later";
+export type PublishItemStatus = "ready_to_publish" | "scheduled" | "published" | "failed" | "cancelled";
+
 export interface ContentDraft {
   id: string;
   sourceListingId: string;
@@ -105,4 +111,82 @@ export interface ContentDraft {
   createdAt: string;
   status: ContentDraftStatus;
   statusNote?: string;
+}
+
+export interface PublishItem {
+  id: string;
+  sourceListingId: string;
+  contentDraftId: string;
+  channel: PublishChannel;
+  publishMode: PublishMode;
+  status: PublishItemStatus;
+  finalCopy: string;
+  selectedImageUrl: string;
+  scheduledFor?: string | null;
+  publishedAt?: string | null;
+  postUrl?: string | null;
+  operatorNotes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ListingSelectorScorePart {
+  key: "trust" | "visual" | "completeness" | "location" | "value" | "freshness" | "uniqueness" | "material";
+  label: string;
+  score: number;
+  maxScore: number;
+  note: string;
+}
+
+export type ListingSelectionTheme = "dream" | "trust" | "opportunity";
+
+export interface ListingSelection {
+  listingId: string;
+  rank: number;
+  totalScore: number;
+  selectionTheme: ListingSelectionTheme;
+  title: string;
+  sourceName: string;
+  sourceUrl?: string | null;
+  locationLabel: string;
+  priceLabel?: string | null;
+  selectedImage: string;
+  reasons: string[];
+  warnings: string[];
+  contentAngle: string;
+  scoreBreakdown: ListingSelectorScorePart[];
+}
+
+export type AgentMapCategory =
+  | "Sales / Revenue"
+  | "Data / Source Ops"
+  | "Editorial / Content"
+  | "SEO / Market Intelligence"
+  | "Distribution / Growth"
+  | "Founder / Decision Support";
+
+export type AgentMapStatus =
+  | "human_only"
+  | "human_plus_ai"
+  | "candidate_for_agent"
+  | "in_progress"
+  | "live"
+  | "parked";
+
+export type AgentMapPriority = "now" | "next" | "later";
+
+export type AgentMapStrategicImportance = "critical" | "high" | "medium";
+
+export interface AgentMapRow {
+  id: string;
+  category: AgentMapCategory;
+  function: string;
+  candidateAgent: string;
+  currentOwner: string;
+  status: AgentMapStatus;
+  priority: AgentMapPriority;
+  strategicImportance: AgentMapStrategicImportance;
+  requiredInputs: string[];
+  expectedOutputs: string[];
+  notes: string;
 }

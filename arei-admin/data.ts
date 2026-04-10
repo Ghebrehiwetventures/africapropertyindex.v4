@@ -9,8 +9,16 @@ import {
   IngestRunPhase,
   ContentDraft,
   ContentDraftStatus,
+  ListingSelection,
+  AgentMapRow,
+  PublishChannel,
+  PublishItem,
+  PublishItemStatus,
+  PublishMode,
 } from "./types";
 import { supabase } from "./supabase";
+import { selectListingsForAttention } from "./listingSelector";
+import { agentMapRows } from "./agentMap";
 
 // ============================================
 // ARTIFACT LOADING
@@ -234,6 +242,7 @@ const mockListings: Listing[] = [
     price: 45000,
     description: "2 bedroom apartment near the beach",
     images: [],
+    approved: true,
   },
   {
     id: "lst_2",
@@ -243,6 +252,7 @@ const mockListings: Listing[] = [
     price: 120000,
     description: "Large house with garden",
     images: ["https://via.placeholder.com/400x300", "https://via.placeholder.com/400x300/eee"],
+    approved: true,
   },
   {
     id: "lst_3",
@@ -252,6 +262,7 @@ const mockListings: Listing[] = [
     price: undefined,
     description: undefined,
     images: ["https://via.placeholder.com/400x300"],
+    approved: true,
   },
   {
     id: "lst_4",
@@ -261,6 +272,7 @@ const mockListings: Listing[] = [
     price: 28000,
     description: "Compact studio in city center",
     images: ["https://via.placeholder.com/400x300", "https://via.placeholder.com/400x300/ddd", "https://via.placeholder.com/400x300/ccc"],
+    approved: true,
   },
 ];
 
@@ -422,6 +434,8 @@ async function loadFromSupabase(): Promise<Market[]> {
         violations: l.violations || undefined,
         amenities: l.amenities || undefined,
         price_period: l.price_period || undefined,
+        createdAt: l.created_at ?? null,
+        updatedAt: l.updated_at ?? null,
       }));
 
       // Determine market status
@@ -683,6 +697,8 @@ export async function getListings(
         approved: l.approved,
         project_flag: l.project_flag ?? null,
         project_start_price: l.project_start_price ?? null,
+        createdAt: l.created_at ?? null,
+        updatedAt: l.updated_at ?? null,
       };
     });
     return { data: listings, totalCount: count ?? 0 };
@@ -723,6 +739,8 @@ export async function getListingById(id: string): Promise<Listing | null> {
       violations: l.violations || undefined,
       amenities: l.amenities || undefined,
       price_period: l.price_period || undefined,
+      createdAt: l.created_at ?? null,
+      updatedAt: l.updated_at ?? null,
     };
   } catch {
     return null;
@@ -754,6 +772,9 @@ export async function getMarketIds(): Promise<{ id: string; name: string }[]> {
 // Supabase persistence for this phase; human approval stays in admin.
 // ============================================
 
+const AGENT_V1_SELECTOR_LIMIT = 8;
+const AGENT_V1_CANDIDATE_LIMIT = 250;
+
 const MAX_CONTENT_DRAFTS_PER_RUN = 5;
 
 interface ContentDraftRow {
@@ -769,8 +790,41 @@ interface ContentDraftRow {
   status_note: string | null;
 }
 
+interface PublishItemRow {
+  id: string;
+  source_listing_id: string;
+  content_draft_id: string;
+  channel: PublishChannel;
+  publish_mode: PublishMode;
+  publish_status: PublishItemStatus;
+  final_copy: string;
+  selected_image_url: string;
+  scheduled_for: string | null;
+  published_at: string | null;
+  post_url: string | null;
+  operator_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 function isContentDraftStatus(value: string): value is ContentDraftStatus {
   return value === "pending" || value === "approved" || value === "rejected" || value === "revision_requested";
+}
+
+function isPublishChannel(value: string): value is PublishChannel {
+  return value === "instagram" || value === "facebook" || value === "linkedin" || value === "blog" || value === "other";
+}
+
+function isPublishMode(value: string): value is PublishMode {
+  return value === "publish_now" || value === "schedule_later";
+}
+
+function isPublishItemStatus(value: string): value is PublishItemStatus {
+  return value === "ready_to_publish" || value === "scheduled" || value === "published" || value === "failed" || value === "cancelled";
+}
+
+function getInitialPublishChannel(value?: string | null): PublishChannel {
+  return value && isPublishChannel(value) ? value : "instagram";
 }
 
 function mapContentDraftRow(row: ContentDraftRow): ContentDraft {
@@ -800,6 +854,44 @@ function mapContentDraftToInsert(row: ContentDraft) {
     created_at: row.createdAt,
     status: row.status,
     status_note: row.statusNote ?? null,
+  };
+}
+
+function mapPublishItemRow(row: PublishItemRow): PublishItem {
+  return {
+    id: row.id,
+    sourceListingId: row.source_listing_id,
+    contentDraftId: row.content_draft_id,
+    channel: isPublishChannel(row.channel) ? row.channel : "instagram",
+    publishMode: isPublishMode(row.publish_mode) ? row.publish_mode : "publish_now",
+    status: isPublishItemStatus(row.publish_status) ? row.publish_status : "ready_to_publish",
+    finalCopy: row.final_copy,
+    selectedImageUrl: row.selected_image_url,
+    scheduledFor: row.scheduled_for,
+    publishedAt: row.published_at,
+    postUrl: row.post_url,
+    operatorNotes: row.operator_notes,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapPublishItemToInsert(row: PublishItem) {
+  return {
+    id: row.id,
+    source_listing_id: row.sourceListingId,
+    content_draft_id: row.contentDraftId,
+    channel: row.channel,
+    publish_mode: row.publishMode,
+    publish_status: row.status,
+    final_copy: row.finalCopy,
+    selected_image_url: row.selectedImageUrl,
+    scheduled_for: row.scheduledFor ?? null,
+    published_at: row.publishedAt ?? null,
+    post_url: row.postUrl ?? null,
+    operator_notes: row.operatorNotes ?? null,
+    created_at: row.createdAt,
+    updated_at: row.updatedAt,
   };
 }
 
@@ -838,6 +930,48 @@ async function updateStoredContentDraftStatus(id: string, status: ContentDraftSt
   const { error } = await supabase.from("content_drafts").update(payload).eq("id", id);
   if (error) {
     throw new Error(`[Admin] Failed to update content draft status: ${error.message}`);
+  }
+}
+
+async function listStoredPublishItems(): Promise<PublishItem[]> {
+  const { data, error } = await supabase
+    .from("publish_items")
+    .select("id,source_listing_id,content_draft_id,channel,publish_mode,publish_status,final_copy,selected_image_url,scheduled_for,published_at,post_url,operator_notes,created_at,updated_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("[Admin] Failed to load publish items from Supabase:", error.message);
+    return [];
+  }
+
+  return ((data || []) as PublishItemRow[]).map(mapPublishItemRow);
+}
+
+async function insertPublishItem(item: PublishItem): Promise<void> {
+  const { error } = await supabase
+    .from("publish_items")
+    .insert(mapPublishItemToInsert(item));
+
+  if (error) {
+    throw new Error(`[Admin] Failed to persist publish item: ${error.message}`);
+  }
+}
+
+async function updateStoredPublishItem(id: string, payload: Partial<PublishItem>): Promise<void> {
+  const updatePayload = {
+    channel: payload.channel,
+    publish_mode: payload.publishMode,
+    publish_status: payload.status,
+    scheduled_for: payload.scheduledFor ?? undefined,
+    published_at: payload.publishedAt ?? undefined,
+    post_url: payload.postUrl ?? undefined,
+    operator_notes: payload.operatorNotes ?? undefined,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase.from("publish_items").update(updatePayload).eq("id", id);
+  if (error) {
+    throw new Error(`[Admin] Failed to update publish item: ${error.message}`);
   }
 }
 
@@ -911,6 +1045,127 @@ function scoreListingForContent(listing: Listing): number {
   if (listing.area_sqm != null) score += 1;
   if (listing.project_flag) score += 1;
   return score;
+}
+
+function computeSourceQualitySignals(listings: Listing[]): Map<string, { score: number; approvedPct: number; imagePct: number; pricePct: number }> {
+  const buckets = new Map<
+    string,
+    {
+      total: number;
+      approved: number;
+      withImages: number;
+      withPrice: number;
+    }
+  >();
+
+  for (const listing of listings) {
+    const current = buckets.get(listing.sourceId) || { total: 0, approved: 0, withImages: 0, withPrice: 0 };
+    current.total += 1;
+    if (listing.approved) current.approved += 1;
+    if (listing.images.length > 0) current.withImages += 1;
+    if (listing.price != null || listing.project_start_price != null) current.withPrice += 1;
+    buckets.set(listing.sourceId, current);
+  }
+
+  const quality = new Map<string, { score: number; approvedPct: number; imagePct: number; pricePct: number }>();
+  for (const [sourceId, bucket] of buckets.entries()) {
+    const approvedPct = Math.round((bucket.approved / bucket.total) * 100);
+    const imagePct = Math.round((bucket.withImages / bucket.total) * 100);
+    const pricePct = Math.round((bucket.withPrice / bucket.total) * 100);
+    const score = (approvedPct * 0.5 + imagePct * 0.3 + pricePct * 0.2) / 100;
+    quality.set(sourceId, { score, approvedPct, imagePct, pricePct });
+  }
+
+  return quality;
+}
+
+async function getCvCandidateIdsFromFeed(limit: number): Promise<string[]> {
+  const feedSources = ["v1_feed_cv_indexable", "v1_feed_cv"] as const;
+
+  for (const feedSource of feedSources) {
+    const { data, error } = await supabase.from(feedSource).select("id,updated_at").order("updated_at", { ascending: false }).limit(limit);
+    if (error) {
+      console.warn(`[Admin] Could not load Agent V1 candidates from ${feedSource}:`, error.message);
+      continue;
+    }
+
+    const ids = ((data || []) as Array<{ id: string | null }>).map((row) => row.id).filter((id): id is string => Boolean(id));
+    if (ids.length > 0) return ids;
+  }
+
+  return [];
+}
+
+async function getCvSelectorCandidates(limit = AGENT_V1_CANDIDATE_LIMIT): Promise<Listing[]> {
+  try {
+    const candidateIds = await getCvCandidateIdsFromFeed(limit);
+    let query = supabase
+      .from("listings")
+      .select(
+        "id,title,description,price,project_start_price,currency,source_id,source_url,source_ref,project_flag,island,city,bedrooms,bathrooms,property_size_sqm,land_area_sqm,image_urls,approved,violations,property_type,status,amenities,price_period,created_at,updated_at"
+      )
+      .order("updated_at", { ascending: false })
+      .limit(limit);
+
+    if (candidateIds.length > 0) {
+      query = query.in("id", candidateIds);
+    } else {
+      query = query.ilike("source_id", "cv_%").eq("approved", true);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.warn("[Admin] Failed to load Agent V1 selector candidates:", error.message);
+      return [];
+    }
+
+    return ((data || []) as SupabaseListing[]).map((l) => ({
+      id: l.id,
+      title: l.title || undefined,
+      price: l.price ?? undefined,
+      currency: l.currency,
+      images: l.image_urls || [],
+      description: l.description || undefined,
+      sourceId: l.source_id,
+      sourceName: sourceIdToName(l.source_id),
+      sourceUrl: l.source_url,
+      source_ref: l.source_ref ?? null,
+      location: [l.city, l.island].filter(Boolean).join(", ") || undefined,
+      island: l.island,
+      city: l.city,
+      bedrooms: l.bedrooms,
+      bathrooms: l.bathrooms,
+      area_sqm: l.property_size_sqm,
+      land_area_sqm: l.land_area_sqm,
+      approved: l.approved,
+      project_flag: l.project_flag ?? null,
+      project_start_price: l.project_start_price ?? null,
+      property_type: l.property_type || undefined,
+      status: l.status,
+      violations: l.violations || undefined,
+      amenities: l.amenities || undefined,
+      price_period: l.price_period || undefined,
+      createdAt: l.created_at ?? null,
+      updatedAt: l.updated_at ?? null,
+    }));
+  } catch (err) {
+    console.warn("[Admin] Failed to build Agent V1 candidate pool:", err);
+    return [];
+  }
+}
+
+export async function getAgentV1Selections(limit = AGENT_V1_SELECTOR_LIMIT): Promise<ListingSelection[]> {
+  const candidates = await getCvSelectorCandidates();
+  if (candidates.length === 0) return [];
+
+  const markets = await getMarketsAsync();
+  const cvUniverse = markets.find((market) => market.id === "cv")?.listings || candidates;
+  const sourceQualityBySourceId = computeSourceQualitySignals(cvUniverse);
+
+  return selectListingsForAttention(candidates, {
+    limit,
+    sourceQualityBySourceId,
+  });
 }
 
 async function getLiveContentCandidateListings(limit = 80): Promise<Listing[]> {
@@ -1007,6 +1262,24 @@ export async function generateContentDrafts(): Promise<ContentDraft[]> {
   return listStoredContentDrafts();
 }
 
+export async function createContentDraftFromListing(listingId: string): Promise<ContentDraft[]> {
+  const listing = await getListingById(listingId);
+  if (!listing) {
+    throw new Error(`[Admin] Could not create content draft: listing ${listingId} not found`);
+  }
+
+  const existingDrafts = await listStoredContentDrafts();
+  const latestForListing = existingDrafts.find((draft) => draft.sourceListingId === listingId);
+  const nextDraft = createDraftFromListing(listing);
+
+  if (latestForListing?.id === nextDraft.id) {
+    return existingDrafts;
+  }
+
+  await insertContentDrafts([nextDraft]);
+  return listStoredContentDrafts();
+}
+
 export async function updateContentDraftStatus(
   id: string,
   status: ContentDraftStatus,
@@ -1014,4 +1287,110 @@ export async function updateContentDraftStatus(
 ): Promise<ContentDraft[]> {
   await updateStoredContentDraftStatus(id, status, statusNote);
   return listStoredContentDrafts();
+}
+
+export async function getPublishItems(): Promise<PublishItem[]> {
+  return listStoredPublishItems();
+}
+
+export async function createOrOpenPublishItemFromDraft(contentDraftId: string): Promise<{ items: PublishItem[]; activeItemId: string; created: boolean }> {
+  const drafts = await listStoredContentDrafts();
+  const draft = drafts.find((item) => item.id === contentDraftId);
+  if (!draft) {
+    throw new Error(`[Admin] Could not create publish item: draft ${contentDraftId} not found`);
+  }
+  if (draft.status !== "approved") {
+    throw new Error(`[Admin] Could not create publish item: draft ${contentDraftId} is not approved`);
+  }
+
+  const items = await listStoredPublishItems();
+  const initialChannel = getInitialPublishChannel(draft.suggestedChannel);
+  const existing = items.find((item) => item.contentDraftId === contentDraftId && item.channel === initialChannel);
+  if (existing) {
+    return { items, activeItemId: existing.id, created: false };
+  }
+
+  const now = new Date().toISOString();
+  const nextItem: PublishItem = {
+    id: `publish_${contentDraftId}_${initialChannel}`,
+    sourceListingId: draft.sourceListingId,
+    contentDraftId,
+    channel: initialChannel,
+    publishMode: "publish_now",
+    status: "ready_to_publish",
+    finalCopy: draft.suggestedCaption,
+    selectedImageUrl: draft.selectedImage,
+    operatorNotes: null,
+    scheduledFor: null,
+    publishedAt: null,
+    postUrl: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await insertPublishItem(nextItem);
+  const nextItems = await listStoredPublishItems();
+  return { items: nextItems, activeItemId: nextItem.id, created: true };
+}
+
+export async function updatePublishItemSetup(
+  id: string,
+  updates: { channel: PublishChannel; publishMode: PublishMode; scheduledFor?: string | null; operatorNotes?: string | null }
+): Promise<{ items: PublishItem[]; duplicateBlocked: boolean }> {
+  const items = await listStoredPublishItems();
+  const current = items.find((item) => item.id === id);
+  if (!current) {
+    throw new Error(`[Admin] Could not update publish item: ${id} not found`);
+  }
+
+  const duplicate = items.find((item) => item.id !== id && item.contentDraftId === current.contentDraftId && item.channel === updates.channel);
+  if (duplicate) {
+    return { items, duplicateBlocked: true };
+  }
+
+  if (updates.publishMode === "schedule_later" && !updates.scheduledFor?.trim()) {
+    throw new Error(`[Admin] Could not schedule publish item: scheduledFor is required`);
+  }
+
+  await updateStoredPublishItem(id, {
+    channel: updates.channel,
+    publishMode: updates.publishMode,
+    scheduledFor: updates.publishMode === "schedule_later" ? updates.scheduledFor ?? null : null,
+    operatorNotes: updates.operatorNotes ?? null,
+    status: updates.publishMode === "schedule_later" ? "scheduled" : "ready_to_publish",
+  });
+
+  return { items: await listStoredPublishItems(), duplicateBlocked: false };
+}
+
+export async function updatePublishItemStatus(
+  id: string,
+  status: PublishItemStatus,
+  fields?: { publishedAt?: string | null; postUrl?: string | null; operatorNotes?: string | null; scheduledFor?: string | null }
+): Promise<PublishItem[]> {
+  if (status === "published") {
+    if (!fields?.publishedAt?.trim()) {
+      throw new Error(`[Admin] Could not publish item: publishedAt is required`);
+    }
+    if (!fields?.postUrl?.trim()) {
+      throw new Error(`[Admin] Could not publish item: postUrl is required`);
+    }
+  }
+
+  if (status === "scheduled" && !fields?.scheduledFor?.trim()) {
+    throw new Error(`[Admin] Could not schedule publish item: scheduledFor is required`);
+  }
+
+  await updateStoredPublishItem(id, {
+    status,
+    publishedAt: fields?.publishedAt ?? undefined,
+    postUrl: fields?.postUrl ?? undefined,
+    operatorNotes: fields?.operatorNotes ?? undefined,
+    scheduledFor: fields?.scheduledFor ?? undefined,
+  });
+  return listStoredPublishItems();
+}
+
+export async function getAgentMapRows(): Promise<AgentMapRow[]> {
+  return agentMapRows;
 }
