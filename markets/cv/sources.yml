@@ -635,7 +635,8 @@ sources:
 
     pagination:
       type: click_next      # Next-page buttons are JS-driven, not URL-based
-                            # next_selector auto-detected by headless click handler
+      next_selector: "ul.page_navigation li.page-item:last-child a.page-link"
+                            # Last <li> in pagination = next button (no text, only flaticon-right-arrow icon)
 
     delay_ms: 3000
     jitter_ms: 1000
