@@ -205,7 +205,7 @@ function getStaticRoutes(blogArticles, listingRoutes = []) {
               to its original source page so buyers can verify details directly before contacting an agent.
             </p>
             <p>
-              <a href="/listings?island=Sal">Properties in Sal</a> ·
+              <a href="/listings/sal">Properties in Sal</a> ·
               <a href="/listings?island=Boa%20Vista">Properties in Boa Vista</a> ·
               <a href="/listings?island=Santiago">Properties in Santiago</a> ·
               <a href="/listings?island=S%C3%A3o%20Vicente">Properties in São Vicente</a>
@@ -221,6 +221,53 @@ function getStaticRoutes(blogArticles, listingRoutes = []) {
           </section>` : ""}
         </main>
       `,
+    ),
+    },
+    {
+      route: "/listings/sal",
+      ...page(
+      "Property for Sale in Sal, Cape Verde | KazaVerde",
+      "Browse property listings for sale in Sal, Cape Verde. Apartments, villas, and resort properties in Santa Maria and across the island.",
+      (() => {
+        const salListings = listingRoutes.filter(
+          (lr) => lr.description.includes(", Sal,") || lr.description.includes("in Sal,")
+        );
+        return `
+        <main>
+          <section>
+            <p>Sal · Cape Verde</p>
+            <h1>Property for Sale in Sal, Cape Verde</h1>
+            <p>
+              Sal is Cape Verde&#39;s most liquid property market, with international flights direct from London,
+              Lisbon, Amsterdam, and Paris. Santa Maria concentrates the strongest rental demand and the widest
+              range of apartments, villas, and resort properties for sale. Browse source-linked listings below.
+            </p>
+            <p><a href="/listings">View all Cape Verde properties</a></p>
+          </section>
+
+          ${salListings.length > 0 ? `
+          <section>
+            <h2>Sal listings in the index</h2>
+            <ul>
+              ${salListings.map((lr) => `<li><a href="${escapeHtml(lr.route)}">${escapeHtml(lr.title)}</a></li>`).join("\n              ")}
+            </ul>
+          </section>` : ""}
+
+          <section>
+            <h2>Buying property in Sal</h2>
+            <p>
+              Sal offers the strongest short-term rental market in Cape Verde, with gross yields of 5–8% reported
+              in well-managed resort complexes. It is the most mature and most expensive island to buy on.
+              One-bedroom apartments in Santa Maria typically start around €95,000; two-bedroom units in resort
+              complexes range from €120,000 to €200,000.
+            </p>
+            <p>
+              <a href="/blog/which-cape-verde-island-property">Compare Sal with other Cape Verde islands</a> ·
+              <a href="/blog/cape-verde-rental-yields-realistic">Rental yield analysis</a>
+            </p>
+          </section>
+        </main>
+      `})(),
     ),
     },
     {
