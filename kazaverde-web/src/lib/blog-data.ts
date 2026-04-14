@@ -239,6 +239,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p><strong>What the market looks like:</strong> Apartments in Santa Maria typically start around €95,000 for a one-bedroom, with two-bedroom units in resort complexes ranging from €120,000 to €200,000. Luxury penthouses and ocean-view properties can reach €300,000+. Prices have been rising 10–15% annually in recent years, driven by steady tourism growth and limited new supply in prime locations.</p>
 <p><strong>Rental potential:</strong> Sal offers the strongest short-term rental market in Cape Verde. Properties in well-managed resort complexes with established rental schemes report gross yields in the range of 5–8%, though individual results vary significantly based on location, property quality, and management company effectiveness.</p>
 <p><strong>Things to consider:</strong> Sal is the most expensive island to buy on, and the market is the most mature — meaning there&#39;s less room for dramatic capital appreciation compared to less-developed islands. The island is also relatively flat and arid, which isn&#39;t everyone&#39;s aesthetic preference.</p>
+<p><a href="/listings/sal">Browse current Sal properties for sale</a> in KazaVerde&#39;s index.</p>
 <hr>
 <h2>Boa Vista: The Growth Story</h2>
 <p>Boa Vista is Cape Verde&#39;s second major tourism island, known for stunning, less-crowded beaches and a more laid-back atmosphere than Sal. It has its own international airport with growing flight connections, and the tourism infrastructure has expanded significantly in recent years.</p>

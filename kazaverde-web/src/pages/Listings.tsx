@@ -22,7 +22,7 @@ const DEFAULT_PAGE_SIZE = 24;
 type ViewMode = "grid" | "list";
 
 export default function Listings() {
-  useDocumentMeta("All Properties", "Browse KazaVerde's read-only index of Cape Verde property listings by island and price range.");
+  useDocumentMeta("Cape Verde Properties for Sale", "Browse tracked property listings across Cape Verde. Source-linked homes, apartments, villas, and land for sale on Sal, Boa Vista, Santiago, and more.");
   const [searchParams, setSearchParams] = useSearchParams();
   const initialIsland = searchParams.get("island") || "";
   const initialPage = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);

@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useLayoutEffect } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -46,6 +46,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/listings" element={<Listings />} />
+        <Route path="/listings/sal" element={<Navigate to="/listings?island=Sal" replace />} />
         <Route path="/listing/:id" element={<Detail />} />
         <Route path="/market" element={<Market />} />
         <Route path="/saved" element={<Saved />} />
