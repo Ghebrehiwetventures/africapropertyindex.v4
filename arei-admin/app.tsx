@@ -37,6 +37,7 @@ function useTheme() {
   return [dark, () => setDark((d) => !d)] as const;
 }
 import { Market, Source, Listing, SourceStatus, DashboardStats, SourceQualityRow, ContentDraft, ContentDraftStatus } from "./types";
+import { supabaseAuth } from "./supabase";
 
 // ============================================
 // IMAGE GALLERY — arrows on hover, dot navigation
@@ -2535,7 +2536,7 @@ const NAV_ITEMS: { key: Tab; label: string; icon: string }[] = [
   { key: "agents", label: "Agents", icon: "◉" },
 ];
 
-function App() {
+function App({ onSignOut }: { onSignOut?: () => void }) {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [dark, toggleTheme] = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -2629,6 +2630,15 @@ function App() {
             <span className="text-base leading-none opacity-50">{dark ? "☀" : "☾"}</span>
             {dark ? "Light mode" : "Dark mode"}
           </button>
+          {onSignOut && (
+            <button
+              onClick={onSignOut}
+              className="w-full flex items-center gap-3 px-3 py-2 text-[13px] font-medium rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-2 transition-all duration-150"
+            >
+              <span className="text-base leading-none opacity-50">↩</span>
+              Sign out
+            </button>
+          )}
           <div className="rounded-lg px-3 py-3 border border-border">
             <div className="text-[11px] text-foreground-subtle mb-0.5">Africa Property Index</div>
             <div className="text-[11px] text-foreground-muted">Pan-African Real Estate</div>
@@ -2664,7 +2674,7 @@ function App() {
 }
 
 // ============================================
-// AUTH GATE — Protected by default outside local dev unless explicitly disabled
+// AUTH GATE — Supabase Auth with admin_users check
 // ============================================
 
 const ADMIN_PROTECTED =
@@ -2672,6 +2682,7 @@ const ADMIN_PROTECTED =
   (!import.meta.env.DEV && import.meta.env.VITE_ADMIN_PROTECTED !== "false");
 
 function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -2681,18 +2692,31 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ password }),
+      const { data, error: signInErr } = await supabaseAuth.auth.signInWithPassword({
+        email,
+        password,
       });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        onSuccess();
-      } else {
-        setError(data.error || "Invalid password");
+      if (signInErr || !data.user) {
+        setError(signInErr?.message || "Invalid credentials");
+        setLoading(false);
+        return;
       }
+
+      // Verify user is in admin_users
+      const { data: adminRow, error: adminErr } = await supabaseAuth
+        .from("admin_users")
+        .select("role")
+        .eq("user_id", data.user.id)
+        .single();
+
+      if (adminErr || !adminRow) {
+        await supabaseAuth.auth.signOut();
+        setError("You are not authorized to access this panel");
+        setLoading(false);
+        return;
+      }
+
+      onSuccess();
     } catch {
       setError("Network error");
     } finally {
@@ -2714,26 +2738,35 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
             Sign in to Admin
           </h1>
           <p className="text-sm text-foreground-muted mb-6 text-center">
-            Enter your password to continue
+            Enter your credentials to continue
           </p>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className="w-full bg-background border border-border text-foreground px-4 py-2.5 text-sm rounded-lg focus:border-foreground-subtle focus:outline-none transition-colors"
+              autoFocus
+              autoComplete="email"
+            />
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
-              className="w-full bg-background border border-border text-foreground px-4 py-2.5 text-sm rounded-lg mb-4 focus:border-foreground-subtle focus:outline-none transition-colors"
-              autoFocus
+              className="w-full bg-background border border-border text-foreground px-4 py-2.5 text-sm rounded-lg focus:border-foreground-subtle focus:outline-none transition-colors"
+              autoComplete="current-password"
             />
             {error && (
-              <p className="text-red text-sm mb-4">{error}</p>
+              <p className="text-red text-sm">{error}</p>
             )}
             <button
               type="submit"
               disabled={loading}
               className="w-full px-4 py-2.5 text-sm font-medium rounded-lg bg-foreground text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50"
             >
-              {loading ? "Checking…" : "Sign in"}
+              {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
         </div>
@@ -2742,7 +2775,7 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-function AuthGate({ children }: { children: React.ReactNode }) {
+function AuthGate() {
   const [status, setStatus] = useState<"loading" | "ok" | "login">("loading");
 
   useEffect(() => {
@@ -2750,14 +2783,37 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       setStatus("ok");
       return;
     }
-    fetch("/api/auth", { method: "GET", credentials: "include" })
-      .then((r) => {
-        setStatus(r.ok ? "ok" : "login");
-      })
-      .catch(() => setStatus("login"));
+
+    // Check existing session
+    supabaseAuth.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) {
+        setStatus("login");
+        return;
+      }
+      // Verify user is still in admin_users
+      const { data: adminRow } = await supabaseAuth
+        .from("admin_users")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .single();
+      setStatus(adminRow ? "ok" : "login");
+    });
+
+    // Listen for auth changes (sign-out, token refresh, etc.)
+    const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session) setStatus("login");
+      }
+    );
+    return () => subscription.unsubscribe();
   }, []);
 
-  if (!ADMIN_PROTECTED) return <>{children}</>;
+  const handleSignOut = async () => {
+    await supabaseAuth.auth.signOut();
+    setStatus("login");
+  };
+
+  if (!ADMIN_PROTECTED) return <App />;
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center text-foreground-muted text-sm">
@@ -2768,15 +2824,11 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   if (status === "login") {
     return <LoginScreen onSuccess={() => setStatus("ok")} />;
   }
-  return <>{children}</>;
+  return <App onSignOut={handleSignOut} />;
 }
 
 const container = document.getElementById("root");
 if (container) {
   const root = createRoot(container);
-  root.render(
-    <AuthGate>
-      <App />
-    </AuthGate>
-  );
+  root.render(<AuthGate />);
 }
