@@ -1279,8 +1279,23 @@ for (const [sourceId, listings] of listingsBySource.entries()) {
 
   // Write all listings to Supabase (both visible and hidden)
   const allReportListings = [...finalListingsReport.visibleListings, ...finalListingsReport.hiddenListings];
-  console.log(`\n[Supabase] Writing ${allReportListings.length} listings...`);
-  const supabaseListings: SupabaseListing[] = allReportListings.map((listing) => {
+
+  // Guard against data regression: when detail enrichment fails, the listing
+  // only carries listing-page data (few images, short description) which will
+  // fail golden rules and set approved=false. Upserting that degraded record
+  // would overwrite a previously good record in Supabase, causing approved
+  // listings to vanish from the public feed. Skip these listings so the
+  // existing DB row is preserved until the next successful enrichment.
+  const detailFailedIds = new Set(
+    allListings.filter(l => l.detail_error).map(l => l.id)
+  );
+  const safeReportListings = allReportListings.filter(l => !detailFailedIds.has(l.id));
+  if (detailFailedIds.size > 0) {
+    console.log(`[Supabase] Skipping ${detailFailedIds.size} listings with failed detail enrichment to prevent data regression`);
+  }
+
+  console.log(`\n[Supabase] Writing ${safeReportListings.length} listings...`);
+  const supabaseListings: SupabaseListing[] = safeReportListings.map((listing) => {
     const fullListing = allListings.find((l) => l.id === listing.id);
     const classification = finalEvalResult.classifications.find((c) => c.listingId === listing.id);
     const violations = classification?.violations || [];
