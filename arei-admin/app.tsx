@@ -2633,7 +2633,7 @@ function App() {
       </aside>
 
       {/* ── Main content ─────────────────────────── */}
-      <main className="flex-1 overflow-y-auto bg-background">
+      <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-background">
         {/* Mobile header */}
         <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-background border-b border-border md:hidden">
           <button
