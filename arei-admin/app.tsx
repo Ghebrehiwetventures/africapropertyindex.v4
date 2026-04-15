@@ -379,6 +379,13 @@ function AgentsApprovalsView() {
   });
 
   const pendingCount = drafts.filter((draft) => draft.status === "pending").length;
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const toggleExpand = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   return (
     <div className="space-y-6">
@@ -470,102 +477,117 @@ function AgentsApprovalsView() {
         </div>
       )}
 
-      <div className="space-y-3">
-        {filteredDrafts.map((draft) => (
-          <article key={draft.id} className="surface-1 rounded-xl border border-border overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-[200px_1fr]">
-              {/* Image */}
-              <div className="bg-surface-3 min-h-[160px]">
+      <div className="surface-1 rounded-xl border border-border overflow-hidden divide-y divide-border">
+        {filteredDrafts.map((draft) => {
+          const isExpanded = expandedIds.has(draft.id);
+          return (
+            <article key={draft.id}>
+              {/* ── Compact row ── */}
+              <button
+                type="button"
+                onClick={() => toggleExpand(draft.id)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface-2 transition-colors"
+              >
+                {/* Thumbnail */}
                 {draft.selectedImage ? (
                   <img
                     src={draft.selectedImage}
-                    alt={draft.listingTitle}
-                    className="w-full h-full min-h-[160px] object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
+                    alt=""
+                    className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
                 ) : (
-                  <div className="h-full min-h-[160px] flex items-center justify-center text-foreground-subtle text-sm">
-                    No image
+                  <div className="w-10 h-10 rounded-lg bg-surface-3 flex items-center justify-center flex-shrink-0 text-foreground-subtle text-xs">
+                    —
                   </div>
                 )}
-              </div>
 
-              {/* Content */}
-              <div className="p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-                  <div>
-                    <h3 className="text-base font-semibold text-foreground leading-tight">
-                      {draft.listingTitle}
-                    </h3>
-                    <p className="text-xs text-foreground-subtle mt-1 font-mono">
-                      {draft.sourceListingId} · {new Date(draft.createdAt).toLocaleDateString()}
-                    </p>
+                {/* Title + meta */}
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-foreground truncate">{draft.listingTitle}</div>
+                  <div className="text-[11px] text-foreground-subtle mt-0.5">
+                    <span className="capitalize">{draft.suggestedChannel}</span>
+                    <span className="mx-1.5">·</span>
+                    {new Date(draft.createdAt).toLocaleDateString()}
                   </div>
-                  <DraftStatusBadge status={draft.status} />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-4">
-                  <div className="space-y-3">
-                    <div>
-                      <div className="text-[11px] text-foreground-subtle mb-1">Caption</div>
-                      <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap m-0">
-                        {draft.suggestedCaption}
-                      </p>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-foreground-subtle mb-1">Hashtags</div>
-                      <p className="text-sm text-foreground-muted m-0 font-mono">
-                        {draft.suggestedHashtags.map((tag) => `#${tag}`).join(" ")}
-                      </p>
-                    </div>
-                  </div>
+                {/* Status badge */}
+                <DraftStatusBadge status={draft.status} />
 
-                  <div className="space-y-3">
-                    <div className="surface-3 rounded-md p-3">
-                      <div className="text-[11px] text-foreground-subtle mb-1">Channel</div>
-                      <div className="text-sm font-medium text-foreground capitalize">{draft.suggestedChannel}</div>
-                    </div>
-                    {draft.statusNote && (
-                      <div className="rounded-md p-3 bg-amber-muted">
-                        <div className="text-[11px] text-amber mb-1">Revision note</div>
-                        <p className="text-sm text-foreground whitespace-pre-wrap m-0">
-                          {draft.statusNote}
+                {/* Chevron */}
+                <span className={"text-foreground-subtle text-xs transition-transform duration-150 " + (isExpanded ? "rotate-180" : "")}>
+                  ▼
+                </span>
+              </button>
+
+              {/* ── Expanded details ── */}
+              {isExpanded && (
+                <div className="px-4 pb-4 pt-1 border-t border-border bg-surface-2/50">
+                  <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4">
+                    <div className="space-y-3">
+                      <div>
+                        <div className="text-[11px] text-foreground-subtle mb-1">Caption</div>
+                        <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap m-0">
+                          {draft.suggestedCaption}
                         </p>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-foreground-subtle mb-1">Hashtags</div>
+                        <p className="text-sm text-foreground-muted m-0 font-mono">
+                          {draft.suggestedHashtags.map((tag) => `#${tag}`).join(" ")}
+                        </p>
+                      </div>
+                      {draft.statusNote && (
+                        <div className="rounded-md p-3 bg-amber-muted">
+                          <div className="text-[11px] text-amber mb-1">Revision note</div>
+                          <p className="text-sm text-foreground whitespace-pre-wrap m-0">{draft.statusNote}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Larger image preview */}
+                    {draft.selectedImage && (
+                      <div className="w-full lg:w-[240px] flex-shrink-0">
+                        <img
+                          src={draft.selectedImage}
+                          alt={draft.listingTitle}
+                          className="w-full rounded-lg object-cover max-h-[200px]"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
                       </div>
                     )}
                   </div>
-                </div>
 
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
-                  <button
-                    type="button"
-                    onClick={() => handleStatusUpdate(draft.id, "approved")}
-                    className="px-3 py-1.5 text-xs font-medium rounded-md bg-green-muted text-green hover:bg-green hover:text-primary-foreground transition-colors"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleStatusUpdate(draft.id, "rejected")}
-                    className="px-3 py-1.5 text-xs font-medium rounded-md bg-red-muted text-red hover:bg-red hover:text-primary-foreground transition-colors"
-                  >
-                    Reject
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleStatusUpdate(draft.id, "revision_requested")}
-                    className="px-3 py-1.5 text-xs font-medium rounded-md border border-border-strong text-foreground-muted hover:text-foreground hover:bg-surface-3 transition-colors"
-                  >
-                    Request revision
-                  </button>
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-border">
+                    <button
+                      type="button"
+                      onClick={() => handleStatusUpdate(draft.id, "approved")}
+                      className="px-3 py-1.5 text-xs font-medium rounded-md bg-green-muted text-green hover:bg-green hover:text-primary-foreground transition-colors"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStatusUpdate(draft.id, "rejected")}
+                      className="px-3 py-1.5 text-xs font-medium rounded-md bg-red-muted text-red hover:bg-red hover:text-primary-foreground transition-colors"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStatusUpdate(draft.id, "revision_requested")}
+                      className="px-3 py-1.5 text-xs font-medium rounded-md border border-border-strong text-foreground-muted hover:text-foreground hover:bg-surface-3 transition-colors"
+                    >
+                      Request revision
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </article>
-        ))}
+              )}
+            </article>
+          );
+        })}
       </div>
     </div>
   );
