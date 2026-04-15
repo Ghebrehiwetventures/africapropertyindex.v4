@@ -32,8 +32,6 @@ In Vercel: Project → Settings → Environment Variables. Add:
 | `VITE_SUPABASE_URL` | Your Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key |
 | `VITE_ADMIN_PROTECTED` | Optional. Set to `false` only if you intentionally want to disable protection. Production should remain protected. |
-| `ADMIN_PASSWORD` | The password users enter to log in |
-| `ADMIN_SESSION_SECRET` | Random string (e.g. `openssl rand -hex 24`) for the session cookie |
 
 Optional:
 
@@ -67,7 +65,7 @@ If you deploy from inside `arei-admin` while the Vercel project also has **Root 
 
 **From Git:** Push to main or trigger deploy in the Vercel dashboard. Keep **Root Directory = `arei-admin`** in project settings.
 
-The build runs `npm run build` and serves the `dist` folder. The `/api/auth` route is a serverless function for login. On Vercel, `../artifacts` is not available, so the build uses `public/` as fallback; the app still works (sync report will show "no report" until you add one via another channel).
+The build runs `npm run build` and serves the `dist` folder. Authentication is handled client-side via Supabase Auth (no serverless functions required). On Vercel, `../artifacts` is not available, so the build uses `public/` as fallback; the app still works (sync report will show "no report" until you add one via another channel).
 
 **If the main URL doesn’t work:** In Vercel → Deployments, open the latest production deployment and use the deployment URL (e.g. `…-ghebrehiwetventures.vercel.app`) to test. Ensure the project’s production domain is set (Settings → Domains). Redeploy after any `vercel.json` or build fix.
 
@@ -95,9 +93,10 @@ The repo root has a separate [`vercel.json`](/Users/ghebrehiwet/morabesa/vercel.
 - Treat any rename from `arei-admin` as a Vercel project-settings change, not just a git rename.
 - Do not treat the Vercel project identifier as public branding. `AREI Admin` remains the canonical product name.
 
-## 5. Password protection
+## 5. Authentication
 
 - Outside local development, the admin is protected by default unless `VITE_ADMIN_PROTECTED=false` is set explicitly.
-- When protection is enabled, the first screen is a login form; after a correct password, a cookie is set and the admin is shown.
-
-**Yes, we need a password (or similar)** when the admin is public. Use the env vars above so only people with `ADMIN_PASSWORD` can access.
+- Authentication uses **Supabase Auth** (email + password).
+- Only users listed in the `admin_users` table can access the panel.
+- To add a new admin: invite user in Supabase Dashboard → Authentication → Users → "Invite User", then insert a row in `admin_users` with their `user_id`, email, and role (`admin` or `editor`).
+- Old env vars `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` are no longer used and can be removed from Vercel.
