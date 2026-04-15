@@ -402,7 +402,7 @@ function AgentsApprovalsView() {
       </div>
 
       {/* ── Stats row ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="surface-1 rounded-xl p-5 border border-border shadow-sm">
           <div className="text-[11px] font-medium uppercase tracking-wide text-foreground-subtle mb-3">Total drafts</div>
           <div className="text-3xl font-bold tabular-nums tracking-tight">{drafts.length}</div>
@@ -688,7 +688,7 @@ function DashboardView() {
       </div>
 
       {/* ── KPI cards ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="surface-1 rounded-xl p-5 border border-border shadow-sm">
           <div className="text-[11px] font-medium uppercase tracking-wide text-foreground-subtle mb-3">Total listings</div>
           <div className="text-3xl font-bold tabular-nums tracking-tight">
@@ -1161,7 +1161,7 @@ function ListingsTabView() {
 
       <div className="surface-1 rounded-xl border border-border p-4 mb-6">
         <div className="text-[11px] text-foreground-subtle uppercase tracking-wider mb-3">Filters</div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           <div>
             <label className="text-[11px] text-foreground-subtle block mb-1">Market</label>
             <select
@@ -2538,11 +2538,33 @@ const NAV_ITEMS: { key: Tab; label: string; icon: string }[] = [
 function App() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [dark, toggleTheme] = useTheme();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close sidebar when resizing up to desktop
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const handler = () => { if (mq.matches) setSidebarOpen(false); };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const selectTab = (key: Tab) => {
+    setTab(key);
+    setSidebarOpen(false);
+  };
 
   return (
     <div className="flex h-screen overflow-hidden">
+      {/* ── Mobile backdrop ──────────────────────── */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* ── Sidebar ──────────────────────────────── */}
-      <aside className="sidebar">
+      <aside className={"sidebar" + (sidebarOpen ? " sidebar-open" : "")}>
         <div className="px-5 pt-6 pb-5">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center text-sm font-bold text-primary-foreground">
@@ -2556,6 +2578,13 @@ function App() {
                 Admin Console
               </div>
             </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="ml-auto md:hidden p-1 text-foreground-muted hover:text-foreground"
+              aria-label="Close menu"
+            >
+              ✕
+            </button>
           </div>
         </div>
 
@@ -2569,7 +2598,7 @@ function App() {
           {NAV_ITEMS.map(({ key, label, icon }) => (
             <button
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => selectTab(key)}
               className={
                 "w-full flex items-center gap-3 px-3 py-2 text-[13px] font-medium rounded-lg transition-all duration-150 " +
                 (tab === key
@@ -2605,7 +2634,20 @@ function App() {
 
       {/* ── Main content ─────────────────────────── */}
       <main className="flex-1 overflow-y-auto bg-background">
-        <div className="max-w-[1200px] mx-auto px-8 py-8">
+        {/* Mobile header */}
+        <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-background border-b border-border md:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-1.5 -ml-1 text-foreground-muted hover:text-foreground"
+            aria-label="Open menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M3 5h14M3 10h14M3 15h14" />
+            </svg>
+          </button>
+          <span className="text-[13px] font-semibold text-foreground tracking-tight">AREI</span>
+        </div>
+        <div className="max-w-[1200px] mx-auto px-4 py-5 md:px-8 md:py-8">
           {tab === "dashboard" && <DashboardView />}
           {tab === "listings" && <ListingsTabView />}
           {tab === "sources" && <SourcesView />}
