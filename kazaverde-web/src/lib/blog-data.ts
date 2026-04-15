@@ -747,6 +747,583 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p><em>This article is for informational purposes only and does not constitute legal or financial advice. Always consult qualified local professionals before purchasing property in Cape Verde.</em></p>
 `,
   },
+  {
+    slug: "sal-vs-santiago-property",
+    title: "Sal vs Santiago: Which Cape Verde Island Makes Sense for Property Buyers?",
+    description: "Sal and Santiago are Cape Verde's two most active property markets, but they serve fundamentally different buyer profiles. One is built around tourism; the other is the country's...",
+    date: "2026-03-10",
+    readTime: "8 min read",
+    tags: ["Sal", "Santiago", "Comparison"],
+    content: `<p><em>Last updated: March 2026</em></p>
+<p>Sal and Santiago are Cape Verde's two most active property markets, but they serve fundamentally different buyer profiles. One is built around tourism; the other is the country's economic and political capital. Treating them as interchangeable options is a common error.</p>
+<p>This comparison breaks down the decision factors so you can match the island to your actual goal.</p>
+<hr>
+<h2>The Core Difference</h2>
+<p>Sal's property market is a tourism derivative. Demand is driven by international visitors, short-term rental activity, and foreign buyers seeking holiday investments. If European tourist arrivals to Cape Verde increase, Sal benefits. If they contract, Sal feels it first.</p>
+<p>Santiago's market is more diversified. Demand comes from a functioning domestic economy — Cape Verde's largest city (Praia), government institutions, a growing middle class, business travel, and a modest but developing tourism sector. The market moves with the Capeverdean economy, not just with international flight routes.</p>
+<p>This distinction matters more than any individual data point about prices or yields.</p>
+<hr>
+<h2>Sal: The Tourism Market</h2>
+<h3>What the market looks like</h3>
+<p>Sal's property activity is concentrated in and around Santa Maria, a beach resort town on the southern tip of the island. It has direct international flights from the UK, Portugal, Germany, the Netherlands, and other European countries — which is the fundamental infrastructure underpinning demand.</p>
+<p>Property types are predominantly apartments and units within resort complexes. Standalone villas exist but are less common than on some other islands. Entry prices for a one-bedroom apartment in a resort complex start around €95,000–€110,000; two-bedroom units typically range from €130,000 to €200,000; premium ocean-facing properties go higher.</p>
+<p>Prices have tracked upward in recent years — 10–15% annual appreciation has been reported for well-located properties — driven by steady tourism growth and limited new supply in established zones.</p>
+<h3>Rental market</h3>
+<p>Sal has the strongest short-term rental market in Cape Verde. International tourist volume provides a large pool of potential guests, and the infrastructure to serve them (tour operators, online booking platforms, airport transfers) is mature.</p>
+<p>Gross rental yields quoted by developers and agents typically fall in the 5–8% range. Net yields — after management fees (25–35% of gross), annual service charges, maintenance, and the new IPI annual property tax — are meaningfully lower. A realistic net yield for a well-managed property in a good resort complex is 3–5%. Read the <a href="/blog/cape-verde-rental-yields-realistic">rental yield analysis</a> for a full cost breakdown.</p>
+<p>Seasonality is moderate on Sal relative to other islands — European winter sun demand helps smooth the calendar — but July and August can be slower as European tourists gravitate toward Mediterranean destinations.</p>
+<h3>Liquidity</h3>
+<p>Sal is the most liquid property market in Cape Verde. There is an established resale market, international buyer interest is ongoing, and real estate agents with marketing reach to European buyers are well-represented. If you need to exit, Sal gives you the best chance of finding a buyer in a reasonable timeframe.</p>
+<h3>Who Sal suits</h3>
+<ul>
+<li>Buyers whose primary objective is rental income from tourist lets</li>
+<li>Holiday home buyers who want guaranteed access to beach infrastructure and restaurants</li>
+<li>Investors who want the most established and liquid market in Cape Verde</li>
+<li>Buyers applying for the Green Card (Sal qualifies as a higher-GDP area, requiring €120,000 minimum)</li>
+</ul>
+<hr>
+<h2>Santiago: The Diversified Market</h2>
+<h3>What the market looks like</h3>
+<p>Santiago is Cape Verde's largest island and home to Praia, the capital — a city of around 160,000 people with ministries, embassies, universities, a functioning port, and a broad service economy. The property market reflects this: you'll find urban apartments for residential use, commercial properties, land, coastal developments near Tarrafal, and a growing supply of modern housing targeting the domestic middle class.</p>
+<p>Price ranges vary enormously by type and location. Urban apartments in Praia can be found at lower absolute prices than equivalent-quality properties on Sal; coastal and development properties vary widely. The market is less consolidated and therefore less easy to summarize with single-number benchmarks.</p>
+<h3>Rental market</h3>
+<p>Santiago's rental market divides into two segments that rarely overlap:</p>
+<p><strong>Domestic/residential rental:</strong> Praia has a real residential rental market driven by professionals, government workers, university students, and the growing Cape Verdean middle class. This market functions on longer-term leases (typically 6–12 months), lower nightly rates than tourist lets, and is less dependent on international flight availability. It's a more stable income stream but with lower peak yields.</p>
+<p><strong>Tourism rental:</strong> Santiago receives international visitors — Praia is a transit hub and has historical sites, and Tarrafal is developing a beach tourism niche — but the tourist volume is substantially lower than Sal. Short-term rental income potential is correspondingly more limited unless the property is in a specific tourist zone.</p>
+<h3>Liquidity</h3>
+<p>The Santiago resale market is thinner than Sal's for foreign-buyer-targeting properties. If you own an apartment in Praia marketed at the domestic market, your buyer pool is primarily Cape Verdean, which changes the liquidity profile. For foreign investors, this is a real consideration — selling may take longer and may require more local-market engagement than selling on Sal.</p>
+<h3>Who Santiago suits</h3>
+<ul>
+<li>Buyers seeking residential investment with domestic rental demand rather than tourist dependency</li>
+<li>Buyers planning to live or spend extended time in Cape Verde (Praia has the most developed urban infrastructure in the archipelago)</li>
+<li>Commercial investors or those interested in the local economy beyond tourism</li>
+<li>Buyers wanting to enter the market at lower absolute price points for equivalent property quality</li>
+<li>Buyers applying for the Green Card (Praia's classification should be verified with a lawyer — some areas of Santiago may qualify at the €80,000 threshold)</li>
+</ul>
+<hr>
+<h2>Side-by-Side Comparison</h2>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>Sal</th>
+<th>Santiago</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Market driver</strong></td>
+<td>International tourism</td>
+<td>Domestic economy + local tourism</td>
+</tr>
+<tr>
+<td><strong>Price level</strong></td>
+<td>Higher (tourism premium)</td>
+<td>Wider range; lower floor</td>
+</tr>
+<tr>
+<td><strong>Short-term rental potential</strong></td>
+<td>Strong</td>
+<td>Limited outside tourist zones</td>
+</tr>
+<tr>
+<td><strong>Long-term rental demand</strong></td>
+<td>Moderate (seasonal)</td>
+<td>Steady (residential)</td>
+</tr>
+<tr>
+<td><strong>Resale liquidity</strong></td>
+<td>Higher (international buyer pool)</td>
+<td>Lower (primarily domestic pool)</td>
+</tr>
+<tr>
+<td><strong>Infrastructure for tourists</strong></td>
+<td>Extensive</td>
+<td>Moderate; growing</td>
+</tr>
+<tr>
+<td><strong>Urban amenities</strong></td>
+<td>Limited (small island)</td>
+<td>Extensive (capital city)</td>
+</tr>
+<tr>
+<td><strong>Risk profile</strong></td>
+<td>Correlated to European tourism</td>
+<td>Correlated to Capeverdean economy</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>The Decision Framework</h2>
+<p>Choose Sal if your primary goal is rental income from tourist lets and you want to operate in Cape Verde's most established, liquid, and internationally visible property market. Accept the tourism-correlated risk profile and the higher entry price.</p>
+<p>Choose Santiago if you want exposure to the domestic Capeverdean economy rather than the international tourism cycle, if you're planning to live in or regularly use the country (Praia is far more functional as a full-time city than Santa Maria), or if you're looking for lower absolute entry prices with a residential rental strategy.</p>
+<p>Neither island is objectively better. They serve different strategies. The mistake is choosing one when your goals fit the other.</p>
+<hr>
+<h2>What to Check Before Deciding</h2>
+<ul>
+<li><strong>Your rental strategy.</strong> Tourist let or residential lease? The answer points to an island almost immediately.</li>
+<li><strong>Your use frequency.</strong> Beach holiday or urban stay? Sal serves the former; Santiago the latter.</li>
+<li><strong>Your risk tolerance.</strong> Tourism is cyclical. The Capeverdean domestic economy is also small and exposed to global shocks, but its cycle is different from European tourist demand.</li>
+<li><strong>Your exit timeline.</strong> If you may need to sell in 5–7 years, Sal's international buyer pool gives you more options.</li>
+<li><strong>Green Card eligibility.</strong> If residency is part of the plan, confirm the investment threshold for your specific target location with a qualified lawyer.</li>
+</ul>
+<hr>
+<h2>Browsing Current Listings</h2>
+<p><a href="/listings/sal">Browse current Sal properties</a> and <a href="/listings/boa-vista">Boa Vista properties</a> on KazaVerde. Santiago listings are included in the main search index at <a href="https://kazaverde.com">kazaverde.com</a>.</p>
+<hr>
+<h2>Related Guides</h2>
+<ul>
+<li><a href="/blog/which-cape-verde-island-property">Which Cape Verde Island Should You Buy On?</a> — Full six-island comparison</li>
+<li><a href="/blog/cape-verde-rental-yields-realistic">Rental Yields: What to Realistically Expect</a> — Net yield analysis by rental model</li>
+<li><a href="/blog/buying-property-cape-verde-guide">How to Buy Property in Cape Verde</a> — Full buying process for foreign buyers</li>
+<li><a href="/blog/boa-vista-property-guide">Boa Vista Property Guide</a> — The third option between Sal's prices and Santiago's profile</li>
+</ul>
+<hr>
+<p><em>This article is for informational purposes only and does not constitute financial or legal advice. Market conditions change. Always consult qualified local professionals before making any property investment.</em></p>
+`,
+  },
+  {
+    slug: "off-plan-property-cape-verde-risks",
+    title: "Buying Off-Plan Property in Cape Verde: Risks, Protections, and What to Check",
+    description: "Off-plan purchases — buying a property before or during construction — are common in Cape Verde, particularly in resort developments on Sal and Boa Vista. The potential advantages...",
+    date: "2026-03-17",
+    readTime: "9 min read",
+    tags: ["Off-Plan", "Risk", "Legal"],
+    content: `<p><em>Last updated: March 2026</em></p>
+<p>Off-plan purchases — buying a property before or during construction — are common in Cape Verde, particularly in resort developments on Sal and Boa Vista. The potential advantages are lower entry prices, stage-payment structures that ease cashflow, and the possibility of capital appreciation before completion. The risks are real and have materialized in this market before.</p>
+<p>This guide covers what can go wrong, how to protect yourself, and the specific checks to run before committing to any off-plan purchase.</p>
+<hr>
+<h2>Why Off-Plan Exists in Cape Verde</h2>
+<p>Cape Verde's tourism-driven development model creates a natural demand for off-plan sales. Developers need pre-sales to secure construction financing; buyers want early-access pricing before a development reaches full occupancy and the management rental scheme is established. The transaction is theoretically beneficial to both parties.</p>
+<p>The problem is asymmetry of information and risk. The developer knows the project's financial health, construction progress, and contractual obligations. The buyer, especially a foreign buyer purchasing remotely, often does not.</p>
+<hr>
+<h2>The Main Risks</h2>
+<h3>1. Construction Delays</h3>
+<p>The most common off-plan problem in Cape Verde is not outright failure — it's delay. A development promised for completion in 18 months takes three years. This has cascading consequences: your capital is committed, you're earning no rental income, the rental market position you bought into may have changed, and any financing arrangements are under strain.</p>
+<p>Delays in Cape Verde often stem from supply chain issues (most construction materials are imported), contractor capacity, regulatory approvals, and occasionally developer cashflow problems. Build a delay assumption into your financial model — 6–12 months beyond the stated completion date is a conservative but realistic buffer.</p>
+<h3>2. Developer Financial Risk</h3>
+<p>Off-plan buyers are unsecured creditors if a developer becomes insolvent. Several Cape Verde developments, particularly those started during the pre-2008 tourism boom, stalled or failed entirely when developer financing collapsed. Buyers who had paid deposits or stage payments had limited legal recourse and, in some cases, lost their funds entirely.</p>
+<p>This risk has not disappeared. Smaller developers with shallow balance sheets, projects dependent on continued pre-sales for construction financing, and developments without bank-guaranteed stage payments all carry meaningful insolvency risk.</p>
+<h3>3. Specification Changes</h3>
+<p>The finished property may differ from what was sold. Developers have been known to substitute finishes, change unit configurations, reduce common area facilities, or modify the rental scheme terms between sale and completion. Without strong contractual protections, buyers have limited grounds for recourse on changes that fall short of a fundamental breach.</p>
+<h3>4. Rental Scheme Changes</h3>
+<p>Many off-plan purchases in Cape Verde are sold with a projected rental yield underpinned by a managed rental scheme. The scheme's terms — income split, management fees, allowed personal use, maintenance obligations — may change between purchase and operation. The management company may also change, particularly if the original operator exits or the development is acquired.</p>
+<h3>5. Resale Limitations</h3>
+<p>Some off-plan contracts restrict resale before completion or during the early years of the rental scheme. If you need to exit before the development is established, you may be limited in your options. Understand the resale conditions before signing.</p>
+<h3>6. Legal Title Risk</h3>
+<p>In some cases, developers have sold units in developments where the underlying land title was not fully clear or where planning permissions were incomplete. Your lawyer must verify not just the contract, but the developer's clear title to the land and all necessary regulatory approvals before you pay any deposit.</p>
+<hr>
+<h2>Protections to Demand</h2>
+<p>The following protections are not automatically included in off-plan contracts. You need to negotiate for them, and if a developer refuses to provide them, treat that as a significant warning signal.</p>
+<h3>Bank Guarantee on Stage Payments</h3>
+<p>The strongest protection available is a bank guarantee covering your stage payments. Under this structure, a Cape Verdean bank guarantees to return your payments if the developer fails to complete the property as contracted. Not all developers offer this — it costs them money and requires their own banking relationships to support it — but it is the standard in reputable developments.</p>
+<p>If a developer cannot or will not provide a bank guarantee, your financial exposure is the full amount of any payments made, recoverable only through litigation against a potentially insolvent entity.</p>
+<h3>Stage Payments Tied to Measurable Milestones</h3>
+<p>Payment schedules should be tied to verifiable construction milestones — foundation complete, structure complete, shell complete, fit-out complete — not to calendar dates or percentages of time elapsed. Calendar-based payment schedules benefit the developer regardless of construction progress.</p>
+<p>Ensure each milestone can be independently verified. Your lawyer or an independent inspector should confirm each stage before you release payment.</p>
+<h3>Clear Completion Date with Penalties</h3>
+<p>The contract should specify a firm completion date (not a range) and include financial penalties for the developer if that date is missed. Without penalties, the developer has no contractual incentive to prioritize your project. The penalty should be meaningful — a percentage of the contract value per month of delay — not a token amount.</p>
+<h3>Specification Schedule Attached to Contract</h3>
+<p>The full specification — materials, finishes, appliances, furniture, common area facilities — should be attached to the contract as a binding schedule, not described in marketing brochures. Brochures are not contracts. If the developer changes a specification item, you need the contract to define what it was and create grounds for recourse.</p>
+<h3>Clear Rental Scheme Terms</h3>
+<p>If you are buying as an investment and the rental scheme is part of the investment case, the scheme's terms must be contractually specified: income split percentage, management fee structure, personal use entitlement, duration of the scheme, and conditions under which it can be modified or terminated. Projected yields in marketing materials are not binding. The contract terms are.</p>
+<hr>
+<h2>Due Diligence Checklist</h2>
+<p>Before committing to any off-plan purchase, your independent lawyer should verify:</p>
+<ul>
+<li><strong>Developer track record.</strong> Has the developer completed projects of similar size and type before? Visit at least one of their completed developments and speak to owners.</li>
+<li><strong>Land title.</strong> The developer must have clear, registered title to the land. Check the CIP (Certidão de Identificação Predial) — the same document used in resale purchases — for the underlying land parcel.</li>
+<li><strong>Planning permissions.</strong> All necessary construction and development permits must be in place, not pending. Developments sold with planning approvals "in process" carry regulatory risk.</li>
+<li><strong>Construction financing.</strong> How is the construction being funded? A development financed primarily through pre-sales has more execution risk than one with committed bank financing.</li>
+<li><strong>Bank guarantee availability.</strong> Can the developer provide a bank guarantee? If not, why not?</li>
+<li><strong>Escrow arrangement.</strong> Are stage payments held in escrow by a third party (bank or notary) until milestones are met, rather than going directly to the developer?</li>
+<li><strong>Company registration and financial standing.</strong> Verify the developer's corporate status. If the developer is a special purpose vehicle (SPV), understand who the principals are and what their financial standing is.</li>
+</ul>
+<hr>
+<h2>Assessing the Developer</h2>
+<p>The most important single variable in an off-plan purchase is developer quality. Everything else — contractual protections, bank guarantees, milestone payments — is risk mitigation. Developer quality is the underlying risk itself.</p>
+<p>Questions to ask and verify:</p>
+<ul>
+<li>How many Cape Verde developments has this developer completed? (Not started — completed.)</li>
+<li>Were those developments delivered on time, or with significant delays?</li>
+<li>Are the rental schemes on completed developments performing as projected?</li>
+<li>Can you speak to existing owners in their completed developments? A developer unwilling to provide references is a warning sign.</li>
+<li>What is the developer's relationship with their construction contractor? Are they building in-house or through a general contractor?</li>
+</ul>
+<hr>
+<h2>Payment Structure: What Is Normal</h2>
+<p>Typical off-plan payment structures in Cape Verde look approximately like this:</p>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Typical Payment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reservation / CPCV signing</td>
+<td>10–20%</td>
+</tr>
+<tr>
+<td>Construction milestone 1 (foundation/structure)</td>
+<td>20–30%</td>
+</tr>
+<tr>
+<td>Construction milestone 2 (shell complete)</td>
+<td>20–30%</td>
+</tr>
+<tr>
+<td>Completion / deed signing</td>
+<td>Remaining balance</td>
+</tr>
+</tbody>
+</table>
+<p>Be cautious of structures that front-load payments heavily before construction milestones are reached, or that require large sums at reservation before contracts are signed and reviewed by your lawyer.</p>
+<hr>
+<h2>If Things Go Wrong</h2>
+<p>If a developer delays, changes specifications, or becomes insolvent, your options depend on the contractual protections you secured upfront. Without a bank guarantee, your primary recourse is legal action in Cape Verdean courts — a slow and costly process even if you ultimately prevail.</p>
+<p>Document everything throughout the purchase process: every payment, every piece of correspondence, every milestone. If problems emerge, your lawyer will need a clear paper trail.</p>
+<hr>
+<h2>The Bottom Line</h2>
+<p>Off-plan purchasing in Cape Verde is legitimate and can be financially rational — but the risk profile is materially higher than buying a completed property. The due diligence required is more extensive, the legal protections matter more, and developer quality is the central variable.</p>
+<p>Never buy off-plan without an independent Cape Verdean lawyer reviewing the full contract before you sign anything or pay any deposit. The cost of legal advice is trivial relative to the capital at risk.</p>
+<p><em>Browse completed resale properties at <a href="https://kazaverde.com">kazaverde.com</a></em></p>
+<hr>
+<h2>Related Guides</h2>
+<ul>
+<li><a href="/blog/buying-property-cape-verde-guide">How to Buy Property in Cape Verde</a> — Full process for resale and new-build purchases</li>
+<li><a href="/blog/mistakes-buying-property-cape-verde">7 Mistakes Buyers Make in Cape Verde</a> — Common errors and how to avoid them</li>
+<li><a href="/blog/cape-verde-rental-yields-realistic">Rental Yields: What to Realistically Expect</a> — Stress-testing developer yield projections</li>
+</ul>
+<hr>
+<p><em>This article is for informational purposes only and does not constitute legal or financial advice. Always consult a qualified Cape Verdean lawyer before entering any property contract.</em></p>
+`,
+  },
+  {
+    slug: "cape-verde-property-management-remotely",
+    title: "Managing Property in Cape Verde Remotely: A Guide for Foreign Owners",
+    description: "Most foreign buyers in Cape Verde do not live on the island where their property is located. Managing a property from another country adds a layer of operational complexity...",
+    date: "2026-03-24",
+    readTime: "8 min read",
+    tags: ["Management", "Investment", "Remote"],
+    content: `<p><em>Last updated: March 2026</em></p>
+<p>Most foreign buyers in Cape Verde do not live on the island where their property is located. Managing a property from another country adds a layer of operational complexity that is easy to underestimate during the buying process and painful to discover afterward.</p>
+<p>This guide covers the management options available, what each costs, the risks of remote ownership in Cape Verde's specific climate and market context, and what to look for when selecting a management arrangement.</p>
+<hr>
+<h2>Why Cape Verde Is Harder to Self-Manage Than Most Markets</h2>
+<p>Remote property ownership creates challenges in any market. Cape Verde has several factors that amplify them:</p>
+<p><strong>Climate.</strong> The tropical maritime environment — consistent heat, salt air, periodic heavy rain, and high humidity — accelerates deterioration faster than most European climates. Paint, plaster, metalwork, electrical systems, appliances, and outdoor surfaces all degrade faster. A property left unvisited for six months in Cape Verde will show more wear than a comparable property in northern Europe left for the same period.</p>
+<p><strong>Distance and logistics.</strong> Physical distance from the islands means that minor issues (a leaking pipe, a broken appliance, an air conditioning unit failure) that could be resolved in a day in your home country can take weeks if there is no competent local party managing the response. Contractors and tradespeople need to be found, scheduled, and supervised — all remotely.</p>
+<p><strong>Language.</strong> While many people in the tourism sector speak English, operational property management — communicating with service contractors, local utility providers, municipal offices — is conducted in Cape Verdean Creole and Portuguese. Non-speakers are dependent on intermediaries for almost all operational communication.</p>
+<p><strong>Market fragmentation.</strong> There is no MLS-style market infrastructure, no standardized property management licensing, and relatively few established property management firms with a track record. Vetting a management provider requires more effort than in mature property markets.</p>
+<hr>
+<h2>Management Options</h2>
+<h3>Option 1: Resort/Hotel Rental Scheme</h3>
+<p>The most common arrangement for foreign buyers in resort developments on Sal and Boa Vista. The development's management company handles everything — guest marketing and bookings, check-in, cleaning, maintenance, and minor repairs — in exchange for a percentage of gross rental income.</p>
+<p><strong>Management fee:</strong> Typically 25–35% of gross rental income. Some schemes structure this differently (fixed fee plus percentage, or tiered based on occupancy), so read the contract carefully.</p>
+<p><strong>What's covered:</strong> Day-to-day operational management, guest services, routine cleaning and maintenance. Usually covers minor repairs below a threshold (often €50–100 per incident). Major repairs, appliance replacements, and capital expenditure are typically the owner's responsibility.</p>
+<p><strong>What's not covered:</strong> Owners typically remain responsible for annual community/service charges, insurance, their share of any major building repairs approved by the owners' association, and periodic refurbishment cycles. In some schemes, owners must pay for an approved furniture package and meet refurbishment standards at defined intervals.</p>
+<p><strong>Practical reality:</strong> The quality of hotel rental schemes varies enormously between developments and management companies. The same headline fee structure can produce vastly different outcomes depending on the operator's occupancy rates, booking platform relationships, and operational standards. Before buying into a scheme, investigate the specific operator's performance, not just the scheme's structure.</p>
+<h3>Option 2: Independent Property Manager</h3>
+<p>Outside of resort schemes, individual property managers operate on Sal, Boa Vista, and Santiago. They handle a mix of short-term rental management, property caretaking, and maintenance coordination.</p>
+<p><strong>Typical fee:</strong> 15–25% of rental income for short-term rental management, or a flat monthly fee (€50–150/month range) for caretaking without active rental management. Many offer combined packages.</p>
+<p><strong>Advantages over resort schemes:</strong> More flexibility in pricing, listing platforms, and guest selection. You're not locked into a single operator's distribution network. You can list on Airbnb, Booking.com, and other platforms with the manager handling operations.</p>
+<p><strong>Disadvantages:</strong> Vetting is harder. The sector is informal — there is no licensing requirement, no industry body, and no standard contract format. A good independent manager is valuable; a poor one can be costly and difficult to exit.</p>
+<h3>Option 3: Trusted Local Contact</h3>
+<p>Some owners, particularly those who visit regularly and have established local networks, manage their properties through a trusted local contact — a neighbor, a Cape Verdean friend, or a local professional who checks on the property and handles minor issues.</p>
+<p>This works when the relationship and trust are solid. It is not a substitute for a professional management arrangement if you are trying to generate rental income. It is also fragile — personal circumstances change, and a dependency on a single individual with no formal arrangement creates operational risk.</p>
+<hr>
+<h2>Costs of Remote Ownership</h2>
+<p>Remote ownership costs beyond the management fee itself:</p>
+<table>
+<thead>
+<tr>
+<th>Cost</th>
+<th>Typical Range</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Property management / rental scheme fee</td>
+<td>15–35% of gross rental income</td>
+</tr>
+<tr>
+<td>Annual community / service charge</td>
+<td>€600–2,000+</td>
+</tr>
+<tr>
+<td>Annual IPI property tax (from Jan 2026)</td>
+<td>0.1% of assessed value</td>
+</tr>
+<tr>
+<td>Building insurance (owner's portion)</td>
+<td>€150–400/year</td>
+</tr>
+<tr>
+<td>Contents insurance</td>
+<td>€100–300/year</td>
+</tr>
+<tr>
+<td>Maintenance reserve</td>
+<td>€500–1,500/year (climate-driven)</td>
+</tr>
+<tr>
+<td>Periodic refurbishment</td>
+<td>€2,000–5,000+ every 3–5 years</td>
+</tr>
+</tbody>
+</table>
+<p>Many rental yield calculations provided by developers or agents omit several of these cost lines, which inflates the apparent net yield. Build all of them into your model before assessing whether the investment makes sense. The <a href="/blog/cape-verde-rental-yields-realistic">rental yield guide</a> covers this in detail.</p>
+<hr>
+<h2>Selecting a Management Company</h2>
+<p>Whether you're evaluating a resort scheme operator or an independent property manager, the due diligence questions are similar:</p>
+<ul>
+<li><strong>How many properties do they currently manage on this island?</strong> A manager handling 3 properties has a different capacity and reliability profile than one managing 80.</li>
+<li><strong>What is their current occupancy rate for comparable properties?</strong> Ask for verified data, not projections. If they can't or won't provide occupancy data for existing properties they manage, that's a warning.</li>
+<li><strong>Can you speak to current owners they manage?</strong> References should be from owners with similar property types to yours. Ask owners directly: how responsive is the manager, what problems have occurred, would you use them again?</li>
+<li><strong>What is the contract exit mechanism?</strong> How much notice is required to terminate the arrangement? Are there penalties for early exit? What happens to bookings already made if you switch managers?</li>
+<li><strong>How are maintenance decisions and costs communicated?</strong> Who approves expenditure above a threshold? How quickly do you receive notifications of issues? How are photos and condition reports shared?</li>
+<li><strong>What accounting and reporting do you receive?</strong> Monthly statements showing income, expenditure, and net remittance are a minimum standard. Some operators provide owner portals with real-time visibility; others send PDF statements by email. Know what you're getting.</li>
+</ul>
+<hr>
+<h2>What to Have in Place Before Completion</h2>
+<p>Do not wait until after you take ownership to arrange management. Have the management structure agreed and operational from day one:</p>
+<ul>
+<li>Signed management contract with clear fee structure, scope, and exit terms</li>
+<li>Local bank account for receiving rental income and making property-related payments</li>
+<li>Buildings and contents insurance confirmed</li>
+<li>Key management procedure established (who has keys, how guest access works)</li>
+<li>Utility accounts transferred into your name (electricity, water, internet)</li>
+<li>Community fees direct debit or standing payment arranged</li>
+</ul>
+<p>If you're buying off-plan, agree the management arrangement before construction completes so it is operational from the handover date.</p>
+<hr>
+<h2>Visiting the Property</h2>
+<p>Even with a well-run management arrangement in place, plan to visit the property at least once a year. This gives you a current-state view that no photo or report fully replicates, allows you to assess whether the management company's quality matches their reporting, lets you address accumulated maintenance issues in person, and maintains your relationship with the local management team.</p>
+<p>The personal use provision in most rental schemes (typically 4–6 weeks per year) serves both holiday and inspection purposes. Use it.</p>
+<hr>
+<h2>Related Guides</h2>
+<ul>
+<li><a href="/blog/cape-verde-rental-yields-realistic">Rental Yields: What to Realistically Expect</a> — Full cost model for investment properties</li>
+<li><a href="/blog/buying-property-cape-verde-guide">How to Buy Property in Cape Verde</a> — End-to-end buying process</li>
+<li><a href="/blog/mistakes-buying-property-cape-verde">7 Mistakes Buyers Make in Cape Verde</a> — Including management-related errors</li>
+</ul>
+<hr>
+<p><em>This article is for informational purposes only and does not constitute financial or legal advice. Always conduct your own due diligence and consult qualified local professionals.</em></p>
+`,
+  },
+  {
+    slug: "financing-property-cape-verde",
+    title: "How to Finance a Property Purchase in Cape Verde as a Foreign Buyer",
+    description: "Cash transactions dominate the foreign buyer market in Cape Verde. Local mortgage options exist but are expensive and difficult to access as a non-resident. Understanding your...",
+    date: "2026-03-31",
+    readTime: "7 min read",
+    tags: ["Financing", "Mortgage", "Buying"],
+    content: `<p><em>Last updated: March 2026</em></p>
+<p>Cash transactions dominate the foreign buyer market in Cape Verde. Local mortgage options exist but are expensive and difficult to access as a non-resident. Understanding your financing options before you start searching saves time and prevents you from committing to a purchase your funding structure can't support.</p>
+<hr>
+<h2>Why Most Foreign Buyers Pay Cash</h2>
+<p>The combination of high local interest rates, restrictive lending criteria for non-residents, and slow loan processing means that the majority of foreign buyers in Cape Verde bring their own capital rather than seeking local financing. This isn't a preference — it's a practical outcome of the market conditions.</p>
+<p>If you're not in a position to purchase with cash or near-cash, understanding the alternatives is important before you start the buying process.</p>
+<hr>
+<h2>Cape Verdean Bank Mortgages</h2>
+<p>Local mortgages from Cape Verdean banks are technically available to foreign nationals, but the conditions make them unattractive for most buyers.</p>
+<h3>Current conditions (2026)</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Typical Range</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Interest rate</td>
+<td>6–9% per annum</td>
+</tr>
+<tr>
+<td>Loan-to-value (LTV)</td>
+<td>60–70% maximum (30–40% deposit required)</td>
+</tr>
+<tr>
+<td>Maximum loan term</td>
+<td>20–25 years</td>
+</tr>
+<tr>
+<td>Currency</td>
+<td>Cape Verdean Escudo (CVE), pegged to EUR at 110.265</td>
+</tr>
+<tr>
+<td>Income documentation</td>
+<td>Proof of income, typically requiring bank statements and tax returns from country of residence</td>
+</tr>
+<tr>
+<td>Processing time</td>
+<td>4–12 weeks from application to approval</td>
+</tr>
+</tbody>
+</table>
+<h3>Key considerations</h3>
+<p><strong>Interest rate premium.</strong> At 6–9%, local borrowing costs are significantly higher than mortgage rates available in most European countries for comparable properties. For a €150,000 mortgage at 7% over 20 years, the total interest cost approaches €125,000 — more than 80% of the original loan principal. The cost of local debt materially changes the investment math.</p>
+<p><strong>Loan-to-value limits.</strong> A maximum LTV of 60–70% means you need 30–40% as a deposit, on top of the 5–7% transaction costs (ITI transfer tax, notary, registration, legal fees). For a €150,000 property, total capital required before financing could be €65,000–€75,000 in cash (deposit + transaction costs), with the remaining €90,000–€105,000 financed.</p>
+<p><strong>Non-resident complexity.</strong> Cape Verdean banks vary in their willingness to lend to non-residents. Some require proof of an established financial relationship with a Cape Verdean bank before processing a mortgage application. Documentation requirements are more extensive for non-residents and the process can be slow.</p>
+<p><strong>Currency peg stability.</strong> The CVE has been pegged to the euro since 1998, maintained through a support agreement with Portugal, which gives it more stability than most small-island currencies. This reduces currency risk for European buyers, but the peg is a policy commitment, not a fixed mechanism, and should be factored into any long-term planning.</p>
+<h3>Which banks offer mortgages to foreigners</h3>
+<p>Banco Comercial do Atlântico (BCA) and Caixa Económica de Cabo Verde (CECV) are the two banks most commonly used by foreign property buyers. Both require you to open a Cape Verdean bank account — which you need anyway as part of the buying process — before processing a mortgage application. Consult your lawyer for current lending criteria, as conditions change.</p>
+<hr>
+<h2>Financing Through Your Home Country</h2>
+<p>For most European buyers, releasing capital from assets at home is more cost-effective than borrowing locally in Cape Verde.</p>
+<h3>Home equity release</h3>
+<p>If you own property in your home country with significant equity, a remortgage, equity release, or home equity loan may provide funds at rates materially lower than a Cape Verdean bank mortgage — particularly for buyers in countries with current mortgage rates in the 3–5% range. The Cape Verdean property serves as the use case for the capital; the loan is secured against your home-country asset.</p>
+<p>The practical advantage: lower rates, familiar lending environment, faster processing, and no dependency on Cape Verdean bank criteria. The practical risk: your home-country property is the collateral, not the Cape Verde property.</p>
+<h3>Remortgage or equity release</h3>
+<p>Similar to the above. If your home property is owned outright or has a low outstanding mortgage, a full remortgage may release a lump sum at current domestic rates. This is particularly common among UK buyers accessing equity built up over years of property appreciation.</p>
+<h3>Investment portfolio liquidity</h3>
+<p>Some buyers liquidate investment assets (funds, bonds, equities) to fund a Cape Verde purchase, particularly if portfolio returns are modest and a tangible asset with rental income is the preferred allocation. The tax implications of selling investment assets will vary by jurisdiction and should be reviewed with a financial adviser before acting.</p>
+<hr>
+<h2>Developer Payment Plans (Off-Plan)</h2>
+<p>For off-plan purchases specifically, developer payment plans effectively function as short-term financing. Stage payments spread over the construction period (typically 18–36 months) mean you are not required to commit the full purchase price at signing.</p>
+<p>A typical structure might require 20% at contract signing, 30–40% across construction milestones, and the balance at completion. For buyers who have the full capital available, this staged commitment can free up liquidity during the construction period. For buyers who do not yet have the full capital, it creates a delivery obligation — you must have the full balance ready by completion, regardless of whether construction ran on schedule.</p>
+<p>Read the <a href="/blog/off-plan-property-cape-verde-risks">off-plan risks guide</a> before treating a payment plan as a financing solution.</p>
+<hr>
+<h2>What to Have in Place Before Making an Offer</h2>
+<p>Regardless of your financing route, have the following resolved before making any offer or paying any deposit:</p>
+<ul>
+<li><strong>Proof of funds or financing commitment.</strong> Know where the full purchase price is coming from. If you're releasing equity from home, have that process underway and a clear timeline for funds availability. Don't make an offer contingent on financing you haven't yet secured.</li>
+<li><strong>Cape Verdean bank account open.</strong> You need this for the transaction regardless of financing source. Open it early. BCA and CECV are the standard options for foreign buyers.</li>
+<li><strong>NIF (tax number) obtained.</strong> You cannot complete a purchase without it. Get it as early as possible. See the <a href="/blog/buying-property-cape-verde-guide">buying guide</a> for the process.</li>
+<li><strong>Transaction cost budget confirmed.</strong> Budget 5–7% of the property value for transaction costs: ITI transfer tax (3%), notary fees (~€420), land registry registration (€200–300), stamp duty (0.8%), lawyer fees (€500–1,500). These are cash costs at completion that cannot be financed.</li>
+<li><strong>Foreign exchange plan.</strong> If you are converting from a non-euro currency, account for exchange rate exposure. The CVE is pegged to the euro, so the relevant rate is your home currency against the euro. Consider whether to transfer funds progressively or all at once.</li>
+</ul>
+<hr>
+<h2>The Investment Case With and Without Leverage</h2>
+<p>Whether leverage improves the investment case depends on the cost of borrowing relative to your expected net yield. At local Cape Verdean mortgage rates of 6–9%, leverage is only accretive if your net rental yield exceeds your borrowing cost — which, given realistic net yield expectations of 3–5% for most properties, is not the case.</p>
+<p>The typical Cape Verde investment case is therefore not built on leverage. It rests on the combination of net rental income, capital appreciation, personal use value, and (for some buyers) the residency pathway through the <a href="/blog/cape-verde-green-card-residency">Green Card program</a>. Model your returns without leverage as the base case, and treat any financing only as a cashflow management tool, not a return amplifier.</p>
+<hr>
+<h2>Related Guides</h2>
+<ul>
+<li><a href="/blog/buying-property-cape-verde-guide">How to Buy Property in Cape Verde</a> — Full buying process including cost breakdown</li>
+<li><a href="/blog/cape-verde-rental-yields-realistic">Rental Yields: What to Realistically Expect</a> — Net yield analysis for investment properties</li>
+<li><a href="/blog/cape-verde-property-tax-reform-2026">2026 Property Tax Reform</a> — Transaction and annual tax costs under the new system</li>
+</ul>
+<hr>
+<p><em>This article is for informational purposes only and does not constitute financial or legal advice. Lending conditions and tax rules change. Always consult qualified professionals before making financing decisions.</em></p>
+`,
+  },
+  {
+    slug: "boa-vista-property-guide",
+    title: "Boa Vista Property Guide: What Buyers Need to Know in 2026",
+    description: "Boa Vista is Cape Verde's second major tourism island and its second most active property market. It's often positioned as the growth alternative to Sal — lower entry prices...",
+    date: "2026-04-07",
+    readTime: "9 min read",
+    tags: ["Boa Vista", "Islands", "Guide"],
+    content: `<p><em>Last updated: April 2026</em></p>
+<p>Boa Vista is Cape Verde's second major tourism island and its second most active property market. It's often positioned as the growth alternative to Sal — lower entry prices, developing infrastructure, and the suggestion that it is today where Sal was a decade ago. That framing is partially accurate and partially marketing. This guide separates the two.</p>
+<hr>
+<h2>Island Overview</h2>
+<p>Boa Vista is the third largest island in Cape Verde by area and has its own international airport — Aristides Pereira International Airport, located near Rabil — with direct flights from several European countries, primarily the UK, Germany, Portugal, and the Netherlands. It covers roughly 620 square kilometers and has a population of around 15,000, heavily concentrated in the main town of Sal Rei.</p>
+<p>The island is characterized by wide, largely empty beaches, extensive sand dunes, and a flat, semi-arid interior. The natural landscape is one of its strongest assets — several beaches are among the finest in the archipelago — but the infrastructure outside resort zones remains limited relative to Sal.</p>
+<p>Tourism is the primary economic driver. Outside the resort areas, the local economy is small and services are limited. This context matters for buyers assessing the island for either residential use or investment.</p>
+<hr>
+<h2>Key Areas for Property Buyers</h2>
+<h3>Sal Rei</h3>
+<p>The main town and commercial center of Boa Vista. Sal Rei has the island's most functional daily infrastructure — a market, restaurants, banks, pharmacies, and municipal services. It sits on the western coast and has a waterfront with sea views.</p>
+<p>Property in Sal Rei is a mix of local residential housing, colonial-era buildings (some with renovation potential), and newer development. It's the most livable option for buyers who want to actually use the island as a base rather than purely as an investment. Prices are generally lower than comparable properties in resort complexes.</p>
+<h3>Northern Resort Zone (Chave Beach area)</h3>
+<p>The primary concentration of resort developments is in the north of the island, centered around Praia de Chave — a long, undeveloped beach consistently rated as one of Cape Verde's finest. Several large resort and hotel-apartment complexes have been built here or are under development.</p>
+<p>This is where most foreign investor activity is concentrated. Properties are predominantly apartments and hotel units within managed complexes, with the associated rental scheme model. Prices and availability vary significantly by development, age, and quality.</p>
+<h3>Santa Monica and Southeast</h3>
+<p>The southeast of the island — including the dramatic Viana Desert dune fields and the beach at Santa Monica — is largely undeveloped for property. Some land plots exist, but infrastructure is extremely limited. This is a long-term land speculation area rather than an active investment market.</p>
+<hr>
+<h2>Property Market</h2>
+<h3>Price levels</h3>
+<p>Boa Vista properties are generally 15–30% cheaper than comparable properties on Sal, though this gap narrows for premium beachfront or ocean-view units in high-quality developments. Indicative ranges:</p>
+<table>
+<thead>
+<tr>
+<th>Property Type</th>
+<th>Typical Price Range</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Studio / 1-bed apartment (resort complex)</td>
+<td>€70,000–€110,000</td>
+</tr>
+<tr>
+<td>2-bed apartment (resort complex)</td>
+<td>€110,000–€170,000</td>
+</tr>
+<tr>
+<td>Villa / standalone house</td>
+<td>€180,000–€400,000+</td>
+</tr>
+<tr>
+<td>Townhouse (Sal Rei)</td>
+<td>€60,000–€150,000</td>
+</tr>
+</tbody>
+</table>
+<p>These are indicative figures from current listings. Individual properties vary based on location, condition, view, and the quality of the development's management and rental scheme. <a href="/listings/boa-vista">Browse current Boa Vista listings</a> for actual market data.</p>
+<h3>Market activity</h3>
+<p>The Boa Vista market is active but smaller than Sal's. There is a resale market, but it is thinner — fewer comparable sales, longer time-on-market for some properties, and fewer agents with strong international marketing reach than on Sal. Liquidity is a real consideration if your investment horizon is short or uncertain.</p>
+<p>New development activity has continued in recent years, adding supply in the northern resort zone. This expansion is a double-edged signal: it reflects developer confidence in the market, but it also adds competitive supply for both rental and resale.</p>
+<hr>
+<h2>Rental Market</h2>
+<p>Boa Vista's rental market is growing but demonstrably less mature than Sal's. The key variables:</p>
+<p><strong>Flight access:</strong> The number of direct European routes to Boa Vista is growing but remains smaller than Sal's. More routes mean more potential guests; fewer routes mean more dependence on the routes that exist. Any significant reduction in a major airline's Boa Vista operations would meaningfully affect occupancy rates.</p>
+<p><strong>Seasonality:</strong> European winter sun demand runs October to April, which is strong. Summer occupancy (June–September) is lower than on Sal, as Boa Vista has less established tourism infrastructure to attract non-package visitors. The seasonal gap is more pronounced than on Sal.</p>
+<p><strong>Management quality variance:</strong> Because the market is smaller and newer, the range in management company quality is wide. A well-run resort with active European tour operator relationships can achieve solid occupancy; a poorly managed one in the same development cluster will significantly underperform.</p>
+<p>Gross yields quoted by developers and agents on Boa Vista follow a similar pattern to Sal: headline figures of 5–8% gross, with realistic net yields after management fees, service charges, maintenance, and taxes in the 3–5% range for well-managed properties. The <a href="/blog/cape-verde-rental-yields-realistic">rental yield guide</a> covers the full cost model.</p>
+<hr>
+<h2>Infrastructure Reality Check</h2>
+<p>The infrastructure gap between Boa Vista and Sal is relevant to both lifestyle buyers and investors:</p>
+<p><strong>Restaurants and services:</strong> Sal Rei has a reasonable range of restaurants and daily services. Outside the town and established resort zones, options are limited. Buyers who expect the variety and density of Santa Maria (Sal) will be disappointed with what's currently available on Boa Vista.</p>
+<p><strong>Healthcare:</strong> Basic medical facilities exist, but for anything beyond routine care, the nearest comprehensive hospital is on Santiago. This is a practical reality for buyers considering the island for extended stays.</p>
+<p><strong>Internet and utilities:</strong> Connectivity has improved significantly in recent years but remains less reliable in some areas than in Sal's resort zones. Verify specifically for any property you're considering purchasing.</p>
+<p><strong>Construction and development:</strong> Active development means some areas of the island are in a transition state — a current view from a property may change as neighboring developments are built. Check what is planned or under construction around any specific property you're considering.</p>
+<hr>
+<h2>The "Next Sal" Question</h2>
+<p>The framing of Boa Vista as "the next Sal" has been used in property marketing for at least fifteen years. It is partially accurate (the island has developed significantly and tourism has grown) and partially an indefinitely deferrable claim. A few honest observations:</p>
+<ul>
+<li>Boa Vista's tourism growth is real and has continued upward. Direct flight connections have expanded. New hotel and resort capacity has been built and occupied.</li>
+<li>However, Sal has also continued to develop, so the gap in tourism infrastructure hasn't closed as dramatically as the "next Sal" framing implies.</li>
+<li>The capital appreciation case for Boa Vista is plausible but involves more uncertainty than a Sal investment at equivalent quality and location. Boa Vista buyers are making a more explicit bet on continued tourism growth than Sal buyers are.</li>
+<li>Buyers who visited Boa Vista five years ago and are returning will find meaningful improvements. Buyers expecting Sal-level infrastructure today will find a gap that remains real.</li>
+</ul>
+<hr>
+<h2>Who Boa Vista Suits</h2>
+<ul>
+<li>Buyers who want Sal-style beach island investment at a lower entry price and are comfortable with a less mature market</li>
+<li>Buyers with a longer investment horizon (5–10 years) who are betting on continued tourism infrastructure development</li>
+<li>Buyers who have visited the island and are specifically drawn to its natural landscape and quieter atmosphere relative to Sal</li>
+<li>Green Card applicants: Boa Vista's classification should be verified with a lawyer — the required investment threshold (€80,000 vs €120,000) may differ by location</li>
+</ul>
+<p>Boa Vista is not the right choice for buyers who need high liquidity, who want Sal's current level of infrastructure today, or who have short exit timelines.</p>
+<hr>
+<h2>Due Diligence Points Specific to Boa Vista</h2>
+<ul>
+<li><strong>Development history check.</strong> Boa Vista has some stalled or incomplete developments from the pre-2008 boom. Verify that any development you're considering was completed and is currently operating, not merely presented as such.</li>
+<li><strong>Management company track record.</strong> Given the wider quality variance, checking the specific management company's occupancy and operational record is more important here than on Sal.</li>
+<li><strong>Surrounding development plans.</strong> Understand what is planned or under construction adjacent to any property you're considering. Views and access can change.</li>
+<li><strong>Rental scheme exit terms.</strong> If the rental scheme is the primary investment case, understand the exit terms carefully — both your ability to exit the scheme and the resale market if you need to sell the property.</li>
+</ul>
+<hr>
+<h2>Browsing Current Listings</h2>
+<p><a href="/listings/boa-vista">Browse current Boa Vista properties for sale</a> in KazaVerde's index. All listings are source-linked with normalized euro pricing.</p>
+<hr>
+<h2>Related Guides</h2>
+<ul>
+<li><a href="/blog/which-cape-verde-island-property">Which Cape Verde Island Should You Buy On?</a> — Full six-island comparison including Boa Vista</li>
+<li><a href="/blog/sal-vs-santiago-property">Sal vs Santiago</a> — The two alternative major markets compared</li>
+<li><a href="/blog/cape-verde-rental-yields-realistic">Rental Yields: What to Realistically Expect</a> — Net yield model for resort investments</li>
+<li><a href="/blog/buying-property-cape-verde-guide">How to Buy Property in Cape Verde</a> — Full buying process for foreign buyers</li>
+</ul>
+<hr>
+<p><em>This article is for informational purposes only and does not constitute financial or legal advice. Market conditions change. Always conduct your own research and consult qualified local professionals before investing.</em></p>
+`,
+  },
 ];
 
 export function getArticleBySlug(slug: string): BlogArticle | undefined {
