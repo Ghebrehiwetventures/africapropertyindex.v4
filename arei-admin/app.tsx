@@ -2554,7 +2554,7 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen w-screen overflow-hidden">
       {/* ── Mobile backdrop ──────────────────────── */}
       {sidebarOpen && (
         <div
