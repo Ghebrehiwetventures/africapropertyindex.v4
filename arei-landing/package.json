@@ -6,5 +6,8 @@
   "scripts": {
     "build": "mkdir -p dist && cp index.html arei-og.png dist/",
     "dev": "python3 -m http.server 4321"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5"
   }
 }
