@@ -428,10 +428,13 @@ nav{
   border-bottom:var(--bp-stroke) dashed var(--bp-line-soft);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.transform-raw .xfm-item{color:var(--bp-muted)}
+/* Raw input: right-aligned — items flow toward the engine */
+.transform-raw .transform-col-label{text-align:right}
+.transform-raw .xfm-item{color:var(--bp-muted);text-align:right}
 .transform-raw .xfm-item:nth-child(2n){color:var(--bp-text);opacity:.75}
 .transform-raw .xfm-item:nth-child(3n){letter-spacing:.03em}
 .transform-raw .xfm-item:nth-child(4n){opacity:.6}
+/* Structured output: left-aligned — items flow away from the engine */
 .transform-clean .xfm-item{
   color:var(--bp-text);font-variant-numeric:tabular-nums;
 }
@@ -441,13 +444,13 @@ nav{
   display:flex;align-items:center;justify-content:center;
   position:relative;
 }
-/* Flow indicator lines — dashed connectors from engine node to each stream */
+/* Flow indicator lines — dashed connectors from engine node to each stream edge */
 .transform-engine::before,.transform-engine::after{
   content:'';position:absolute;top:50%;height:1px;
   border-top:var(--bp-stroke) dashed var(--bp-line);
 }
-.transform-engine::before{left:0;right:calc(50% + 48px)}
-.transform-engine::after{right:0;left:calc(50% + 48px)}
+.transform-engine::before{left:-18px;right:calc(50% + 48px)}
+.transform-engine::after{right:-18px;left:calc(50% + 48px)}
 
 .log-footer{
   display:flex;justify-content:space-between;
