@@ -62,6 +62,7 @@ jobs:
           DRY_RUN: "1"
           DETAIL_ENRICH: "1"
           DETAIL_ENRICH_LIMIT: "10"
+          DEBUG_GENERIC: "1"
         run: npx ts-node --transpile-only core/ingestMarket.ts
 
       - name: Shadow Report (generic pipeline)
