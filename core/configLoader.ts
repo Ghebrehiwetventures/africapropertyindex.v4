@@ -8,7 +8,7 @@ import { SourceStatus } from "./status";
 // ============================================
 
 export type FetchMethod = "http" | "headless";
-export type PaginationType = "query_param" | "next_link" | "offset" | "cursor" | "path_segment" | "click_next" | "infinite_scroll" | "ajax_post" | "auto" | "none";
+export type PaginationType = "query_param" | "next_link" | "offset" | "cursor" | "path_segment" | "click_next" | "infinite_scroll" | "ajax_post" | "json_api" | "auto" | "none";
 export type StopCondition = "empty_listings" | "no_next_link" | "max_items" | "max_pages" | "total_from_page";
 export type DetailPolicy = "always" | "on_violation" | "never";
 
@@ -29,6 +29,45 @@ export interface PaginationConfig {
   html_field?: string;
   has_more_field?: string;
   no_result_value?: string;
+  /** json_api pagination (structured JSON APIs) */
+  method?: "GET" | "POST";
+  body?: Record<string, unknown>;
+  query?: Record<string, string>;
+  page_size?: number;
+  page_mode?: "skip" | "page";
+  page_field?: string;
+  size_field?: string;
+  items_path?: string;
+  count_path?: string;
+}
+
+/** Array-pick spec for json_api item mapping */
+export interface ItemMapArrayPick {
+  array: string;
+  field: string;
+  match_field?: string;
+  match_value?: string | number | boolean;
+  template?: string;
+  limit?: number;
+  all?: boolean;
+}
+
+/** Field mapping for json_api sources */
+export interface ItemMapConfig {
+  content_base?: string;
+  id?: string;
+  title?: string;
+  title_template?: string;
+  price?: string;
+  bedrooms?: string;
+  bathrooms?: string;
+  area_sqm?: string;
+  location?: string;
+  location_template?: string;
+  description?: string | ItemMapArrayPick;
+  detail_url?: string | ItemMapArrayPick;
+  images?: ItemMapArrayPick;
+  skip_if?: Array<{ field: string; equals: unknown }>;
 }
 
 export interface PriceFormatConfig {
@@ -64,7 +103,7 @@ export interface DetailConfig {
 }
 
 export interface SelectorsConfig {
-  listing: string;
+  listing?: string;
   link?: string;
   title?: string;
   price?: string;
@@ -103,7 +142,8 @@ export interface SourceConfig {
   id_prefix?: string;
   detail?: DetailConfig;
 
-  selectors: SelectorsConfig;
+  selectors?: SelectorsConfig;
+  item_map?: ItemMapConfig;
 }
 
 export interface SourcesConfig {
