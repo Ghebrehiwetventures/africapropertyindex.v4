@@ -27,7 +27,7 @@ import {
 // CONFIG TYPES (matches sources.yml schema)
 // ============================================
 
-export type PaginationType = "query_param" | "next_link" | "offset" | "cursor" | "click_next" | "infinite_scroll" | "path_segment" | "ajax_post" | "auto" | "none";
+export type PaginationType = "query_param" | "next_link" | "offset" | "cursor" | "click_next" | "infinite_scroll" | "path_segment" | "ajax_post" | "json_api" | "auto" | "none";
 export type StopCondition = "empty_listings" | "no_next_link" | "max_items" | "max_pages" | "total_from_page";
 export type FetchMethod = "http" | "headless";
 
@@ -55,11 +55,82 @@ export interface PaginationConfig {
   html_field?: string;
   has_more_field?: string;
   no_result_value?: string;
+
+  // ============================================
+  // JSON API pagination (type: json_api)
+  // Generic support for POST/GET JSON APIs (Azure Search, OData, Elastic, REST)
+  // ============================================
+  /** HTTP method for json_api (default: POST) */
+  method?: "GET" | "POST";
+  /** Request body template (POST). Pagination params injected at runtime. */
+  body?: Record<string, unknown>;
+  /** Extra query params (GET). Pagination params injected at runtime. */
+  query?: Record<string, string>;
+  /** Items per request (default: 20) */
+  page_size?: number;
+  /** How to advance pages: skip = body[page_param] = (page-1)*page_size, page = body[page_param] = pageNum */
+  page_mode?: "skip" | "page";
+  /** Body/query field name for page offset or page number (default: "skip" for skip mode, "page" for page mode) */
+  page_field?: string;
+  /** Body/query field name for page size (default: "top" for skip mode, "per_page" for page mode) */
+  size_field?: string;
+  /** Dot-path to items array in response (e.g. "value", "data.results") */
+  items_path?: string;
+  /** Dot-path to total count in response (optional, for stop condition) */
+  count_path?: string;
+}
+
+// ============================================
+// ITEM MAP (for type: json_api)
+// Field-level mapping from JSON item → GenericParsedListing
+// ============================================
+
+export interface ItemMapArrayPick {
+  /** Dot-path to array field on item */
+  array: string;
+  /** Field name on each array element to extract */
+  field: string;
+  /** Optional filter: pick element whose match_field equals match_value */
+  match_field?: string;
+  match_value?: string | number | boolean;
+  /** Optional template applied to the extracted value, with `{VALUE}` placeholder */
+  template?: string;
+  /** For image arrays: cap number of entries returned */
+  limit?: number;
+  /** If true, return all entries (array); otherwise return first match (scalar) */
+  all?: boolean;
+}
+
+export interface ItemMapConfig {
+  /** Optional base path inside each search hit (e.g. "content" for Azure Search docs) */
+  content_base?: string;
+  /** Dot-path to unique ID field */
+  id?: string;
+  /** Dot-path to title OR template string with {field} placeholders */
+  title?: string;
+  title_template?: string;
+  /** Dot-path to numeric price */
+  price?: string;
+  /** Dot-paths for optional scalars */
+  bedrooms?: string;
+  bathrooms?: string;
+  area_sqm?: string;
+  /** Location from single path OR template */
+  location?: string;
+  location_template?: string;
+  /** Description from path or array-pick by language */
+  description?: string | ItemMapArrayPick;
+  /** Detail URL from path or array-pick */
+  detail_url?: string | ItemMapArrayPick;
+  /** Image URLs from array-pick */
+  images?: ItemMapArrayPick;
+  /** Optional hide rules — items matching any rule are dropped */
+  skip_if?: Array<{ field: string; equals: unknown }>;
 }
 
 export interface SelectorsConfig {
-  /** Container for each listing item */
-  listing: string;
+  /** Container for each listing item (required for HTML sources; unused for json_api) */
+  listing?: string;
   /** Link to detail page (relative to listing container) */
   link?: string;
   /** Title element */
@@ -117,6 +188,9 @@ export interface SourceFetchConfig {
 
   /** CMS type for selector fallbacks (auto-detected if not specified) */
   cms_type?: CMSType;
+
+  /** Item field mapping (required when pagination.type === "json_api") */
+  item_map?: ItemMapConfig;
 }
 
 // ============================================
@@ -380,6 +454,220 @@ function parsePrice(priceText: string, config?: SourceFetchConfig["price_format"
   // Apply multiplier if prices shown in thousands
   const multiplier = config?.multiplier || 1;
   return num * multiplier;
+}
+
+// ============================================
+// JSON PATH HELPERS (for type: json_api)
+// ============================================
+
+/** Walk a dot-path (e.g. "value", "data.results", "content.City") safely. */
+function getByPath(obj: unknown, path: string | undefined): unknown {
+  if (!path) return undefined;
+  let cur: unknown = obj;
+  for (const seg of path.split(".")) {
+    if (cur == null) return undefined;
+    cur = (cur as Record<string, unknown>)[seg];
+  }
+  return cur;
+}
+
+/** Expand "{field}" placeholders against a scope, skipping empty values. */
+function renderTemplate(template: string, scope: Record<string, unknown>): string {
+  return template.replace(/\{([\w.]+)\}/g, (_, key: string) => {
+    const val = getByPath(scope, key);
+    return val == null ? "" : String(val);
+  }).replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Pick value(s) from an array field on an item using an ItemMapArrayPick spec.
+ * Returns either a scalar (first match) or array of values (when all: true).
+ */
+function pickFromArray(
+  item: Record<string, unknown>,
+  pick: ItemMapArrayPick,
+): string | string[] | undefined {
+  const arr = getByPath(item, pick.array);
+  if (!Array.isArray(arr)) return undefined;
+
+  const applyTemplate = (raw: unknown): string | undefined => {
+    if (raw == null) return undefined;
+    const str = String(raw);
+    if (!str) return undefined;
+    if (!pick.template) return str;
+    return pick.template.replace(/\{VALUE\}/g, str);
+  };
+
+  const extract = (el: unknown): string | undefined => {
+    if (el == null || typeof el !== "object") return undefined;
+    return applyTemplate((el as Record<string, unknown>)[pick.field]);
+  };
+
+  if (pick.all) {
+    const results: string[] = [];
+    for (const el of arr) {
+      const v = extract(el);
+      if (v) results.push(v);
+      if (pick.limit && results.length >= pick.limit) break;
+    }
+    return results;
+  }
+
+  for (const el of arr) {
+    if (pick.match_field !== undefined) {
+      const mv = (el as Record<string, unknown>)[pick.match_field];
+      if (mv !== pick.match_value) continue;
+    }
+    const v = extract(el);
+    if (v) return v;
+  }
+  return undefined;
+}
+
+/**
+ * Map a single JSON item into a GenericParsedListing using config.item_map.
+ * Returns null if the item should be skipped (unmappable or matches skip_if).
+ */
+function mapJsonItem(
+  rawItem: unknown,
+  config: SourceFetchConfig,
+  now: Date,
+): GenericParsedListing | null {
+  const map = config.item_map;
+  if (!map || rawItem == null || typeof rawItem !== "object") return null;
+
+  // Resolve content scope (e.g. Azure Search hits have payload under "content")
+  const item = (map.content_base
+    ? (getByPath(rawItem, map.content_base) as Record<string, unknown>)
+    : (rawItem as Record<string, unknown>)) ?? (rawItem as Record<string, unknown>);
+
+  // skip_if rules
+  if (map.skip_if) {
+    for (const rule of map.skip_if) {
+      if (getByPath(item, rule.field) === rule.equals) return null;
+    }
+  }
+
+  // Title — template wins, then single-path
+  let title = "";
+  if (map.title_template) {
+    title = renderTemplate(map.title_template, item);
+  } else if (map.title) {
+    const raw = getByPath(item, map.title);
+    if (raw != null) title = String(raw);
+  }
+  title = title.replace(/\s+/g, " ").trim();
+
+  // Price — numeric coerce
+  let price: number | undefined;
+  if (map.price) {
+    const raw = getByPath(item, map.price);
+    if (typeof raw === "number" && raw > 0) price = raw;
+    else if (typeof raw === "string") {
+      const n = Number(raw.replace(/[^\d.]/g, ""));
+      if (Number.isFinite(n) && n > 0) price = n;
+    }
+  }
+
+  // Location
+  let location: string | undefined;
+  if (map.location_template) {
+    const rendered = renderTemplate(map.location_template, item).replace(/,\s*,/g, ",").replace(/^,\s*|,\s*$/g, "");
+    if (rendered) location = rendered;
+  } else if (map.location) {
+    const raw = getByPath(item, map.location);
+    if (raw) location = String(raw).trim();
+  }
+
+  // Scalars
+  const coerceInt = (path?: string): number | undefined => {
+    if (!path) return undefined;
+    const raw = getByPath(item, path);
+    if (raw == null) return undefined;
+    const n = typeof raw === "number" ? raw : Number(raw);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : undefined;
+  };
+  const coerceFloat = (path?: string): number | undefined => {
+    if (!path) return undefined;
+    const raw = getByPath(item, path);
+    if (raw == null) return undefined;
+    const n = typeof raw === "number" ? raw : Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  };
+
+  const bedrooms = coerceInt(map.bedrooms);
+  const bathrooms = coerceInt(map.bathrooms);
+  const area_sqm = coerceFloat(map.area_sqm);
+
+  // Description
+  let description: string | undefined;
+  if (typeof map.description === "string") {
+    const raw = getByPath(item, map.description);
+    if (raw) description = String(raw);
+  } else if (map.description) {
+    const picked = pickFromArray(item, map.description);
+    if (typeof picked === "string") description = picked;
+  }
+
+  // Detail URL
+  let detailUrl: string | undefined;
+  if (typeof map.detail_url === "string") {
+    const raw = getByPath(item, map.detail_url);
+    if (raw) detailUrl = String(raw);
+  } else if (map.detail_url) {
+    const picked = pickFromArray(item, map.detail_url);
+    if (typeof picked === "string") detailUrl = picked;
+  }
+  if (detailUrl && !/^https?:\/\//i.test(detailUrl)) {
+    detailUrl = makeAbsoluteUrl(detailUrl, config.base_url);
+  }
+  // Strip trailing slashes to match HTML pipeline's canonical form
+  if (detailUrl) detailUrl = detailUrl.replace(/\/+$/, "");
+
+  // Images
+  let imageUrls: string[] = [];
+  if (map.images) {
+    const picked = pickFromArray(item, { ...map.images, all: true });
+    if (Array.isArray(picked)) imageUrls = picked;
+  }
+  imageUrls = dedupeImageUrls(imageUrls).slice(0, map.images?.limit ?? 10);
+
+  // ID fallback chain: explicit id path → MLSID-like → detailUrl hash
+  let id: string | undefined;
+  if (map.id) {
+    const raw = getByPath(item, map.id);
+    if (raw != null) id = String(raw);
+  }
+  const idPrefix = config.id_prefix || config.id.replace(/^cv_/, "");
+  const listingId = id
+    ? `${idPrefix}_${id}`
+    : generateListingId(idPrefix, title, price, detailUrl || "");
+
+  // Drop clearly unusable rows (need at least a title or detail URL)
+  if (!title && !detailUrl) return null;
+  if (title.length < 5 && !detailUrl) return null;
+
+  const projectMetadata = deriveProjectMetadata({ title, price });
+
+  return {
+    id: listingId,
+    sourceId: config.id,
+    sourceName: config.name,
+    source_ref: projectMetadata.source_ref,
+    title: title || undefined,
+    price,
+    priceText: price ? String(price) : "",
+    project_flag: projectMetadata.project_flag,
+    project_start_price: projectMetadata.project_start_price,
+    description,
+    imageUrls,
+    location,
+    detailUrl,
+    createdAt: now,
+    bedrooms,
+    bathrooms,
+    area_sqm,
+  };
 }
 
 // ============================================
@@ -851,7 +1139,8 @@ async function fetchWithClickPagination(
   const delayMs = config.delay_ms ?? 2500;
   const jitterMs = config.jitter_ms ?? 500;
   let nextSelector = config.pagination.next_selector;
-  const listingSelector = config.selectors.listing;
+  // click_next is HTML-only; listing selector is required here.
+  const listingSelector = config.selectors.listing ?? "body";
 
   let browser: Browser | undefined;
 
@@ -1403,6 +1692,158 @@ export async function genericPaginatedFetcher(
   }
 
   // =============================================
+  // JSON API PAGINATION (skip/top or page/per_page)
+  // Generic handler for structured JSON APIs (Azure Search, OData, Elastic, REST)
+  // =============================================
+  if (config.pagination.type === "json_api") {
+    const p = config.pagination;
+    const method = (p.method || "POST").toUpperCase();
+    const pageMode = p.page_mode || "skip";
+    const pageSize = p.page_size ?? 20;
+    const pageField = p.page_field || (pageMode === "skip" ? "skip" : "page");
+    const sizeField = p.size_field || (pageMode === "skip" ? "top" : "per_page");
+    const itemsPath = p.items_path || "value";
+    const countPath = p.count_path;
+
+    if (!config.item_map) {
+      debug.errors.push("json_api pagination requires item_map on source config");
+      debug.stopReason = "config_error_missing_item_map";
+      return { listings: [], debug };
+    }
+
+    if (process.env.DEBUG_GENERIC === "1") {
+      console.log(`[GenericFetcher] Using json_api pagination for ${config.id} (${method} ${config.base_url})`);
+    }
+
+    let pageNum = startPage;
+    let totalFromServer: number | undefined;
+
+    while (allListings.length < maxItems && pageNum <= startPage + maxPages - 1) {
+      if (pageNum > startPage) {
+        const actualDelay = delayMs + Math.floor(Math.random() * jitterMs);
+        if (process.env.DEBUG_GENERIC === "1") {
+          console.log(`[GenericFetcher] Waiting ${actualDelay}ms before json_api page ${pageNum}...`);
+        }
+        await sleep(actualDelay);
+      }
+
+      debug.pagesAttempted++;
+
+      // Build pagination values
+      const pageValue = pageMode === "skip" ? (pageNum - startPage) * pageSize : pageNum;
+
+      // Build request
+      let requestUrl = config.base_url;
+      const headers: Record<string, string> = {
+        "User-Agent": getRandomUserAgent(),
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Referer": config.base_url,
+      };
+      let bodyStr: string | undefined;
+
+      if (method === "POST") {
+        const body: Record<string, unknown> = { ...(p.body || {}) };
+        body[pageField] = pageValue;
+        body[sizeField] = pageSize;
+        bodyStr = JSON.stringify(body);
+      } else {
+        const url = new URL(config.base_url);
+        for (const [k, v] of Object.entries(p.query || {})) url.searchParams.set(k, v);
+        url.searchParams.set(pageField, String(pageValue));
+        url.searchParams.set(sizeField, String(pageSize));
+        requestUrl = url.toString();
+      }
+
+      if (process.env.DEBUG_GENERIC === "1") {
+        console.log(`[GenericFetcher] json_api page ${pageNum}: ${pageField}=${pageValue} ${sizeField}=${pageSize}`);
+      }
+
+      try {
+        const response = await fetch(requestUrl, { method, headers, body: bodyStr });
+
+        if (!response.ok) {
+          debug.errors.push(`json_api page ${pageNum}: HTTP ${response.status}`);
+          debug.stopReason = `json_api_http_${response.status}_page_${pageNum}`;
+          break;
+        }
+
+        const json = await response.json();
+        const bodyText = JSON.stringify(json);
+        debug.htmlLengths.push(bodyText.length);
+        debug.pagesSuccessful++;
+
+        if (countPath && totalFromServer === undefined) {
+          const tv = getByPath(json, countPath);
+          if (typeof tv === "number") totalFromServer = tv;
+        }
+
+        const items = getByPath(json, itemsPath);
+        if (!Array.isArray(items)) {
+          debug.errors.push(`json_api page ${pageNum}: items_path "${itemsPath}" did not resolve to an array`);
+          debug.stopReason = `json_api_bad_items_path_page_${pageNum}`;
+          break;
+        }
+
+        const pageListings: GenericParsedListing[] = [];
+        for (const raw of items) {
+          const mapped = mapJsonItem(raw, config, now);
+          if (!mapped) continue;
+          if (processedUrls.has(mapped.detailUrl || mapped.id)) continue;
+          processedUrls.add(mapped.detailUrl || mapped.id);
+          pageListings.push(mapped);
+        }
+
+        debug.listingsPerPage.push(pageListings.length);
+        allListings.push(...pageListings);
+
+        if (process.env.DEBUG_GENERIC === "1") {
+          console.log(`[GenericFetcher] json_api page ${pageNum}: ${items.length} items → ${pageListings.length} mapped (total: ${allListings.length}${totalFromServer !== undefined ? `/${totalFromServer}` : ""})`);
+        }
+
+        // Stop conditions
+        if (items.length === 0) {
+          debug.stopReason = "empty_listings";
+          break;
+        }
+        if (items.length < pageSize) {
+          debug.stopReason = "last_page_partial";
+          break;
+        }
+        if (totalFromServer !== undefined && allListings.length >= totalFromServer) {
+          debug.stopReason = "reached_server_total";
+          break;
+        }
+        if (allListings.length >= maxItems) {
+          debug.stopReason = "max_items_reached";
+          break;
+        }
+
+        pageNum++;
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        debug.errors.push(`json_api page ${pageNum}: ${errMsg}`);
+        debug.stopReason = `json_api_error_page_${pageNum}`;
+        break;
+      }
+    }
+
+    if (!debug.stopReason) debug.stopReason = "natural_end";
+
+    if (process.env.DEBUG_GENERIC === "1") {
+      console.log(`[GenericFetcher] ===== Complete (json_api) =====`);
+      console.log(`[GenericFetcher] Pages: ${debug.pagesSuccessful}/${debug.pagesAttempted}`);
+      console.log(`[GenericFetcher] Total listings: ${allListings.length}${totalFromServer !== undefined ? ` (server total: ${totalFromServer})` : ""}`);
+      console.log(`[GenericFetcher] Stop reason: ${debug.stopReason}`);
+    }
+
+    return {
+      listings: allListings.slice(0, maxItems),
+      debug,
+    };
+  }
+
+  // =============================================
   // STANDARD URL-BASED PAGINATION
   // =============================================
   let currentPage = startPage;
@@ -1555,6 +1996,16 @@ export function buildFetchConfigFromYaml(
       html_field: yamlSource.pagination?.html_field,
       has_more_field: yamlSource.pagination?.has_more_field,
       no_result_value: yamlSource.pagination?.no_result_value,
+      // JSON API pagination fields
+      method: yamlSource.pagination?.method,
+      body: yamlSource.pagination?.body,
+      query: yamlSource.pagination?.query,
+      page_size: yamlSource.pagination?.page_size,
+      page_mode: yamlSource.pagination?.page_mode,
+      page_field: yamlSource.pagination?.page_field,
+      size_field: yamlSource.pagination?.size_field,
+      items_path: yamlSource.pagination?.items_path,
+      count_path: yamlSource.pagination?.count_path,
     },
     selectors: mergedSelectors,
     delay_ms: yamlSource.delay_ms ?? 2500,
@@ -1567,6 +2018,7 @@ export function buildFetchConfigFromYaml(
     price_format: yamlSource.price_format,
     location_patterns: yamlSource.location_patterns || [],
     id_prefix: yamlSource.id_prefix,
+    item_map: yamlSource.item_map,
     ...overrides,
   };
 

@@ -684,6 +684,86 @@ sources:
         balcony: ["balcony", "varanda", "terraço"]
 
   # ============================================
+  # REMAX CAPE VERDE
+  # Azure Cognitive Search backend (Gryphtech WebPlatform)
+  # No HTML parsing — pipeline talks to the JSON API directly via the generic
+  # json_api pagination type. Same pattern applies to every other REMAX market
+  # (KE/NG/ZA/BW/ZM/UG/GH) — just clone this entry with a different country code.
+  # ============================================
+  - id: cv_remax
+    name: "REMAX Cape Verde"
+    url: https://www.remax.cv/search/listing-search/docs/search
+    type: json_api
+    lifecycleOverride: IN
+    currency: EUR
+    fetch_method: http
+
+    pagination:
+      type: json_api
+      method: POST
+      page_mode: skip          # Azure Search uses $skip/$top semantics
+      page_size: 20
+      page_field: skip
+      size_field: top
+      items_path: value
+      count_path: "@odata.count"
+      body:
+        search: "*"
+        filter: "content/ListingCountryCode eq 'CV' and content/IsFindable eq true"
+        count: true
+
+    delay_ms: 1500
+    jitter_ms: 500
+    max_items: 100
+    max_pages: 5
+
+    id_prefix: "rmx"
+
+    # item_map = field-level mapping from JSON hit → listing.
+    # Dot-paths resolve inside content_base. Templates use {field} placeholders.
+    item_map:
+      content_base: content
+      id: MLSID
+      title_template: "{NumberOfBedrooms}-bed {City} property"
+      price: ListingPriceEuro
+      bedrooms: NumberOfBedrooms
+      bathrooms: NumberOfBathrooms
+      area_sqm: TotalArea
+      location_template: "{City}, {Province}"
+
+      # Hidden-price listings are dropped upstream — skip them early.
+      skip_if:
+        - field: HidePricePublic
+          equals: true
+
+      # Prefer the English description, else any language (first match wins).
+      description:
+        array: ListingDescriptions
+        field: Description
+        match_field: ISOLanguageCode
+        match_value: en
+
+      # Prefer English ShortLink; prepend site origin.
+      detail_url:
+        array: ShortLinks
+        field: ShortLink
+        match_field: ISOLanguageCode
+        match_value: en
+        template: "https://www.remax.cv/{VALUE}"
+
+      # Gryphtech REMAX CDN pattern: /userimages/{CountryID}/LargeWM/{FileName}
+      # CountryID for CV is 73 (hardcoded in the tenant config).
+      images:
+        array: ListingImages
+        field: FileName
+        template: "https://cdn.gryphtech.com/userimages/73/LargeWM/{VALUE}"
+        limit: 10
+
+    # Listing detail is already complete from the search API — no HTML enrichment.
+    detail:
+      enabled: false
+
+  # ============================================
   # DROPPED SOURCES
   # ============================================
   - id: cv_rightmove
