@@ -164,7 +164,6 @@ function displayPreflightReport(marketId: string): void {
 
   if (!reportPath) {
     console.log("No preflight report found in reports/ directory.");
-    console.log(`Run 'MARKET_ID=${marketId} npx ts-node core/preflightMarket.ts' to generate one.`);
     return;
   }
 
