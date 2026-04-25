@@ -16,11 +16,11 @@
   gap: 16px;
   width: min(380px, calc(100vw - 40px));
   padding: 16px 16px 14px;
-  background: #fafafa;
-  border: 1px solid #0a0a0a;
+  background: var(--kv-paper);
+  border: 1px solid var(--kv-black);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.16);
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  color: #0a0a0a;
+  font-family: var(--kv-mono);
+  color: var(--kv-black);
   animation: ck-slide 0.4s ease-out;
   pointer-events: auto;
 }
@@ -41,8 +41,8 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #888;
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color: var(--kv-gray-500);
+  font-family: var(--kv-mono);
 }
 
 .ck-text {
@@ -50,27 +50,27 @@
   color: rgba(0, 0, 0, 0.7);
   line-height: 1.6;
   max-width: 32ch;
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--kv-mono);
 }
 
 .ck-btn {
   flex-shrink: 0;
   align-self: flex-end;
   padding: 9px 18px;
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--kv-mono);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #0a0a0a;
+  color: var(--kv-black);
   background: transparent;
-  border: 1px solid #0a0a0a;
+  border: 1px solid var(--kv-black);
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
 .ck-btn:hover {
-  background: #0a0a0a;
-  color: #8ecf8e;
+  background: var(--kv-hover);
+  color: var(--kv-black);
 }
 
 @media (max-width: 640px) {

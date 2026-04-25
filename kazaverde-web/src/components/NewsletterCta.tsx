@@ -10,7 +10,7 @@ interface Props {
 
 export default function NewsletterCta({
   overline = "Monthly Property Index",
-  heading = <>Cape Verde <em>market intelligence</em></>,
+  heading = "Cape Verde market intelligence.",
   description = "Median prices by island, inventory trends, new development alerts, and regulatory changes.",
 }: Props) {
   const [email, setEmail] = useState("");

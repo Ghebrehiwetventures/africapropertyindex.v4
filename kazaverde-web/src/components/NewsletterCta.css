@@ -1,41 +1,41 @@
-/* NewsletterCta — KV design (green band, mono, inline form) */
+/* NewsletterCta — KV master design (green band, mono, inline form).
+   Tokens come from globals.css :root. */
 .nl-cta {
   /* Full-bleed green band */
   width: 100vw;
   margin-left: calc(50% - 50vw);
-  background: #8ecf8e;
-  color: #0a0a0a;
+  background: var(--kv-green);
+  color: var(--kv-black);
   padding: 72px 24px;
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--kv-mono);
   text-align: center;
 }
 
 .nl-overline {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
+  font-size: var(--kv-t-xs);
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: 0.20em;
   text-transform: uppercase;
   color: rgba(0, 0, 0, 0.55);
   margin-bottom: 18px;
 }
 
 .nl-cta h2 {
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: clamp(26px, 3.4vw, 36px);
-  font-weight: 400;
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-h1);
+  font-weight: var(--kv-fw-regular);
   line-height: 1.2;
-  letter-spacing: -0.02em;
-  color: #0a0a0a;
+  letter-spacing: var(--kv-ls-display);
+  color: var(--kv-black);
   max-width: 720px;
   margin: 0 auto 14px;
+  text-wrap: balance;
 }
-.nl-cta h2 em {
-  font-style: italic;
-  font-weight: 500;
-}
+/* h2 <em> intentionally not styled — newsletter heading is now plain
+   mono for system consistency (no italic serif elsewhere). */
 
 .nl-cta p {
-  font-size: 13px;
+  font-size: var(--kv-t-base);
   color: rgba(0, 0, 0, 0.65);
   line-height: 1.6;
   max-width: 540px;
@@ -47,8 +47,8 @@
   gap: 0;
   max-width: 480px;
   margin: 0 auto;
-  border: 1px solid #0a0a0a;
-  background: #fafafa;
+  border: 1px solid var(--kv-black);
+  background: var(--kv-paper);
 }
 
 .nl-input {
@@ -56,64 +56,59 @@
   padding: 12px 16px;
   border: none;
   background: transparent;
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 13px;
-  color: #0a0a0a;
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-base);
+  color: var(--kv-black);
   outline: none;
 }
-.nl-input::placeholder {
-  color: rgba(0, 0, 0, 0.4);
-}
-.nl-input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.nl-input::placeholder { color: rgba(0, 0, 0, 0.4); }
+.nl-input:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Submit follows the .kv-btn-solid convention:
+   solid black on the form's white surface, inverts on hover. */
 .nl-submit {
   padding: 12px 22px;
   border: none;
-  border-left: 1px solid #0a0a0a;
-  background: #0a0a0a;
-  color: #8ecf8e;
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  border-left: 1px solid var(--kv-black);
+  background: var(--kv-black);
+  color: var(--kv-white);
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-sm);
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: var(--kv-ls-eyebrow);
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background var(--kv-dur) var(--kv-ease),
+              color var(--kv-dur) var(--kv-ease);
 }
 .nl-submit:hover:not(:disabled) {
-  background: #fafafa;
-  color: #0a0a0a;
+  background: var(--kv-hover);
+  color: var(--kv-black);
 }
-.nl-submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.nl-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .nl-success {
   display: inline-block;
   padding: 12px 22px;
-  border: 1px solid #0a0a0a;
+  border: 1px solid var(--kv-black);
   background: rgba(255, 255, 255, 0.5);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  font-size: var(--kv-t-md);
+  font-weight: var(--kv-fw-medium);
+  letter-spacing: var(--kv-ls-meta);
   text-transform: uppercase;
-  color: #0a0a0a;
+  color: var(--kv-black);
 }
 
 .nl-error {
   margin-top: 14px;
-  font-size: 11px;
+  font-size: var(--kv-t-sm);
   color: #b1221f;
   letter-spacing: 0.06em;
 }
 
 .nl-fine {
   margin-top: 22px;
-  font-size: 10px;
+  font-size: var(--kv-t-xs);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(0, 0, 0, 0.4);
@@ -122,6 +117,6 @@
 @media (max-width: 520px) {
   .nl-cta { padding: 56px 24px; }
   .nl-form { flex-direction: column; border: none; background: transparent; }
-  .nl-input { border: 1px solid #0a0a0a; background: #fafafa; }
-  .nl-submit { border: 1px solid #0a0a0a; border-top: none; }
+  .nl-input { border: 1px solid var(--kv-black); background: var(--kv-paper); }
+  .nl-submit { border: 1px solid var(--kv-black); border-top: none; }
 }

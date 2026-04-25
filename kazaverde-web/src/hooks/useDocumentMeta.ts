@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 
 const DEFAULT_DESCRIPTION =
   "Cape Verde's read-only property index. Every island, every listing, one source-linked view.";
-const SITE_NAME = "KazaVerde";
+const SITE_NAME = "Cape Verde Real Estate Index";
 const SITE_URL =
   (typeof import.meta !== "undefined" && (import.meta as { env?: { VITE_SITE_URL?: string } }).env?.VITE_SITE_URL) ||
   (typeof window !== "undefined" ? window.location.origin : "https://kazaverde.com");

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import NewsletterCta from "../components/NewsletterCta";
 import { arei } from "../lib/arei";
+import { formatSourceLabel, isNewListing } from "../lib/format";
 import type { ListingCard, PriceBucket } from "arei-sdk";
 import "./Listings.css";
 
@@ -191,7 +192,14 @@ export default function Listings() {
   const islandLabel = island || "All islands";
   const sortLabel = SORT_OPTIONS.find((s) => s.value === sort)?.label || "Newest first";
 
-  const shownCount = visible.length;
+  // Filter-result count:
+  // - No client-side filters (type/beds): server-side `total` is accurate for the
+  //   current filter state (matches hero + pager — "392 LISTINGS INDEXED",
+  //   "Showing 1-27 of 392").
+  // - With client-side filters: server `total` is no longer accurate since we
+  //   can only know what matches among loaded cards → fall back to visible.length.
+  const hasClientFilter = !!type || beds > 0;
+  const shownCount = hasClientFilter ? visible.length : total;
   const canLoadMore = page < totalPages;
 
   return (
@@ -425,8 +433,8 @@ export default function Listings() {
           </div>
         ) : (
           <div className="kv-grid">
-            {visible.map((l, i) => (
-              <Card key={l.id} l={l} index={i} />
+            {visible.map((l) => (
+              <Card key={l.id} l={l} />
             ))}
           </div>
         )}
@@ -535,8 +543,10 @@ function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
-function Card({ l, index }: { l: ListingCard; index: number }) {
-  const isNew = l.is_new || index < 2;
+function Card({ l }: { l: ListingCard; index?: number }) {
+  // NEW = indexed within the last 7 days (single source of truth in lib/format).
+  // Drops the previous "first two cards always look new" hack.
+  const isNew = l.is_new || isNewListing(l.first_seen_at);
   const typeLabel = l.property_type ? TYPES[l.property_type.toLowerCase()] || capitalize(l.property_type) : "";
   const location = [l.city, l.island].filter(Boolean).join(", ");
   const imgUrl = l.image_urls?.[0] || l.image_url;
@@ -551,6 +561,17 @@ function Card({ l, index }: { l: ListingCard; index: number }) {
 
   const isLand = (l.property_type || "").toLowerCase() === "land";
 
+  // Build only the specs we actually have data for. Empty placeholders
+  // ("— bed") read as broken; better to omit silently.
+  const specs: { label: string; value: number | string }[] = [];
+  if (isLand) {
+    if (l.land_area_sqm != null) specs.push({ label: "m²", value: l.land_area_sqm });
+  } else {
+    if (l.bedrooms != null) specs.push({ label: "bed", value: l.bedrooms === 0 ? "Studio" : l.bedrooms });
+    if (l.bathrooms != null && l.bathrooms > 0) specs.push({ label: "bath", value: l.bathrooms });
+    if (l.land_area_sqm != null) specs.push({ label: "m²", value: l.land_area_sqm });
+  }
+
   return (
     <Link className="kv-lcard" to={`/listing/${l.id}`}>
       <div className="kv-lc-img" style={bgStyle}>
@@ -563,31 +584,17 @@ function Card({ l, index }: { l: ListingCard; index: number }) {
         </div>
         <div className="kv-lc-price">{fmtPrice(l.price)}</div>
         <div className="kv-lc-title">{l.title}</div>
-        <div className="kv-lc-specs">
-          {isLand ? (
-            <>
-              <span><b>—</b></span>
-              <span><b>—</b></span>
-              <span>
-                <b>{l.land_area_sqm ?? "—"}</b> m²
+        {specs.length > 0 && (
+          <div className="kv-lc-specs">
+            {specs.map((s) => (
+              <span key={s.label}>
+                <b>{s.value}</b> {s.label}
               </span>
-            </>
-          ) : (
-            <>
-              <span>
-                <b>{l.bedrooms ?? "—"}</b> bed
-              </span>
-              <span>
-                <b>{l.bathrooms ?? "—"}</b> bath
-              </span>
-              <span>
-                <b>{l.land_area_sqm ?? "—"}</b> m²
-              </span>
-            </>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
         <div className="kv-lc-provenance">
-          <span>via {l.source_id}</span>
+          <span>via {formatSourceLabel(l.source_id)}</span>
           <span>{relTime(l.first_seen_at)}</span>
         </div>
       </div>

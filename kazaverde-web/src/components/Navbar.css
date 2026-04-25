@@ -3,12 +3,12 @@
   position: sticky;
   top: 0;
   z-index: 201;
-  background: #8ecf8e;
+  background: var(--kv-green);
   /* Break out of .ctn to full viewport width */
   width: 100vw;
   margin-left: calc(50% - 50vw);
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  color: #0a0a0a;
+  font-family: var(--kv-mono);
+  color: var(--kv-black);
 }
 
 .nav-inner {
@@ -22,18 +22,18 @@
 }
 
 .logo {
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--kv-mono);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #0a0a0a;
+  color: var(--kv-black);
   line-height: 1.2;
   cursor: pointer;
   position: relative;
   z-index: 2;
 }
-.logo span { color: #0a0a0a; }
+.logo span { color: var(--kv-black); }
 
 .nc {
   display: flex;
@@ -41,7 +41,7 @@
   gap: 28px;
 }
 .nc a {
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--kv-mono);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.1em;
@@ -52,7 +52,7 @@
 }
 .nc a:hover,
 .nc a.on,
-.nc a.active { color: #0a0a0a; }
+.nc a.active { color: var(--kv-black); }
 
 /* "Alerts"-style CTA pill — matches .nav-btn in the design file */
 .nav-saved {
@@ -60,9 +60,9 @@
   align-items: center;
   gap: 6px;
   padding: 6px 16px !important;
-  border: 1px solid #0a0a0a;
-  color: #0a0a0a !important;
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  border: 1px solid var(--kv-black);
+  color: var(--kv-black) !important;
+  font-family: var(--kv-mono);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -71,8 +71,8 @@
   transition: background 0.2s, color 0.2s;
 }
 .nav-saved:hover {
-  background: #0a0a0a;
-  color: #8ecf8e !important;
+  background: var(--kv-hover);
+  color: var(--kv-black) !important;
 }
 .nav-saved svg {
   width: 12px;
@@ -108,7 +108,7 @@
   justify-content: center;
   border: none;
   background: transparent;
-  color: #0a0a0a;
+  color: var(--kv-black);
   cursor: pointer;
   transition: opacity 0.2s;
   position: relative;
@@ -124,7 +124,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: #fafafa;
+  background: var(--kv-white);
   z-index: 200;
   flex-direction: column;
   align-items: center;
@@ -141,7 +141,7 @@
   visibility: visible;
 }
 .nc-mobile a {
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--kv-mono);
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.12em;
@@ -150,17 +150,17 @@
   transition: color 0.2s;
 }
 .nc-mobile a:hover,
-.nc-mobile a.on { color: #0a0a0a; }
+.nc-mobile a.on { color: var(--kv-black); }
 
 .nav-saved-mobile {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 8px 18px;
-  border: 1px solid #0a0a0a;
-  color: #0a0a0a;
+  border: 1px solid var(--kv-black);
+  color: var(--kv-black);
   margin-top: 12px;
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--kv-mono);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.1em;
