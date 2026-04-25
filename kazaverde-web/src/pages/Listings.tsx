@@ -543,7 +543,7 @@ function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
-function Card({ l }: { l: ListingCard; index?: number }) {
+export function Card({ l }: { l: ListingCard; index?: number }) {
   // NEW = indexed within the last 7 days (single source of truth in lib/format).
   // Drops the previous "first two cards always look new" hack.
   const isNew = l.is_new || isNewListing(l.first_seen_at);

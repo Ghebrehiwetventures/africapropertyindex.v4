@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useSaved } from "../hooks/useSaved";
 import "./Navbar.css";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { count } = useSaved();
 
   const closeMenu = () => setMenuOpen(false);
+
+  // Shortlist label includes a count when the user has saved anything,
+  // so they can see at a glance their list has things in it.
+  const shortlistLabel = count > 0 ? `SHORTLIST · ${count}` : "SHORTLIST";
 
   return (
     <nav className="nav anim-fd">
@@ -17,6 +23,7 @@ export default function Navbar() {
 
         <div className="nc hide-mobile">
           <NavLink to="/" end className={({ isActive }) => (isActive ? "on" : "")}>LISTINGS</NavLink>
+          <NavLink to="/saved" className={({ isActive }) => (isActive ? "on" : "")}>{shortlistLabel}</NavLink>
         </div>
 
         <button
@@ -35,6 +42,7 @@ export default function Navbar() {
 
         <div className={`nc-mobile${menuOpen ? " open" : ""}`}>
           <NavLink to="/" end className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>LISTINGS</NavLink>
+          <NavLink to="/saved" className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>{shortlistLabel}</NavLink>
         </div>
       </div>
     </nav>

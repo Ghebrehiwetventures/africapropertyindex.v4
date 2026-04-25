@@ -459,12 +459,45 @@
   .kv-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 640px) {
-  .kv-hero { padding: 72px 0 40px; }
+  /* Tighter hero so first listing card is reachable in ~1 scroll
+     instead of ~1.5 — vertical padding cut, stats row gap cut. */
+  .kv-hero { padding: 48px 0 28px; }
   .kv-grid { grid-template-columns: 1fr; }
-  .kv-hero-meta { gap: 20px; }
+  .kv-hero-meta { gap: 16px; padding-top: 14px; }
+  /* RESULTS section header is redundant with hero on mobile (same
+     "browse the index" message). Hide eyebrow + h2; keep only the
+     SORT BY chip so users can still re-sort. */
   .kv-section-head {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
   }
+  .kv-section-head > div:first-child { display: none; }
+  .kv-section { padding-top: 16px; }
   .kv-filters { top: 52px; }
+  /* Horizontal scroll for filter chips — mobile-native pattern.
+     Chips keep natural width; user swipes right to reveal extras.
+     (Targeting .kv-field, the actual chip class — earlier draft used
+     .kv-filter-field which doesn't exist, so nothing applied.) */
+  .kv-filter-group {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    /* Bleed past the .kv-filters-inner 24px padding so chips can
+       scroll edge-to-edge without an awkward right gutter. */
+    margin: 0 -24px;
+    padding: 4px 24px;
+  }
+  .kv-filter-group::-webkit-scrollbar { display: none; }
+  .kv-field {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    /* Lock chip text to one line — without this, "ALL ISLANDS" wraps
+       inside the flex item to "ALL\nISLANDS". */
+    white-space: nowrap;
+  }
 }

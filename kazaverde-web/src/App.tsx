@@ -6,9 +6,10 @@ import NotFound from "./pages/NotFound";
 import CookieBanner from "./components/CookieBanner";
 import Listings from "./pages/Listings";
 
-// v1: only / (Listings) and /listing/:id (Detail) are user-facing.
-// All other routes redirect to / until they're rebuilt in the KV design.
+// Phase A live: /, /listings, /listing/:id, /saved.
+// Other routes still redirect to / until they're rebuilt in the KV design.
 const Detail = lazy(() => import("./pages/Detail"));
+const Saved = lazy(() => import("./pages/Saved"));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -50,7 +51,7 @@ export default function App() {
           <Route path="/" element={<Listings />} />
           <Route path="/listings" element={<Listings />} />
           <Route path="/listing/:id" element={<Detail />} />
-          <Route path="/saved" element={<Navigate to="/" replace />} />
+          <Route path="/saved" element={<Saved />} />
           {/* v1 redirects — pages not yet rebuilt in KV design */}
           <Route path="/listings/sal" element={<Navigate to="/?island=Sal" replace />} />
           <Route path="/listings/boa-vista" element={<Navigate to="/?island=Boa+Vista" replace />} />

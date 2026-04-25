@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
+import { useSaved } from "../hooks/useSaved";
 import { arei } from "../lib/arei";
 import type {
   ListingDetail as ListingDetailType,
@@ -91,6 +92,7 @@ function sourceSlug(sourceId: string): string {
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toggle, isSaved } = useSaved();
 
   const [detail, setDetail] = useState<ListingDetailType | null>(null);
   const [images, setImages] = useState<string[]>([]);
@@ -515,6 +517,14 @@ export default function Detail() {
                   View on {formatSourceLabel(detail.source_id)} ↗
                 </a>
               )}
+              <button
+                type="button"
+                className={`kv-d-btn-ghost${isSaved(detail.id) ? " is-saved" : ""}`}
+                onClick={() => toggle(detail.id)}
+                aria-pressed={isSaved(detail.id)}
+              >
+                {isSaved(detail.id) ? "✓ Saved to shortlist" : "Save to shortlist"}
+              </button>
             </div>
             <div className="kv-d-method">
               <b>How we index.</b> This record is aggregated from a public listing. KazaVerde does
@@ -952,8 +962,12 @@ function KvSimilar({ cards }: { cards: ListingCard[] }) {
   const scroll = (dir: -1 | 1) => {
     const el = ref.current;
     if (!el) return;
-    // Scroll by ~1 card width (card ~360px + 20 gap)
-    el.scrollBy({ left: dir * 380, behavior: "smooth" });
+    // Use the actual rendered card width + gap so the scroll lands one
+    // card over on every viewport. Hard-coding 380px overshot on mobile
+    // (cards are ~85vw there) and made the next card disappear left.
+    const firstCard = el.querySelector<HTMLElement>(".kv-d-sim-card");
+    const step = firstCard ? firstCard.offsetWidth + 20 : 380;
+    el.scrollBy({ left: dir * step, behavior: "smooth" });
   };
 
   return (
