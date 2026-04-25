@@ -1064,10 +1064,30 @@
     grid-template-rows: repeat(3, 180px);
   }
   .kv-d-gtile-primary { grid-row: 1 / 2; grid-column: 1 / 3; }
-  .kv-d-facts { grid-template-columns: repeat(3, 1fr); }
+  /* Facts strip — restore page-edge padding (desktop is flush 0). */
+  .kv-d-facts {
+    grid-template-columns: repeat(3, 1fr);
+    padding-left: 24px;
+    padding-right: 24px;
+  }
   .kv-d-fact:nth-child(n + 4) { border-top: 1px solid var(--kv-rule); }
-  .kv-d-main { grid-template-columns: 1fr; gap: 40px; }
-  .kv-d-aside { position: static; }
+  /* Main grid: stack to single column, restore padding, and reset the
+     desktop grid-column overrides on description (was 1/4) and aside
+     (was 4/6) so they don't create implicit narrow tracks on mobile. */
+  .kv-d-main {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .kv-d-main > :first-child {
+    grid-column: 1;
+    padding-right: 0;
+  }
+  .kv-d-main > .kv-d-aside {
+    grid-column: 1;
+    position: static;
+  }
   .kv-d-mc { grid-template-columns: 1fr; }
   .kv-d-mc-inputs { grid-template-columns: 1fr; }
   .kv-d-mc-inputs .kv-d-mc-field-wide { grid-column: 1; }
