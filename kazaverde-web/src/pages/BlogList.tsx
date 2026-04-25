@@ -1,48 +1,66 @@
 import { Link } from "react-router-dom";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
-import NewsletterCta from "../components/NewsletterCta";
 import { BLOG_ARTICLES } from "../lib/blog-data";
 import "./BlogList.css";
 
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export default function BlogList() {
-  useDocumentMeta("Blog", "Cape Verde real estate insights, guides, and market analysis. Property buying, islands, legal requirements, and investment tips.");
+  useDocumentMeta(
+    "Cape Verde property guides — KazaVerde",
+    "Cape Verde real estate insights, buying guides, market analysis, legal requirements and investment tips. Independent reporting from the Cape Verde Real Estate Index.",
+  );
+
+  // Articles are stored newest-first in blog-data.ts; respect that order.
+  const articles = BLOG_ARTICLES;
 
   return (
-    <>
-      <section className="bl-header anim-fu delay-1">
-        <div className="bl-overline">BLOG</div>
-        <h1>Cape Verde <em>Real Estate</em> Insights</h1>
-        <p>Guides, market analysis, and practical advice for property buyers and investors.</p>
-      </section>
+    <div className="kv-blog">
+      {/* Hero — same green band rhythm as Listings/Saved */}
+      <header className="kv-blog-hero">
+        <div className="kv-blog-hero-inner">
+          <div className="kv-blog-eyebrow">Knowledge index</div>
+          <h1 className="kv-blog-title">
+            How Cape Verde property actually works.
+          </h1>
+          <p className="kv-blog-sub">
+            Independent guides from the Cape Verde Real Estate Index. Buying
+            process, taxes, residency, rental yields, and the differences between
+            islands — written for buyers who want the data, not the pitch.
+          </p>
+          <div className="kv-blog-meta">
+            <span><b>{articles.length}</b> articles</span>
+            <span>· Updated continuously</span>
+          </div>
+        </div>
+      </header>
 
-      <div className="bl-grid">
-        {BLOG_ARTICLES.map((article, i) => (
-          <Link
-            key={article.slug}
-            to={`/blog/${article.slug}`}
-            className="bl-card anim-fu"
-            style={{ animationDelay: `${0.15 + i * 0.05}s` }}
-          >
-            <div className="bl-card-inner">
-              <div className="bl-meta">
-                <span>{new Date(article.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
-                <span>·</span>
-                <span>{article.readTime}</span>
+      {/* Article grid */}
+      <section className="kv-blog-body">
+        <div className="kv-blog-grid">
+          {articles.map((a) => (
+            <Link key={a.slug} to={`/blog/${a.slug}`} className="kv-blog-card">
+              <div className="kv-blog-card-meta">
+                <span>{fmtDate(a.date)}</span>
+                <span>· {a.readTime}</span>
               </div>
-              <h2>{article.title}</h2>
-              <p>{article.description}</p>
-              <div className="bl-tags">
-                {article.tags.map((t) => (
-                  <span key={t} className="bl-tag">{t}</span>
+              <h2 className="kv-blog-card-title">{a.title}</h2>
+              <p className="kv-blog-card-desc">{a.description}</p>
+              <div className="kv-blog-card-tags">
+                {a.tags.map((t) => (
+                  <span key={t} className="kv-blog-tag">{t}</span>
                 ))}
               </div>
-            </div>
-            <span className="bl-arrow">→</span>
-          </Link>
-        ))}
-      </div>
-
-      <NewsletterCta />
-    </>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
