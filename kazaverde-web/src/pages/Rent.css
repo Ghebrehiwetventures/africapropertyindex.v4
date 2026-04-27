@@ -99,8 +99,8 @@
 
 /* ─── Form block (sits inside header, switches with intent) ─── */
 .kv-rent-form-block {
-  max-width: 640px;
-  padding: 24px;
+  max-width: 760px;
+  padding: 28px 32px;
   background: var(--kv-white);
   border: 1px solid var(--kv-rule);
   margin-bottom: 24px;

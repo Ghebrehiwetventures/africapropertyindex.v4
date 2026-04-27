@@ -361,22 +361,27 @@ export default function Market() {
             </p>
           </div>
 
-          <div className="kv-d-card kv-d-card-soft">
-            <div className="kv-d-card-h">
-              <span>Island medians</span>
-              <span>Listings · Median</span>
+          {/* Three-column table — island name, listings count, median price.
+              Replaces the older 2-column flex layout where listings and
+              median were squeezed into one right-hand cell ("57 · €450,000")
+              which read as a single jumbled value rather than two distinct
+              data points. Now each metric has its own column with right-
+              aligned tabular numbers, headers aligned to data columns. */}
+          <div className="kv-m-island-table">
+            <div className="kv-m-island-h">
+              <span>Island</span>
+              <span>Listings</span>
+              <span>Median price</span>
             </div>
-            <div className="kv-d-card-body kv-d-meta">
-              {data.islands.map((island) => (
-                <div className="kv-d-meta-row" key={island.name}>
-                  <span className="kv-d-meta-k">{island.name}</span>
-                  <span className="kv-d-meta-v">
-                    <span className="kv-m-meta-aux">{island.totalListings} ·{" "}</span>
-                    {island.median !== null ? formatMedian(island.median) : "—"}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {data.islands.map((island) => (
+              <div className="kv-m-island-row" key={island.name}>
+                <span className="kv-m-island-name">{island.name}</span>
+                <span className="kv-m-island-count">{island.totalListings.toLocaleString("en")}</span>
+                <span className="kv-m-island-median">
+                  {island.median !== null ? formatMedian(island.median) : "—"}
+                </span>
+              </div>
+            ))}
           </div>
 
           <p className="kv-m-disclaimer">

@@ -26,7 +26,7 @@ export default function Navbar() {
   }, [menuOpen]);
 
   const links = [
-    { to: "/", label: "Listings", end: true },
+    { to: "/listings", label: "Listings" },
     { to: "/rent", label: "Rent" },
     { to: "/market", label: "Market" },
     { to: "/blog", label: "Guides" },
@@ -45,7 +45,6 @@ export default function Navbar() {
             <NavLink
               key={l.to}
               to={l.to}
-              end={l.end}
               className={({ isActive }) => `nav-a${isActive ? " on" : ""}`}
             >
               {l.label}
@@ -84,7 +83,6 @@ export default function Navbar() {
             <NavLink
               key={l.to}
               to={l.to}
-              end={l.end}
               className={({ isActive }) => `nav-drawer-link${isActive ? " on" : ""}`}
               onClick={closeMenu}
             >
