@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import NewsletterCta from "../components/NewsletterCta";
@@ -150,9 +151,15 @@ export default function Listings() {
     };
   }, [page, island, priceBucket, retryCount]);
 
-  // Close any open popover on outside click
+  // Close any open popover on outside click.
+  // Target-aware: clicks inside a filter chip wrap, the sort wrap, or
+  // the popover itself are ignored. Safari iOS occasionally bubbles a
+  // synthetic click to document even when React's stopPropagation runs,
+  // which would close the sheet in the same tick it opened.
   useEffect(() => {
-    function onDocClick() {
+    function onDocClick(e: MouseEvent) {
+      const target = e.target as Element | null;
+      if (target?.closest(".kv-field-wrap, .kv-sort-wrap, .kv-pop")) return;
       setOpenPop("");
     }
     document.addEventListener("click", onDocClick);
@@ -378,8 +385,14 @@ export default function Listings() {
           open. Sits below the popover sheet, above the page content,
           so a tap on listings/cards behind closes the popover via the
           existing document-click handler instead of triggering the
-          card's navigation. Hidden on desktop via CSS. */}
-      {openPop && <div className="kv-pop-backdrop" aria-hidden="true" />}
+          card's navigation. Portaled to <body> so it shares a stacking
+          context with the portaled popover. Hidden on desktop via CSS. */}
+      {openPop &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="kv-pop-backdrop" aria-hidden="true" />,
+          document.body,
+        )}
 
       {/* RESULTS */}
       <section className="kv-section">
@@ -508,6 +521,19 @@ function applyClientFilters(
 
 /* ────────────────────────────────────────────────────── */
 
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 640px)").matches : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return isMobile;
+}
+
 function PopOver({
   children,
   className,
@@ -517,11 +543,20 @@ function PopOver({
   className?: string;
   onClickInside?: (e: React.MouseEvent) => void;
 }) {
-  return (
+  const isMobile = useIsMobile();
+  const node = (
     <div className={`kv-pop${className ? " " + className : ""}`} onClick={onClickInside}>
       {children}
     </div>
   );
+  // On mobile the popover is a fixed bottom-sheet. Render it via a portal
+  // into <body> so it escapes the .kv-filter-group overflow-x + mask-image
+  // ancestor — Safari iOS clips position:fixed inside such containers,
+  // which is why taps on the chip looked like they did nothing.
+  if (isMobile && typeof document !== "undefined") {
+    return createPortal(node, document.body);
+  }
+  return node;
 }
 
 function Option({
