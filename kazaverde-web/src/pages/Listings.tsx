@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import NewsletterCta from "../components/NewsletterCta";
+import SmartImage from "../components/SmartImage";
 import { arei } from "../lib/arei";
 import { formatSourceLabel, isNewListing } from "../lib/format";
 import type { ListingCard, PriceBucket } from "arei-sdk";
@@ -592,14 +593,6 @@ export function Card({ l }: { l: ListingCard; index?: number }) {
   const location = [l.city, l.island].filter(Boolean).join(", ");
   const imgUrl = l.image_urls?.[0] || l.image_url;
 
-  const bgStyle: React.CSSProperties = imgUrl
-    ? {
-        backgroundImage: `url("${imgUrl}")`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }
-    : { backgroundImage: "linear-gradient(135deg, #c9d4c8 0%, #a8bea4 100%)" };
-
   const isLand = (l.property_type || "").toLowerCase() === "land";
 
   // Build only the specs we actually have data for. Empty placeholders
@@ -615,7 +608,8 @@ export function Card({ l }: { l: ListingCard; index?: number }) {
 
   return (
     <Link className="kv-lcard" to={`/listing/${l.id}`}>
-      <div className="kv-lc-img" style={bgStyle}>
+      <div className="kv-lc-img">
+        <SmartImage src={imgUrl} alt={l.title || ""} className="kv-lc-img-tag" />
         {isNew && <span className="kv-lc-flag">New</span>}
       </div>
       <div className="kv-lc-body">
