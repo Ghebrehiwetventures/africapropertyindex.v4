@@ -19,6 +19,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ["Buying","Legal","Guide"],
     content: `<p><em>Last updated: February 2026</em></p>
 <p>Cape Verde allows foreign nationals to purchase property with full freehold ownership and no restrictions on nationality. The legal framework is rooted in Portuguese law, which means a structured, notary-based process that offers strong buyer protections — provided you do the paperwork right.</p>
+<blockquote><p>Cape Verde is one of the few African countries where foreigners can own freehold property outright, with the same rights as citizens, and without restrictions on repatriation of sale proceeds.</p></blockquote>
 <p>This guide walks through every stage of the buying process, from getting your tax number to signing the deed.</p>
 <hr>
 <h2>Before You Start: What You&#39;ll Need</h2>

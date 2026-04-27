@@ -1,44 +1,25 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import { useSaved } from "../hooks/useSaved";
-import PropertyCard from "../components/PropertyCard";
 import { arei } from "../lib/arei";
-import type { ListingDetail as ListingDetailType, ListingCard } from "arei-sdk";
-import type { DemoListing } from "../lib/demo-data";
-import { cardToDemoListing } from "../lib/transforms";
-import { formatPrice, formatLocation, formatBedrooms, formatBathrooms, formatSourceLabel } from "../lib/format";
+import type {
+  ListingDetail as ListingDetailType,
+  ListingCard,
+  IslandContext,
+} from "arei-sdk";
+import {
+  formatPrice,
+  formatLocation,
+  formatSourceLabel,
+  formatMedian,
+  formatPricePerSqm,
+} from "../lib/format";
 import { looksItalian, stripHtml, translateItalianToEnglish } from "../lib/translation";
+import { calcMortgage, type MortgageInput } from "../lib/calcMortgage";
 import NotFound from "./NotFound";
-import MortgageCalculator from "../components/MortgageCalculator";
-import MarketContext from "../components/MarketContext";
 import "./Detail.css";
-
-const PLACEHOLDER_BG = "linear-gradient(145deg,#5B8A72,#1A4A32)";
-const LAND_TYPES = /^(land|plot|lot|lote|terreno|terrenos|parcela|parcel|terrain)$/i;
-const LAND_TITLE = /\b(land|plot|lot|lote|terreno|terrenos|parcela|parcel|terrain)\b/i;
-
-function parseAreaSqmFromText(text: string): number | null {
-  const matches = [...text.matchAll(/(\d{1,3}(?:[.,\s]\d{3})+|\d+(?:[.,]\d+)?)\s*m²/gi)];
-  if (matches.length === 0) return null;
-
-  for (const match of matches) {
-    const raw = match[1].trim();
-
-    // Thousands-grouped forms like 13.571 or 13,571
-    if (/^\d{1,3}(?:[.,\s]\d{3})+$/.test(raw)) {
-      const normalized = Number(raw.replace(/[.,\s]/g, ""));
-      if (Number.isFinite(normalized) && normalized > 0) return normalized;
-      continue;
-    }
-
-    const normalized = Number(raw.replace(",", "."));
-    if (Number.isFinite(normalized) && normalized > 0) return normalized;
-  }
-
-  return null;
-}
 
 /** Collapse WP size variants (-1024x768.jpg) into one image per base filename, keeping the largest. */
 function dedupeWpImages(urls: string[]): string[] {
@@ -48,7 +29,7 @@ function dedupeWpImages(urls: string[]): string[] {
     const url = unique[i];
     const base = url.replace(/-\d{2,5}x\d{2,5}(\.\w+)$/, "$1");
     const m = url.match(/-(\d{2,5})x(\d{2,5})\.\w+$/);
-    const area = m ? Number(m[1]) * Number(m[2]) : Infinity; // no suffix = original = largest
+    const area = m ? Number(m[1]) * Number(m[2]) : Infinity;
     const existing = groups.get(base);
     if (!existing) {
       groups.set(base, { url, area, order: i });
@@ -61,65 +42,202 @@ function dedupeWpImages(urls: string[]): string[] {
     .map((g) => g.url);
 }
 
-/** Convert ALL CAPS titles to Title Case */
 function toTitleCase(str: string): string {
   if (str !== str.toUpperCase()) return str;
-  return str
-    .toLowerCase()
-    .replace(/(?:^|\s|[-/])\S/g, (c) => c.toUpperCase());
+  return str.toLowerCase().replace(/(?:^|\s|[-/])\S/g, (c) => c.toUpperCase());
 }
 
-function buildListingMetaTitle(title: string | null | undefined): string {
-  const normalized = title ? toTitleCase(title) : "Property";
-  return normalized;
+function capitalize(str: string): string {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
-function buildListingMetaDescription(detail: DemoListing | null, isLand: boolean): string {
-  if (!detail) return "Property listing in Cape Verde";
+function relTime(iso: string | null | undefined): string {
+  if (!iso) return "recently";
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "recently";
+  const days = Math.max(0, Math.round((Date.now() - t) / 86_400_000));
+  if (days === 0) return "today";
+  if (days === 1) return "1d ago";
+  return `${days}d ago`;
+}
 
-  const parts = [
-    buildListingMetaTitle(detail.title),
-    `in ${detail.city ? `${detail.city}, ` : ""}${detail.island}, Cape Verde`,
-  ];
+function fmtShortDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
+}
 
-  if (detail.price) {
-    parts.push(`${formatPrice(detail.price, detail.currency)}`);
+function fmtDateTime(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return (
+    d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }).toUpperCase() +
+    " " +
+    d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+  );
+}
+
+/** Friendly "Today, 06:14" / "Yesterday, 14:22" / "12 Apr, 09:30" for
+ *  the inline verified strip — feels alive vs raw timestamps. */
+function fmtVerifiedTime(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffH = diffMs / 3_600_000;
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  if (diffH < 24 && now.getDate() === d.getDate()) return `Today, ${time}`;
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (yesterday.toDateString() === d.toDateString()) return `Yesterday, ${time}`;
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + `, ${time}`;
+}
+
+/** "48 days ago" / "2 days ago" — for first-seen freshness. */
+function fmtDaysAgo(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const days = Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000));
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  return `${days} days ago`;
+}
+
+/** Number of whole days since `iso` (clamped to 0). Used for "Days on index". */
+function daysSince(iso: string | null | undefined): number {
+  if (!iso) return 0;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 0;
+  return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000));
+}
+
+/** ±N% string for "vs median" cell. Returns null when the comparison
+ *  isn't meaningful — e.g. land priced against an overall house median
+ *  produces 1000%+ noise; bail out and let the row be hidden. */
+function priceVsMedian(price: number | null, median: number | null): { pct: number; label: string } | null {
+  if (price == null || median == null || median <= 0) return null;
+  const pct = Math.round(((price - median) / median) * 100);
+  // Above this band the comparison is almost certainly cross-category
+  // (land vs house, hotel vs apartment) — better to hide than to lie.
+  if (Math.abs(pct) > 200) return null;
+  if (pct === 0) return { pct: 0, label: "On median" };
+  const sign = pct > 0 ? "+" : "−";
+  return { pct, label: `${sign}${Math.abs(pct)}%` };
+}
+
+/** "gabetti.cv" from a full URL — used in the source-panel link label. */
+function hostFromUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
   }
+}
 
-  if (detail.property_type) {
-    parts.push(isLand ? `${detail.property_type} listing` : detail.property_type);
-  }
+/** Extract a short slug from source_id (e.g. "cv_gabetticasecapoverde:CV-TER339" → "TCV") */
+/* Map our free-form property_type onto schema.org Residence subtypes.
+   Falls back to "Residence" when nothing matches — still valid per the
+   schema and Google ignores rather than rejects. */
+function mapResidenceType(propertyType: string | null | undefined): string {
+  const t = (propertyType || "").toLowerCase();
+  if (/apart|flat|condo/.test(t)) return "Apartment";
+  if (/villa|house|moradia|casa|chalet/.test(t)) return "House";
+  if (/single.?family/.test(t)) return "SingleFamilyResidence";
+  if (/land|plot|terreno|parcela|terrain|lot/.test(t)) return "Place";
+  return "Residence";
+}
 
-  if (!isLand && detail.bedrooms != null) {
-    parts.push(detail.bedrooms === 0 ? "studio" : `${detail.bedrooms}-bedroom`);
-  }
-
-  return parts.join(" · ");
+function sourceSlug(sourceId: string): string {
+  const before = sourceId.split(":")[0] || sourceId;
+  // Take letters from after first underscore, uppercased, first 3-4 chars
+  const after = before.split("_").slice(1).join("");
+  if (after) return after.slice(0, 3).toUpperCase();
+  return before.slice(0, 3).toUpperCase();
 }
 
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toggle, isSaved } = useSaved();
-  const [listing, setListing] = useState<DemoListing | null>(null);
-  const [detailRaw, setDetailRaw] = useState<ListingDetailType | null>(null);
-  const [similar, setSimilar] = useState<DemoListing[]>([]);
+
+  const [detail, setDetail] = useState<ListingDetailType | null>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [translatedDescription, setTranslatedDescription] = useState<string | null>(null);
+  const [similar, setSimilar] = useState<ListingCard[]>([]);
+  const [marketCtx, setMarketCtx] = useState<IslandContext | null>(null);
 
-  const listingForMeta = listing;
-  const listingIsLand =
-    listingForMeta != null &&
-    (LAND_TYPES.test(listingForMeta.property_type ?? "") || LAND_TITLE.test(listingForMeta.title ?? ""));
+  const displayTitle = detail ? toTitleCase(detail.title) : "Property";
 
   useDocumentMeta(
-    listingForMeta ? buildListingMetaTitle(listingForMeta.title) : (error ? "Property not found" : "Property"),
-    buildListingMetaDescription(listingForMeta, Boolean(listingIsLand)),
-    listing?.image_urls?.[0] ? { image: listing.image_urls[0] } : undefined
+    detail ? displayTitle : error ? "Property not found" : "Property",
+    detail
+      ? `${displayTitle} in ${detail.city ? `${detail.city}, ` : ""}${detail.island}, Cape Verde.`
+      : "Property listing in Cape Verde",
+    images[0] ? { image: images[0] } : undefined
   );
+
+  /* JSON-LD RealEstateListing — gives Google the structured data needed for
+     property rich results. Injected as a single <script> tag in the head and
+     replaced (not duplicated) on each detail load. The mainEntity type maps
+     the listing's property_type onto the closest schema.org Residence type
+     so Google can categorize correctly. */
+  useEffect(() => {
+    if (!detail) return;
+    const SCRIPT_ID = "kv-jsonld-listing";
+    document.getElementById(SCRIPT_ID)?.remove();
+    const url = `https://kazaverde.com/listing/${detail.id}`;
+    const residenceType = mapResidenceType(detail.property_type);
+    const ld: Record<string, unknown> = {
+      "@context": "https://schema.org",
+      "@type": "RealEstateListing",
+      name: displayTitle,
+      url,
+      description: detail.description?.slice(0, 500) || displayTitle,
+      datePosted: detail.first_seen_at ?? detail.last_seen_at ?? undefined,
+      image: images.length > 0 ? images.slice(0, 6) : undefined,
+      mainEntity: {
+        "@type": residenceType,
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: detail.city || undefined,
+          addressRegion: detail.island,
+          addressCountry: "CV",
+        },
+        numberOfRooms: detail.bedrooms ?? undefined,
+        numberOfBathroomsTotal: detail.bathrooms ?? undefined,
+        floorSize: detail.property_size_sqm
+          ? { "@type": "QuantitativeValue", value: detail.property_size_sqm, unitCode: "MTK" }
+          : undefined,
+      },
+      offers: detail.price
+        ? {
+            "@type": "Offer",
+            price: detail.price,
+            priceCurrency: detail.currency || "EUR",
+            availability: "https://schema.org/InStock",
+            url,
+          }
+        : undefined,
+    };
+    const script = document.createElement("script");
+    script.id = SCRIPT_ID;
+    script.type = "application/ld+json";
+    script.text = JSON.stringify(ld);
+    document.head.appendChild(script);
+    return () => {
+      document.getElementById(SCRIPT_ID)?.remove();
+    };
+  }, [detail, images, displayTitle]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -132,86 +250,105 @@ export default function Detail() {
     setError(null);
     arei
       .getListing(id)
-      .then((detail) => {
+      .then((d) => {
         if (cancelled) return;
-        if (!detail) {
+        if (!d) {
           setError("Property not found.");
-          setListing(null);
+          setDetail(null);
           return;
         }
-        const demo: DemoListing = {
-          id: detail.id,
-          title: detail.title,
-          island: detail.island,
-          city: detail.city,
-          price: detail.price,
-          currency: detail.currency ?? "",
-          image_urls: dedupeWpImages(detail.image_urls ?? []),
-          bedrooms: detail.bedrooms,
-          bathrooms: detail.bathrooms,
-          property_type: detail.property_type,
-          land_area_sqm: detail.land_area_sqm,
-          property_size_sqm: detail.property_size_sqm,
-          description: detail.description ?? null,
-          description_html: detail.description_html ?? null,
-          first_seen_at: detail.first_seen_at,
-          source_id: detail.source_id,
-          source_url: detail.source_url,
-          last_seen_at: detail.last_seen_at,
-          is_new: detail.is_new,
-          _bg: PLACEHOLDER_BG,
-        };
-        setListing(demo);
-        setDetailRaw(detail);
+        setDetail(d);
+        setImages(dedupeWpImages(d.image_urls ?? []));
       })
       .catch((e) => {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Could not load property.");
-          setListing(null);
+          setDetail(null);
         }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   useEffect(() => {
     let cancelled = false;
-    const sourceText = listing?.description_html
-      ? stripHtml(listing.description_html)
-      : (listing?.description ?? "");
-
-    if (!sourceText) {
+    const source = detail?.description_html
+      ? stripHtml(detail.description_html)
+      : detail?.description ?? "";
+    if (!source || !looksItalian(source)) {
       setTranslatedDescription(null);
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }
-
-    if (!looksItalian(sourceText)) {
-      setTranslatedDescription(null);
-      return () => { cancelled = true; };
-    }
-
-    translateItalianToEnglish(sourceText).then((translated) => {
-      if (!cancelled) {
-        setTranslatedDescription(translated);
-      }
+    translateItalianToEnglish(source).then((t) => {
+      if (!cancelled) setTranslatedDescription(t);
     });
+    return () => {
+      cancelled = true;
+    };
+  }, [detail?.description, detail?.description_html]);
 
-    return () => { cancelled = true; };
-  }, [listing?.description, listing?.description_html]);
+  // Similar properties — fetch up to 9 so user can scroll through.
+  // minResults: 3 so the SDK keeps broadening its fallback chain (price
+  // ±30%, then type-only, then island-only) until at least 3 cards are
+  // available. Otherwise sparse niches (e.g. type "property" with a
+  // narrow price band) bottom out at 2 and the UI hides the section.
+  useEffect(() => {
+    if (!detail) {
+      setSimilar([]);
+      return;
+    }
+    let cancelled = false;
+    arei
+      .getSimilarListings({ listing: detail, limit: 9, minResults: 3 })
+      .then((cards) => {
+        if (!cancelled) setSimilar(cards);
+      })
+      .catch(() => {
+        if (!cancelled) setSimilar([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [detail]);
 
-  /* Keyboard navigation for gallery — must be before any early returns */
-  const images = listing?.image_urls ?? [];
+  // Market context
+  useEffect(() => {
+    if (!detail) {
+      setMarketCtx(null);
+      return;
+    }
+    let cancelled = false;
+    arei
+      .getIslandContext(detail.island, detail.price)
+      .then((c) => {
+        if (!cancelled) setMarketCtx(c);
+      })
+      .catch(() => {
+        if (!cancelled) setMarketCtx(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [detail?.island, detail?.price]);
+
   const hasMultipleImages = images.length > 1;
 
   useEffect(() => {
     setGalleryIndex(0);
-  }, [listing?.id]);
+  }, [detail?.id]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && lightboxOpen) { setLightboxOpen(false); return; }
+      if (e.key === "Escape" && lightboxOpen) {
+        setLightboxOpen(false);
+        return;
+      }
       if (!hasMultipleImages) return;
       if (e.key === "ArrowLeft") setGalleryIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
       if (e.key === "ArrowRight") setGalleryIndex((i) => (i >= images.length - 1 ? 0 : i + 1));
@@ -220,148 +357,19 @@ export default function Detail() {
     return () => window.removeEventListener("keydown", onKey);
   }, [hasMultipleImages, images.length, lightboxOpen]);
 
-  /* Lock body scroll when lightbox is open */
   useEffect(() => {
     if (lightboxOpen) {
       document.body.style.overflow = "hidden";
-      return () => { document.body.style.overflow = ""; };
+      return () => {
+        document.body.style.overflow = "";
+      };
     }
   }, [lightboxOpen]);
 
-  /* Fetch similar listings when detail is ready */
-  useEffect(() => {
-    if (!detailRaw) { setSimilar([]); return; }
-    let cancelled = false;
-    arei
-      .getSimilarListings({ listing: detailRaw, limit: 4 })
-      .then((cards: ListingCard[]) => {
-        if (!cancelled) setSimilar(cards.map(cardToDemoListing));
-      })
-      .catch(() => {
-        if (!cancelled) setSimilar([]);
-      });
-    return () => { cancelled = true; };
-  }, [detailRaw]);
-
-  /* Similar properties carousel scroll — hooks must be before early returns */
-  const simRef = useRef<HTMLDivElement>(null);
-  const [simCanPrev, setSimCanPrev] = useState(false);
-  const [simCanNext, setSimCanNext] = useState(false);
-
-  const updateSimArrows = useCallback(() => {
-    const el = simRef.current;
-    if (!el) return;
-    setSimCanPrev(el.scrollLeft > 4);
-    setSimCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  }, []);
-
-  useEffect(() => {
-    const el = simRef.current;
-    if (!el) return;
-    updateSimArrows();
-    el.addEventListener("scroll", updateSimArrows, { passive: true });
-    window.addEventListener("resize", updateSimArrows);
-    return () => {
-      el.removeEventListener("scroll", updateSimArrows);
-      window.removeEventListener("resize", updateSimArrows);
-    };
-  }, [similar, updateSimArrows]);
-
-  const scrollSim = (dir: -1 | 1) => {
-    const el = simRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * 280, behavior: "smooth" });
-  };
-
-  /* Touch swipe ref — must be before early returns */
   const touchStartX = useRef(0);
-
-  if (loading) {
-    return (
-      <>
-        <a className="db" onClick={() => navigate("/listings")}>
-          <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
-          Back to listings
-        </a>
-        <div style={{ padding: "3rem", textAlign: "center" }}>Loading property…</div>
-      </>
-    );
-  }
-
-  if (error || !listing) {
-    return (
-      <NotFound
-        title="Property not found"
-        message="This listing may have been removed or the link is no longer valid. Browse our latest properties to find something similar."
-      />
-    );
-  }
-
-  const displayTitle = toTitleCase(listing.title);
-  const saved = isSaved(listing.id);
-
-  const listingSchema: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "RealEstateListing",
-    "name": displayTitle,
-    "url": `https://kazaverde.com/listing/${listing.id}`,
-    "description": buildListingMetaDescription(listing, listingIsLand),
-    "address": {
-      "@type": "PostalAddress",
-      ...(listing.city ? { "addressLocality": listing.city } : {}),
-      "addressRegion": listing.island,
-      "addressCountry": "CV",
-    },
-    ...(listing.first_seen_at ? { "datePosted": listing.first_seen_at } : {}),
-    ...(images[0] ? { "image": images[0] } : {}),
-    ...(listing.price
-      ? {
-          "offers": {
-            "@type": "Offer",
-            "price": listing.price,
-            "priceCurrency": listing.currency || "EUR",
-          },
-        }
-      : {}),
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
   };
-  const mobileDisplayPrice = formatPrice(listing.price, listing.currency);
-  const showMobileCvePrice = Boolean(listing.price && listing.currency === "EUR");
-  const isLongMobilePrice = mobileDisplayPrice.length >= 10;
-  const isVeryLongMobilePrice = mobileDisplayPrice.length >= 11;
-
-  const isLand = LAND_TYPES.test(listing.property_type ?? "") || LAND_TITLE.test(listing.title ?? "");
-  const sourceText = listing.description_html ? stripHtml(listing.description_html) : (listing.description ?? "");
-  const parsedAreaFromText = parseAreaSqmFromText(sourceText);
-  const effectiveLandAreaSqm =
-    isLand
-    && parsedAreaFromText
-    && (!listing.land_area_sqm || parsedAreaFromText > listing.land_area_sqm * 50)
-      ? parsedAreaFromText
-      : listing.land_area_sqm;
-  const specs: { value: string; label: string }[] = [];
-  if (listing.property_type) specs.push({ value: listing.property_type, label: "Type" });
-  if (!isLand) {
-    const bed = formatBedrooms(listing.bedrooms);
-    if (bed) specs.push({ value: listing.bedrooms === 0 ? "Studio" : String(listing.bedrooms), label: bed === "Studio" ? "Type" : "Bedrooms" });
-    if (listing.bathrooms && listing.bathrooms > 0) specs.push({ value: String(listing.bathrooms), label: "Bathrooms" });
-  }
-  if (effectiveLandAreaSqm) {
-    specs.push({ value: `${effectiveLandAreaSqm.toLocaleString()}`, label: "m² Land" });
-  }
-
-  const mainImageStyle: React.CSSProperties =
-    images.length > 0
-      ? { backgroundImage: `url(${images[galleryIndex]})`, backgroundSize: "cover", backgroundPosition: "center" }
-      : { background: listing._bg };
-
-  const goPrev = () => setGalleryIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
-  const goNext = () => setGalleryIndex((i) => (i >= images.length - 1 ? 0 : i + 1));
-
-  /* Touch swipe handlers for gallery + lightbox */
-  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
   const onTouchEnd = (e: React.TouchEvent) => {
     if (!hasMultipleImages) return;
     const delta = e.changedTouches[0].clientX - touchStartX.current;
@@ -369,229 +377,977 @@ export default function Detail() {
     else if (delta < -50) goNext();
   };
 
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(listingSchema) }}
-      />
-      <a className="db" onClick={() => navigate("/listings")}>
-        <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="19" y1="12" x2="5" y2="12" />
-          <polyline points="12 19 5 12 12 5" />
-        </svg>
-        Back to listings
-      </a>
+  const goPrev = () => setGalleryIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
+  const goNext = () => setGalleryIndex((i) => (i >= images.length - 1 ? 0 : i + 1));
 
-      <div className="dhi anim-fu delay-1" onClick={() => images.length > 0 && setLightboxOpen(true)} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        <div className="ph" style={mainImageStyle} />
-        {listing.is_new && <span className="dhi-badge dhi-new">NEW</span>}
-        {listing.property_type && <span className="dhi-badge dhi-type">{listing.property_type.toUpperCase()}</span>}
-        {listing.price && (
-          <span className="dhi-badge dhi-price">{formatPrice(listing.price, listing.currency)}</span>
-        )}
-        {hasMultipleImages && (
+  if (loading) {
+    return (
+      <div className="kv-d">
+        <div className="kv-d-topbar">
+          <button type="button" className="kv-d-back" onClick={() => navigate("/")}>← All listings</button>
+        </div>
+        <div className="kv-empty"><strong>Loading…</strong></div>
+      </div>
+    );
+  }
+
+  if (error || !detail) {
+    return (
+      <NotFound
+        title="Property not found"
+        message="This listing may have been removed or the link is no longer valid."
+      />
+    );
+  }
+
+  const interiorArea = detail.property_size_sqm;
+  const landArea = detail.land_area_sqm;
+  const effectiveArea = interiorArea || landArea;
+  const pricePerSqm =
+    detail.price && effectiveArea ? Math.round(detail.price / effectiveArea) : null;
+
+  const isLand = (detail.property_type || "").toLowerCase() === "land";
+
+  // Build facts strip: Type / Bedrooms / Bathrooms / Interior / Price per m²
+  // For land: Type / Land / Price per m² (bed/bath omitted as "—")
+  const typeLabel = detail.property_type ? capitalize(detail.property_type) : "—";
+
+  return (
+    <div className="kv-d">
+      {/* Breadcrumb: Listings / Island / City — no internal id, the page
+          title carries the listing identity. */}
+      <div className="kv-d-crumb">
+        <Link to="/">Listings</Link>
+        <span className="kv-d-crumb-sep">/</span>
+        <Link to={`/?island=${encodeURIComponent(detail.island)}`}>{detail.island}</Link>
+        {detail.city && (
           <>
-            <button
-              type="button"
-              className="dg-arrow dg-arrow-prev"
-              onClick={(e) => { e.stopPropagation(); goPrev(); }}
-              aria-label="Previous image"
-            >
-              <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><polyline points="15 18 9 12 15 6" /></svg>
-            </button>
-            <button
-              type="button"
-              className="dg-arrow dg-arrow-next"
-              onClick={(e) => { e.stopPropagation(); goNext(); }}
-              aria-label="Next image"
-            >
-              <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><polyline points="9 18 15 12 9 6" /></svg>
-            </button>
-            <div className="dg-counter">{galleryIndex + 1} / {images.length}</div>
+            <span className="kv-d-crumb-sep">/</span>
+            <span className="kv-d-crumb-cur">{detail.city}</span>
           </>
         )}
       </div>
 
-      <div className="dg anim-fu delay-2">
-        <div>
-          <h1 className="dt">{displayTitle}</h1>
-          <div className="dl">
-            <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
-            {formatLocation(listing.city, listing.island)}, Cape Verde
+      {/* Top meta rail: 3-row grid — eyebrow / title+price / subline+€per-m². */}
+      <header className="kv-d-top">
+        <div className="kv-d-top-grid">
+          <div className="kv-d-eyebrow">
+            <span className={`kv-d-tag${detail.is_new ? " kv-d-tag-new" : ""}`}>
+              {detail.is_new ? "New" : "Indexed"}
+            </span>
+            {detail.property_type && <b>{typeLabel}</b>}
+            <span className="kv-d-eyebrow-dot" aria-hidden="true" />
+            <span>{formatLocation(detail.city, detail.island)}</span>
+            {/* Source name intentionally omitted here — already shown
+                on the sidebar CTA button and the Original Source panel. */}
           </div>
-
-          {/* Mobile-only: price + CTA visible early */}
-          <div className={`dm-price-bar${isLongMobilePrice ? " dm-price-bar-tight" : ""}`}>
-            <div className="dm-price-copy">
-              <div
-                className={`dm-price${isLongMobilePrice ? " dm-price-long" : ""}${isVeryLongMobilePrice ? " dm-price-xlong" : ""}`}
-              >
-                {mobileDisplayPrice}
-              </div>
-              {showMobileCvePrice && (
-                <div className="dm-price-cve">
-                  Approx. {(listing.price! * 110.265).toLocaleString("en-US", { maximumFractionDigits: 0 })} CVE
-                </div>
-              )}
-            </div>
-            <div className="dm-actions">
-              {listing.source_url && (
-                <a className="dm-cta" href={listing.source_url} target="_blank" rel="noopener noreferrer">
-                  VIEW ON SOURCE
-                </a>
-              )}
-              <button
-                type="button"
-                className={`dm-save${saved ? " is-saved" : ""}`}
-                onClick={() => toggle(listing.id)}
-                aria-label={saved ? `Remove ${displayTitle} from saved properties` : `Save ${displayTitle} to saved properties`}
-                aria-pressed={saved}
-                title={saved ? "Saved" : "Save"}
-              >
-                <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                </svg>
-              </button>
-            </div>
+          <h1 className="kv-d-title">{displayTitle}</h1>
+          <div className="kv-d-price-block">
+            <div className="kv-d-price">{formatPrice(detail.price, detail.currency)}</div>
           </div>
-
-          {specs.length > 0 && (
-            <div className="dsg">
-              {specs.map((s) => (
-                <div className="sb" key={s.label}>
-                  <div className="v">{s.value}</div>
-                  <div className="l">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="dd">
-            <h3>About this property</h3>
-            {translatedDescription ? (
-              <p>{translatedDescription}</p>
-            ) : listing.description_html ? (
-              <div className="dd-html" dangerouslySetInnerHTML={{ __html: listing.description_html }} />
-            ) : listing.description ? (
-              <p>{listing.description}</p>
-            ) : (
-              <p>
-                This property is located in {formatLocation(listing.city, listing.island)}, Cape Verde.
-                {listing.property_type ? ` Listed as ${listing.property_type.toLowerCase()}.` : ""}
-                {effectiveLandAreaSqm ? ` Land area: ${effectiveLandAreaSqm.toLocaleString()} m².` : ""}
-              </p>
+          <div className="kv-d-subline">
+            {!isLand && detail.bedrooms != null && (
+              <>
+                <b>{detail.bedrooms === 0 ? "Studio" : detail.bedrooms}</b> bed
+              </>
             )}
-            <p className="dd-source">
-              Sourced from <strong>{formatSourceLabel(listing.source_id)}</strong>. Information is extracted from
-              the public listing and may not reflect the current state.
-            </p>
-            {listing.last_seen_at && (
-              <p className="last-checked">
-                Last checked: {new Date(listing.last_seen_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-              </p>
+            {!isLand && detail.bathrooms != null && detail.bathrooms > 0 && (
+              <>
+                {" · "}
+                <b>{detail.bathrooms}</b> bath
+              </>
             )}
+            {effectiveArea != null && (
+              <>
+                {" · "}
+                <b>{effectiveArea.toLocaleString()}</b> m²
+              </>
+            )}
+          </div>
+          {/* Always rendered to reserve vertical space; empty when €/m² unknown.
+              Format mirrors listing-v1.html .ppm: bold value + " per m²". */}
+          <div className="kv-d-price-cve">
+            {pricePerSqm ? <><b>€{pricePerSqm.toLocaleString()}</b> per m²</> : ""}
           </div>
         </div>
 
-        <aside className="ds">
-          <div className="cc">
-            <h4>Interested in this property?</h4>
-            <div className="src">Listed by {formatSourceLabel(listing.source_id)}</div>
-            <div className="dp">{formatPrice(listing.price, listing.currency)}</div>
-            {listing.price && listing.currency === "EUR" && (
-              <div className="dpn">
-                Approx. {(listing.price * 110.265).toLocaleString("en-US", { maximumFractionDigits: 0 })} CVE
+        {/* Verified strip — freshness signal inline with the header per
+            cv-listing.html. Reads as "this is current data" instead of
+            burying first/last-seen in the sidebar. */}
+        <div className="kv-d-verified">
+          <span className="kv-d-verified-dot" aria-hidden="true" />
+          <span className="kv-d-verified-lbl">Last verified</span>
+          <span className="kv-d-verified-val">{fmtVerifiedTime(detail.last_seen_at)}</span>
+          {detail.first_seen_at && (
+            <>
+              <span className="kv-d-verified-sep" aria-hidden="true">·</span>
+              <span className="kv-d-verified-val">Indexed {fmtDaysAgo(detail.first_seen_at)}</span>
+            </>
+          )}
+        </div>
+      </header>
+
+      {/* Gallery — mosaic if ≥5 images, else single hero */}
+      {images.length >= 5 ? (
+        <GalleryMosaic
+          images={images}
+          isNew={detail.is_new}
+          onOpen={(i) => {
+            setGalleryIndex(i);
+            setLightboxOpen(true);
+          }}
+        />
+      ) : (
+        <div
+          className="kv-d-hero"
+          onClick={() => images.length > 0 && setLightboxOpen(true)}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+        >
+          <div
+            className="kv-d-hero-img"
+            style={
+              images.length > 0
+                ? {
+                    backgroundImage: `url(${images[galleryIndex]})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }
+                : { background: "linear-gradient(135deg, #c9d4c8 0%, #a8bea4 100%)" }
+            }
+          />
+          {detail.is_new && <span className="kv-d-flag">New</span>}
+          {hasMultipleImages && (
+            <>
+              <button
+                type="button"
+                className="kv-d-arrow kv-d-arrow-prev"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goPrev();
+                }}
+                aria-label="Previous image"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className="kv-d-arrow kv-d-arrow-next"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goNext();
+                }}
+                aria-label="Next image"
+              >
+                ›
+              </button>
+              <div className="kv-d-counter">
+                {galleryIndex + 1} / {images.length}
               </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Facts strip — editorial 5-col between black rules */}
+      <div className="kv-d-facts">
+        <div className="kv-d-fact">
+          <div className="kv-d-fact-k">Type</div>
+          <div className="kv-d-fact-v">{typeLabel}</div>
+        </div>
+        <div className="kv-d-fact">
+          <div className="kv-d-fact-k">Bedrooms</div>
+          <div className="kv-d-fact-v">
+            {isLand || detail.bedrooms == null
+              ? "—"
+              : detail.bedrooms === 0
+                ? "Studio"
+                : detail.bedrooms}
+          </div>
+        </div>
+        <div className="kv-d-fact">
+          <div className="kv-d-fact-k">Bathrooms</div>
+          <div className="kv-d-fact-v">
+            {isLand || detail.bathrooms == null || detail.bathrooms === 0 ? "—" : detail.bathrooms}
+          </div>
+        </div>
+        <div className="kv-d-fact">
+          <div className="kv-d-fact-k">{isLand ? "Land" : "Interior"}</div>
+          <div className="kv-d-fact-v">
+            {effectiveArea != null ? (
+              <>
+                {effectiveArea.toLocaleString()}
+                <small>m²</small>
+              </>
+            ) : (
+              "—"
             )}
-            <div className="cc-actions">
-              {listing.source_url && (
-                <a className="bp" style={{ width: "100%", textAlign: "center", padding: 14, borderRadius: 10, fontSize: "0.82rem", display: "block" }} href={listing.source_url} target="_blank" rel="noopener noreferrer">
-                  VIEW ON SOURCE
+          </div>
+        </div>
+        <div className="kv-d-fact">
+          <div className="kv-d-fact-k">Price / m²</div>
+          <div className="kv-d-fact-v">{pricePerSqm ? `€${pricePerSqm.toLocaleString()}` : "—"}</div>
+        </div>
+      </div>
+
+      {/* Main 2-col: description + INDEX RECORD sidebar */}
+      <div className="kv-d-main">
+        <div>
+          {/* Description — descriptions are rewritten with AI before
+              publish to normalize tone and strip sales language.
+              The badge in the heading is the primary tell; a small
+              footnote after the body catches readers who scrolled past
+              the heading. Source agent stays credited in the sidebar. */}
+          <div className="kv-d-block">
+            <div className="kv-d-block-head">
+              <h2 className="kv-d-block-h">Description</h2>
+              <span
+                className="kv-d-ai-badge"
+                title="Rewritten with AI to normalize tone and remove sales language. Source attribution unchanged — see Original source panel."
+              >
+                <span className="kv-d-ai-dot" aria-hidden="true" />
+                AI · Rewritten
+              </span>
+            </div>
+            {translatedDescription ? (
+              <p>{translatedDescription}</p>
+            ) : detail.description_html ? (
+              <div className="kv-d-html" dangerouslySetInnerHTML={{ __html: detail.description_html }} />
+            ) : detail.description ? (
+              <p>{detail.description}</p>
+            ) : (
+              <p>
+                This property is located in {formatLocation(detail.city, detail.island)}, Cape Verde.
+              </p>
+            )}
+            <p className="kv-d-ai-caption">
+              Description rewritten with AI for clarity — original source attribution unchanged.
+            </p>
+          </div>
+
+          {/* Property details — vertical k/v table mirroring cv-listing
+              reference. Each row is the same .kv-d-meta-row primitive
+              used by the sidebar Index Record (no new visual idiom).
+              Only rows with real data render — and the whole section
+              hides itself if fewer than 4 fields are available, so the
+              card never reads as a half-empty stub for sparse listings.
+              Fields beyond beds/baths/areas (year built, condition,
+              parking, …) light up automatically once the ingestion
+              pipeline starts extracting them. */}
+          {(() => {
+            const rows: { k: string; v: React.ReactNode }[] = [];
+            if (detail.property_type) rows.push({ k: "Type", v: typeLabel });
+            if (!isLand && detail.bedrooms != null) {
+              rows.push({ k: "Bedrooms", v: detail.bedrooms === 0 ? "Studio" : detail.bedrooms });
+            }
+            if (!isLand && detail.bathrooms != null && detail.bathrooms > 0) {
+              rows.push({ k: "Bathrooms", v: detail.bathrooms });
+            }
+            if (detail.property_size_sqm != null) {
+              rows.push({ k: "Living area", v: <>{detail.property_size_sqm.toLocaleString()} m²</> });
+            }
+            if (detail.land_area_sqm != null) {
+              rows.push({ k: "Plot area", v: <>{detail.land_area_sqm.toLocaleString()} m²</> });
+            }
+            if (detail.city) {
+              rows.push({ k: "Location", v: formatLocation(detail.city, detail.island) });
+            }
+            if (rows.length < 4) return null;
+            return (
+              <div className="kv-d-table-block">
+                <div className="kv-d-table-eyebrow">Property details</div>
+                <div className="kv-d-table">
+                  {rows.map((r) => (
+                    <div className="kv-d-table-row" key={r.k}>
+                      <div className="kv-d-table-k">{r.k}</div>
+                      <div className="kv-d-table-v">{r.v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+        </div>
+
+        {/* Buyer-facing sidebar — three stacked panels mirroring the
+            cv-listing reference rhythm:
+              1. ACT   — Listing summary (price + specs + CTAs, strong border)
+              2. KNOW  — Index record (k/v data rows, soft border)
+              3. TRUST — Original source (attribution + disclaimer, soft border)
+            Visual hierarchy: Panel 1 carries the action and gets the
+            strong black hairline; Panels 2/3 use the softer rule so the
+            row reads as a sequence, not three competing boxes. */}
+        <aside className="kv-d-aside">
+          {/* Panel 1 — Listing summary. Same border weight (--kv-rule)
+              as the meta table and source panel below; only the surface
+              changes (white / transparent / off-white) so the column
+              reads as one harmonised stack instead of three competing
+              card treatments. cv-listing.html .s-panel pattern. */}
+          <div className="kv-d-card">
+            <div className="kv-d-card-h">
+              <span>Listing summary</span>
+            </div>
+            <div className="kv-d-card-body">
+              {detail.price && (
+                <div className="kv-d-card-price-block">
+                  <div className="kv-d-card-price">
+                    {formatPrice(detail.price, detail.currency)}
+                  </div>
+                  <div className="kv-d-card-subline">
+                    {pricePerSqm != null && (
+                      <>
+                        <b>€{pricePerSqm.toLocaleString()}</b>/m²
+                        <span className="kv-d-card-subline-sep"> · </span>
+                      </>
+                    )}
+                    <span>Asking price</span>
+                  </div>
+                </div>
+              )}
+
+              {(detail.bedrooms != null || detail.bathrooms != null || detail.property_size_sqm != null || detail.land_area_sqm != null) && (
+                <div className="kv-d-spec-row">
+                  {detail.bedrooms != null && (
+                    <span className="kv-d-spec-token">
+                      <b>{detail.bedrooms === 0 ? "Studio" : detail.bedrooms}</b> {detail.bedrooms === 1 ? "bed" : "beds"}
+                    </span>
+                  )}
+                  {detail.bathrooms != null && detail.bathrooms > 0 && (
+                    <span className="kv-d-spec-token">
+                      <b>{detail.bathrooms}</b> {detail.bathrooms === 1 ? "bath" : "baths"}
+                    </span>
+                  )}
+                  {(detail.property_size_sqm ?? detail.land_area_sqm) != null && (
+                    <span className="kv-d-spec-token">
+                      <b>{detail.property_size_sqm ?? detail.land_area_sqm}</b> m²
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {detail.source_url && (
+                <a
+                  className="kv-d-btn-primary"
+                  href={detail.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span>View on {formatSourceLabel(detail.source_id)}</span>
+                  <span aria-hidden="true">→</span>
                 </a>
               )}
               <button
                 type="button"
-                className={`boc detail-save-sidebar${saved ? " is-saved" : ""}`}
-                onClick={() => toggle(listing.id)}
-                aria-label={saved ? `Remove ${displayTitle} from saved properties` : `Save ${displayTitle} to saved properties`}
-                aria-pressed={saved}
+                className={`kv-d-btn-ghost${isSaved(detail.id) ? " is-saved" : ""}`}
+                onClick={() => toggle(detail.id)}
+                aria-pressed={isSaved(detail.id)}
               >
-                <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                </svg>
-                <span>{saved ? "Saved" : "Save property"}</span>
+                <span>{isSaved(detail.id) ? "✓ Saved to shortlist" : "Save to shortlist"}</span>
+                <span aria-hidden="true">↗</span>
               </button>
             </div>
+          </div>
+
+          {/* Panel 2 — Status table. Same border weight as Panel 1 + 3,
+              transparent surface. cv-listing.html .s-meta pattern: a
+              clean tabular grid (1fr 1fr per row) with no eyebrow
+              header — the data IS the section. */}
+          {(() => {
+            const days = daysSince(detail.first_seen_at);
+            const vsMed = priceVsMedian(detail.price, marketCtx?.medianPrice ?? null);
+            return (
+              <div className="kv-d-meta-table">
+                <div className="kv-d-meta-table-row">
+                  <div className="kv-d-meta-table-k">Status</div>
+                  <div className="kv-d-meta-table-v">Active</div>
+                </div>
+                <div className="kv-d-meta-table-row">
+                  <div className="kv-d-meta-table-k">First indexed</div>
+                  <div className="kv-d-meta-table-v">{fmtShortDate(detail.first_seen_at)}</div>
+                </div>
+                <div className="kv-d-meta-table-row">
+                  <div className="kv-d-meta-table-k">Days on index</div>
+                  <div className="kv-d-meta-table-v">{days} {days === 1 ? "day" : "days"}</div>
+                </div>
+                <div className="kv-d-meta-table-row">
+                  <div className="kv-d-meta-table-k">Last verified</div>
+                  <div className="kv-d-meta-table-v">{fmtDateTime(detail.last_seen_at)}</div>
+                </div>
+                {marketCtx?.medianPrice != null && (
+                  <div className="kv-d-meta-table-row">
+                    <div className="kv-d-meta-table-k">{detail.island} median</div>
+                    <div className="kv-d-meta-table-v">{formatMedian(marketCtx.medianPrice)}</div>
+                  </div>
+                )}
+                {vsMed && (
+                  <div className="kv-d-meta-table-row">
+                    <div className="kv-d-meta-table-k">vs median</div>
+                    <div className={`kv-d-meta-table-v${vsMed.pct < 0 ? " is-lower" : vsMed.pct > 0 ? " is-higher" : ""}`}>
+                      {vsMed.label}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Panel 3 — Original source (trust + disclaimer) */}
+          <div className="kv-d-card kv-d-card-soft kv-d-source">
+            <div className="kv-d-source-lbl">Original source</div>
+            <div className="kv-d-source-name">{formatSourceLabel(detail.source_id)}</div>
+            {detail.source_url && (
+              <a
+                className="kv-d-source-link"
+                href={detail.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View on {hostFromUrl(detail.source_url) || "source"} →
+              </a>
+            )}
+            <p className="kv-d-source-disc">
+              This index reproduces public listing data only. We have no affiliation with the
+              source agent or the seller. Contact the agent directly for viewings, offers, and
+              legal advice — or see our <Link to="/blog">buying guide</Link> for the basics.
+            </p>
           </div>
         </aside>
       </div>
 
-      {listing.price && !isLand && (
-        <MortgageCalculator price={listing.price} />
+      {/* Monthly Cost */}
+      {detail.price && !isLand && <KvMortgage price={detail.price} />}
+
+      {/* Market Context */}
+      {marketCtx && <KvMarketContext ctx={marketCtx} island={detail.island} />}
+
+      {/* Similar Properties — minimum 3 cards or hide. A 1- or 2-card
+          row breaks the editorial grid (last column reads as missing,
+          not as a curated short row). Better to drop the section than
+          ship a sparse "Similar" rail. */}
+      {similar.length >= 3 && <KvSimilar cards={similar} />}
+
+      {/* Mobile sticky CTA — visible <768px, mirrors aside's primary
+          action so the View-on-source link is one tap away while
+          scrolling. Uses position: fixed at viewport bottom. */}
+      {detail.source_url && (
+        <div className="kv-d-mcta" role="region" aria-label="Listing actions">
+          <div className="kv-d-mcta-info">
+            {detail.price && (
+              <div className="kv-d-mcta-price">{formatPrice(detail.price, detail.currency)}</div>
+            )}
+            <div className="kv-d-mcta-source">via {formatSourceLabel(detail.source_id)}</div>
+          </div>
+          <a
+            className="kv-d-mcta-btn"
+            href={detail.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View <span aria-hidden="true">→</span>
+          </a>
+        </div>
       )}
 
-      <MarketContext island={listing.island} price={listing.price} />
+      {/* Lightbox */}
+      {lightboxOpen &&
+        images.length > 0 &&
+        createPortal(
+          <div
+            className="kv-d-lb"
+            onClick={() => setLightboxOpen(false)}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+          >
+            <button className="kv-d-lb-close" onClick={() => setLightboxOpen(false)} aria-label="Close">
+              ×
+            </button>
+            {hasMultipleImages && (
+              <>
+                <button
+                  className="kv-d-lb-arrow kv-d-lb-prev"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goPrev();
+                  }}
+                  aria-label="Previous image"
+                >
+                  ‹
+                </button>
+                <button
+                  className="kv-d-lb-arrow kv-d-lb-next"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goNext();
+                  }}
+                  aria-label="Next image"
+                >
+                  ›
+                </button>
+              </>
+            )}
+            <img
+              className="kv-d-lb-img"
+              src={images[galleryIndex]}
+              alt={`Photo ${galleryIndex + 1} of ${images.length}`}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="kv-d-lb-counter">
+              {galleryIndex + 1} / {images.length}
+            </div>
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+}
 
-      {similar.length > 0 && (
-        <section className="dsim">
-          <div className="dsim-header">
-            <h2 className="dsim-h">Similar <em>Properties</em></h2>
-            <div className="dsim-nav">
-              <button
-                type="button"
-                className={`dsim-arrow${simCanPrev ? "" : " dsim-arrow-off"}`}
-                onClick={() => scrollSim(-1)}
-                aria-label="Scroll left"
-              >
-                <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><polyline points="15 18 9 12 15 6" /></svg>
-              </button>
-              <button
-                type="button"
-                className={`dsim-arrow${simCanNext ? "" : " dsim-arrow-off"}`}
-                onClick={() => scrollSim(1)}
-                aria-label="Scroll right"
-              >
-                <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><polyline points="9 18 15 12 9 6" /></svg>
-              </button>
+/* ─────────────────────────────────────────────────────────
+   Gallery mosaic — 2fr 1fr 1fr with primary spanning 2 rows
+──────────────────────────────────────────────────────────── */
+
+function GalleryMosaic({
+  images,
+  isNew,
+  onOpen,
+}: {
+  images: string[];
+  isNew: boolean;
+  onOpen: (index: number) => void;
+}) {
+  // Show 5 tiles: primary (idx 0) + 4 smaller tiles
+  const tiles = images.slice(0, 5);
+  const extraCount = Math.max(0, images.length - 5);
+
+  return (
+    <div className="kv-d-gallery">
+      {tiles.map((url, i) => {
+        const isPrimary = i === 0;
+        const isLast = i === tiles.length - 1;
+        return (
+          <div
+            key={url + i}
+            className={`kv-d-gtile${isPrimary ? " kv-d-gtile-primary" : ""}`}
+            style={{ backgroundImage: `url(${url})` }}
+            onClick={() => onOpen(i)}
+            role="button"
+            tabIndex={0}
+          >
+            {isPrimary && isNew && <span className="kv-d-g-flag">New</span>}
+            {isPrimary && !isNew && <span className="kv-d-g-flag">Primary</span>}
+            {isLast && extraCount > 0 && (
+              <span className="kv-d-g-count">+{extraCount} images</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   Monthly Cost Estimate
+──────────────────────────────────────────────────────────── */
+
+function fmtEur(n: number, decimals = 0): string {
+  return n.toLocaleString("en-US", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function parseNum(raw: string, allowDecimal = false): number {
+  const cleaned = allowDecimal
+    ? raw.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1")
+    : raw.replace(/[^0-9]/g, "");
+  return cleaned === "" ? 0 : Number(cleaned);
+}
+
+function KvMortgage({ price }: { price: number }) {
+  const [input, setInput] = useState<MortgageInput>({
+    totalAmount: price,
+    downPaymentPct: 20,
+    interestRate: 4.5,
+    loanTermYears: 25,
+    propertyTaxPct: 0.3,
+    insuranceAnnual: 600,
+    hoaMonthly: 0,
+    maintenanceMonthly: 50,
+    utilitiesMonthly: 0,
+  });
+
+  const [rawInterestRate, setRawInterestRate] = useState(String(input.interestRate));
+  /* Mobile-only: collapses property tax + carrying costs (insurance, HOA,
+     maintenance, utilities) behind a Show more toggle. Defaults are sane,
+     so the typical reader can submit-by-skip. The toggle button hides
+     itself on desktop where space is no constraint and all fields show. */
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const set = <K extends keyof MortgageInput>(key: K, val: MortgageInput[K]) =>
+    setInput((prev) => ({ ...prev, [key]: val }));
+
+  const result = useMemo(() => calcMortgage(input), [input]);
+
+  const totalInterest = Math.max(0, result.monthlyMortgage * input.loanTermYears * 12 - result.loanAmount);
+  const totalCost = result.downPayment + result.loanAmount + totalInterest;
+
+  const rows: { label: string; value: number }[] = [
+    { label: "Loan payment", value: result.monthlyMortgage },
+    { label: "Property tax", value: result.monthlyTax },
+    { label: "Insurance", value: result.monthlyInsurance },
+    { label: "Condo fee", value: result.monthlyHoa },
+    { label: "Maintenance", value: result.monthlyMaintenance },
+    { label: "Utilities", value: result.monthlyUtilities },
+  ].filter((r) => r.value > 0);
+
+  return (
+    <section className="kv-d-section">
+      <div className="kv-d-section-head">
+        <div>
+          <div className="kv-d-ey">Estimate</div>
+          <h2 className="kv-d-h2">Monthly cost</h2>
+        </div>
+      </div>
+
+      <div className="kv-d-mc">
+        <div className="kv-d-mc-inputs">
+          {/* Loan terms — primary inputs */}
+          <div className="kv-d-mc-field kv-d-mc-field-wide">
+            <label>Property price</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={input.totalAmount || ""}
+              onChange={(e) => set("totalAmount", parseNum(e.target.value))}
+            />
+          </div>
+          <div className="kv-d-mc-field">
+            <label>Deposit ({input.downPaymentPct}%)</label>
+            <input
+              type="range"
+              min={0}
+              max={50}
+              step={1}
+              value={input.downPaymentPct}
+              onChange={(e) => set("downPaymentPct", Number(e.target.value))}
+            />
+          </div>
+          <div className="kv-d-mc-field">
+            <label>Loan term ({input.loanTermYears}y)</label>
+            <input
+              type="range"
+              min={5}
+              max={40}
+              step={1}
+              value={input.loanTermYears}
+              onChange={(e) => set("loanTermYears", Number(e.target.value))}
+            />
+          </div>
+          <div className="kv-d-mc-field">
+            <label>Interest rate (%)</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={rawInterestRate}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
+                setRawInterestRate(raw);
+                const n = raw === "" || raw === "." ? 0 : Number(raw);
+                if (!isNaN(n)) set("interestRate", Math.min(15, n));
+              }}
+            />
+          </div>
+          {/* Advanced fields — wrapped in a display:contents group so they
+              still flow into the parent grid on desktop. On mobile, the
+              wrapper is hidden until the reader opens the toggle below. */}
+          <div className="kv-d-mc-advanced" data-open={showAdvanced ? "true" : "false"}>
+            <div className="kv-d-mc-field">
+              <label>Property tax (%)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={input.propertyTaxPct}
+                onChange={(e) => set("propertyTaxPct", parseNum(e.target.value, true))}
+              />
+            </div>
+            <div className="kv-d-mc-field">
+              <label>Insurance (€/yr)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={input.insuranceAnnual || ""}
+                onChange={(e) => set("insuranceAnnual", parseNum(e.target.value))}
+              />
+            </div>
+            <div className="kv-d-mc-field">
+              <label>Condo fee (€/mo)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={input.hoaMonthly || ""}
+                onChange={(e) => set("hoaMonthly", parseNum(e.target.value))}
+              />
+            </div>
+            <div className="kv-d-mc-field">
+              <label>Maintenance (€/mo)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={input.maintenanceMonthly || ""}
+                onChange={(e) => set("maintenanceMonthly", parseNum(e.target.value))}
+              />
+            </div>
+            <div className="kv-d-mc-field">
+              <label>Utilities (€/mo)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={input.utilitiesMonthly || ""}
+                onChange={(e) => set("utilitiesMonthly", parseNum(e.target.value))}
+              />
             </div>
           </div>
-          <div className="dsim-grid" ref={simRef}>
-            {similar.map((s) => (
-              <PropertyCard key={s.id} listing={s} disableSwipe />
+          <button
+            type="button"
+            className="kv-d-mc-advanced-toggle"
+            onClick={() => setShowAdvanced((s) => !s)}
+            aria-expanded={showAdvanced}
+          >
+            <span>{showAdvanced ? "Hide advanced costs" : "Show advanced costs"}</span>
+            <span aria-hidden="true">{showAdvanced ? "−" : "+"}</span>
+          </button>
+        </div>
+
+        <div className="kv-d-mc-result">
+          <div className="kv-d-mc-hero">
+            <div className="kv-d-mc-hero-label">Estimated monthly</div>
+            <div className="kv-d-mc-hero-value">{fmtEur(result.totalMonthly, 0)}</div>
+            <div className="kv-d-mc-hero-sub">per month</div>
+          </div>
+          <div className="kv-d-mc-table">
+            {rows.map((r) => (
+              <div className="kv-d-mc-row" key={r.label}>
+                <span>{r.label}</span>
+                <span className="kv-d-mc-val">{fmtEur(r.value, 0)}</span>
+              </div>
             ))}
           </div>
-        </section>
-      )}
+          <div className="kv-d-mc-summary">
+            <div className="kv-d-mc-summary-row">
+              <span>Deposit</span>
+              <span>{fmtEur(result.downPayment, 0)}</span>
+            </div>
+            <div className="kv-d-mc-summary-row">
+              <span>Loan amount</span>
+              <span>{fmtEur(result.loanAmount, 0)}</span>
+            </div>
+            <div className="kv-d-mc-summary-row">
+              <span>Total interest</span>
+              <span>{fmtEur(totalInterest, 0)}</span>
+            </div>
+            <div className="kv-d-mc-summary-row">
+              <span>Total cost ({input.loanTermYears}y)</span>
+              <span>{fmtEur(totalCost, 0)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {lightboxOpen && images.length > 0 && createPortal(
-        <div className="lb-overlay" onClick={() => setLightboxOpen(false)} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-          <button className="lb-close" onClick={() => setLightboxOpen(false)} aria-label="Close">
-            <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} fill="none"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+      <p className="kv-d-disclaimer">
+        Illustrative estimate for planning purposes. Not financial advice — rates and taxes vary.
+      </p>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   Market Context
+──────────────────────────────────────────────────────────── */
+
+function ordinal(n: number): string {
+  const suffix =
+    n % 100 >= 11 && n % 100 <= 13
+      ? "th"
+      : n % 10 === 1
+        ? "st"
+        : n % 10 === 2
+          ? "nd"
+          : n % 10 === 3
+            ? "rd"
+            : "th";
+  return `${n}${suffix}`;
+}
+
+function KvMarketContext({ ctx, island }: { ctx: IslandContext; island: string }) {
+  const cards: {
+    value: string;
+    label: string;
+    note?: string;
+    percentile?: number;
+  }[] = [];
+
+  if (ctx.medianPrice !== null) {
+    cards.push({
+      value: formatMedian(ctx.medianPrice),
+      label: `${island} median`,
+      note: `${ctx.activeListings} priced listings`,
+    });
+  }
+  if (ctx.medianPricePerSqm !== null) {
+    cards.push({
+      value: formatPricePerSqm(ctx.medianPricePerSqm),
+      label: "Median €/m²",
+      note: `${ctx.nSqmListings} with size data`,
+    });
+  }
+  if (ctx.pricePercentile !== null) {
+    cards.push({
+      value: ordinal(ctx.pricePercentile),
+      label: "Price percentile",
+      note: ctx.pricePercentile >= 50 ? "Above island median" : "Below island median",
+      percentile: ctx.pricePercentile,
+    });
+  }
+  if (ctx.lastUpdated) {
+    cards.push({
+      value: new Date(ctx.lastUpdated).toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
+      label: "Last seen",
+      note: "Latest tracked update",
+    });
+  }
+
+  if (cards.length === 0) return null;
+
+  return (
+    <section className="kv-d-section">
+      <div className="kv-d-section-head">
+        <div>
+          <div className="kv-d-ey">Context</div>
+          <h2 className="kv-d-h2">Market context</h2>
+        </div>
+      </div>
+
+      <div className={`kv-d-mctx-grid kv-d-mctx-${cards.length}`}>
+        {cards.map((c) => (
+          <div className="kv-d-mctx-card" key={c.label}>
+            <div className="kv-d-mctx-value">{c.value}</div>
+            <div className="kv-d-mctx-label">{c.label}</div>
+            {c.percentile != null && (
+              <div className="kv-d-mctx-bar">
+                <div className="kv-d-mctx-bar-track">
+                  <div className="kv-d-mctx-bar-dot" style={{ left: `${c.percentile}%` }} />
+                </div>
+                <div className="kv-d-mctx-bar-labels">
+                  <span>Low</span>
+                  <span>High</span>
+                </div>
+              </div>
+            )}
+            {c.note && <div className="kv-d-mctx-note">{c.note}</div>}
+          </div>
+        ))}
+      </div>
+
+      <p className="kv-d-disclaimer">Asking price data from public listings. Not financial advice.</p>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   Similar Properties — horizontal scroll carousel
+──────────────────────────────────────────────────────────── */
+
+function KvSimilar({ cards }: { cards: ListingCard[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+
+  const updateArrows = () => {
+    const el = ref.current;
+    if (!el) return;
+    setCanPrev(el.scrollLeft > 4);
+    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    updateArrows();
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    window.addEventListener("resize", updateArrows);
+    return () => {
+      el.removeEventListener("scroll", updateArrows);
+      window.removeEventListener("resize", updateArrows);
+    };
+  }, [cards]);
+
+  const scroll = (dir: -1 | 1) => {
+    const el = ref.current;
+    if (!el) return;
+    // Use the actual rendered card width + gap so the scroll lands one
+    // card over on every viewport. Hard-coding 380px overshot on mobile
+    // (cards are ~85vw there) and made the next card disappear left.
+    const firstCard = el.querySelector<HTMLElement>(".kv-d-sim-card");
+    const step = firstCard ? firstCard.offsetWidth + 20 : 380;
+    el.scrollBy({ left: dir * step, behavior: "smooth" });
+  };
+
+  return (
+    <section className="kv-d-section kv-d-section-tinted">
+      <div className="kv-d-section-inner">
+        <div className="kv-d-section-head">
+        <div>
+          <div className="kv-d-ey">Comparable</div>
+          <h2 className="kv-d-h2">Similar properties</h2>
+        </div>
+        <div className="kv-d-sim-nav">
+          <button
+            type="button"
+            className={`kv-d-sim-arrow${canPrev ? "" : " kv-d-sim-arrow-off"}`}
+            onClick={() => scroll(-1)}
+            aria-label="Scroll left"
+            disabled={!canPrev}
+          >
+            ‹
           </button>
-          {hasMultipleImages && (
-            <>
-              <button className="lb-arrow lb-prev" onClick={(e) => { e.stopPropagation(); goPrev(); }} aria-label="Previous image">
-                <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><polyline points="15 18 9 12 15 6" /></svg>
-              </button>
-              <button className="lb-arrow lb-next" onClick={(e) => { e.stopPropagation(); goNext(); }} aria-label="Next image">
-                <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><polyline points="9 18 15 12 9 6" /></svg>
-              </button>
-            </>
-          )}
-          <img
-            className="lb-img"
-            src={images[galleryIndex]}
-            alt={`Photo ${galleryIndex + 1} of ${images.length}`}
-            onClick={(e) => e.stopPropagation()}
-          />
-          <div className="lb-counter">{galleryIndex + 1} / {images.length}</div>
-        </div>,
-        document.body
-      )}
-    </>
+          <button
+            type="button"
+            className={`kv-d-sim-arrow${canNext ? "" : " kv-d-sim-arrow-off"}`}
+            onClick={() => scroll(1)}
+            aria-label="Scroll right"
+            disabled={!canNext}
+          >
+            ›
+          </button>
+        </div>
+      </div>
+
+      <div className="kv-d-sim-scroll" ref={ref}>
+        {cards.map((l) => {
+          const loc = [l.city, l.island].filter(Boolean).join(", ");
+          const imgUrl = l.image_urls?.[0] || l.image_url;
+          const bg: React.CSSProperties = imgUrl
+            ? { backgroundImage: `url("${imgUrl}")`, backgroundSize: "cover", backgroundPosition: "center" }
+            : { backgroundImage: "linear-gradient(135deg, #c9d4c8 0%, #a8bea4 100%)" };
+          return (
+            <Link key={l.id} to={`/listing/${l.id}`} className="kv-d-sim-card">
+              <div className="kv-d-sim-img" style={bg}>
+                {l.is_new && <span className="kv-d-sim-flag">New</span>}
+              </div>
+              <div className="kv-d-sim-body">
+                <div className="kv-d-sim-top">
+                  <span>{l.property_type ? capitalize(l.property_type) : ""}</span>
+                  {loc && <span className="kv-d-sim-loc">{loc}</span>}
+                </div>
+                <div className="kv-d-sim-price">{formatPrice(l.price, l.currency)}</div>
+                <div className="kv-d-sim-title">{toTitleCase(l.title)}</div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+      </div>
+    </section>
   );
 }

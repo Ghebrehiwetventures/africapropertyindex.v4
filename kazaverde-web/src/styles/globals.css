@@ -1,148 +1,576 @@
-/* ═══════════════════════════════════════════════════
-   KAZAVERDE DESIGN SYSTEM
-   Playfair Display + DM Sans | Warm Chocolate + Lime
-   ═══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   KAZAVERDE — Master design system
+   ──────────────────────────────────────────────────────────
+   IBM Plex Mono · #fafafa surface · #0a0a0a ink · #8ecf8e accent
+   Editorial / data-first / mono-typographic.
+   This file is the single source of truth for tokens and
+   shared primitives. Page CSS should consume these — avoid
+   redeclaring tokens locally and avoid hard-coded hex.
+   ══════════════════════════════════════════════════════════ */
 
 :root {
-  /* Surface */
+  /* ── Surface ── */
+  --kv-white:      #fafafa;   /* page background */
+  --kv-paper:      #ffffff;   /* raised surface (cards, inputs) */
+  --kv-off-white:  #f2f0ec;   /* warm tint, used sparingly */
+
+  /* ── Ink ── */
+  --kv-black:      #0a0a0a;   /* primary text */
+  --kv-ink-700:    rgba(0, 0, 0, 0.78);
+  --kv-ink-600:    rgba(0, 0, 0, 0.62);
+  --kv-gray-500:   #888888;   /* meta / labels */
+  --kv-ink-400:    rgba(0, 0, 0, 0.45);
+  --kv-ink-300:    rgba(0, 0, 0, 0.30);
+
+  /* ── Accent — teal-grön master per archive design.
+     Replaces earlier pure-green (#8ecf8e) which read too candy.
+     Deep companion is a true editorial teal-green, not just a
+     darkened version of the brand colour. */
+  --kv-green:       #8ecfbf;  /* primary brand accent (teal-sage) */
+  --kv-green-soft:  #b6dfd2;
+  --kv-green-hover: #7ec0b0;  /* slight darken for primary-CTA hover */
+  --kv-black-hover: #2a2a2a;  /* slight lighten for solid-CTA hover (stays dark, no inversion) */
+  --kv-green-deep:  #2d4a42;  /* dark editorial teal — for accent text, eyebrow dots, etc. */
+  --kv-green-tint:  rgba(142, 207, 191, 0.18);
+
+  /* Article-category accents — green/ocean/lavender for editorial
+     differentiation per archive. Matched intensity to --kv-green so
+     dots in eyebrows read as a coherent palette. */
+  --kv-accent-ocean:    #8eb4cf;
+  --kv-accent-lavender: #b48ecf;
+
+  /* ── Hover (universal calm gray fill — no black hovers) ── */
+  --kv-hover:      #ececea;   /* neutral tint for outlined / chrome hovers */
+
+  /* ── Rules / dividers ── */
+  --kv-rule:        rgba(0, 0, 0, 0.15);
+  --kv-rule-strong: rgba(0, 0, 0, 0.30);
+  --kv-rule-soft:   rgba(0, 0, 0, 0.08);
+
+  /* ── Typography ──
+     Mono = UI, labels, eyebrows, headings, prices, all data.
+     Sans = long-form body text (article paragraphs, footer
+     descriptions). Mono for body reads as code/cold for >2-3
+     paragraphs; Sans is the editorial convention. */
+  --kv-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --kv-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Type scale */
+  --kv-t-2xs:  9px;
+  --kv-t-xs:   10px;
+  --kv-t-sm:   11px;
+  --kv-t-md:   12px;
+  --kv-t-base: 13px;
+  --kv-t-lg:   15px;
+  --kv-t-xl:   18px;
+  --kv-t-h3:   clamp(18px, 2.2vw, 22px);
+  --kv-t-h2:   clamp(22px, 2.8vw, 28px);
+  --kv-t-h1:   clamp(28px, 3.6vw, 40px);
+  --kv-t-hero: clamp(34px, 5.4vw, 56px);
+
+  /* Weight */
+  --kv-fw-regular:  400;
+  --kv-fw-medium:   500;
+  --kv-fw-semibold: 600;
+
+  /* Letter spacing */
+  --kv-ls-display: -0.02em;
+  --kv-ls-eyebrow: 0.16em;
+  --kv-ls-label:   0.10em;
+  --kv-ls-meta:    0.08em;
+
+  /* ── Spacing scale (4px base) ── */
+  --kv-s-1:  4px;
+  --kv-s-2:  8px;
+  --kv-s-3:  12px;
+  --kv-s-4:  16px;
+  --kv-s-5:  20px;
+  --kv-s-6:  24px;
+  --kv-s-7:  32px;
+  --kv-s-8:  40px;
+  --kv-s-10: 56px;
+  --kv-s-12: 72px;
+
+  /* ── Layout ── */
+  --kv-content-w: 1200px;
+  --kv-gutter:    24px;
+  --kv-nav-h:     52px;
+
+  /* ── Motion ── */
+  --kv-ease:    cubic-bezier(0.4, 0, 0.2, 1);
+  --kv-dur-fast: 0.15s;
+  --kv-dur:      0.22s;
+
+  /* ══════════════════════════════════════════════════════
+     LEGACY tokens (chocolate + lime).
+     Used only by archived routes that currently redirect to /
+     (Saved, Market, About, Blog, Privacy, CookiePolicy,
+      IslandLanding). Kept so their .css files still parse;
+     remove once those pages are rebuilt or deleted.
+     ══════════════════════════════════════════════════════ */
   --bg:  hsl(25 20% 18%);
   --bg2: hsl(25 18% 22%);
   --bg3: hsl(25 15% 25%);
   --sf:  hsl(25 15% 28%);
-
-  /* Text */
   --tx:  hsl(45 30% 85%);
   --tx2: hsl(35 15% 55%);
   --tx3: hsl(25 12% 40%);
-
-  /* Accent (lime-green) */
   --ac:  hsl(65 70% 55%);
   --ac2: hsl(65 75% 62%);
   --acs: hsla(65, 70%, 55%, 0.12);
-
-  /* Ocean accent (same as primary for v1) */
   --oc:  hsl(65 70% 55%);
   --ocs: hsla(65, 70%, 55%, 0.10);
-
-  /* Semantic */
   --tc: hsl(15 50% 55%);
   --gr: hsl(65 70% 55%);
   --rd: hsl(0 50% 55%);
-
-  /* Borders */
   --bd:  hsl(25 12% 30%);
   --bd2: hsl(25 12% 35%);
-
-  /* Typography */
   --fd: 'Playfair Display', Georgia, serif;
   --fb: 'DM Sans', -apple-system, sans-serif;
-
-  /* Layout */
   --mw: 1000px;
   --px: 24px;
 }
 
-/* ═══════════ RESET ═══════════ */
+/* ══════════════════════════════════════════════════════════
+   RESET
+   ══════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { overflow-x: hidden; }
 
 body {
-  background: var(--bg);
-  color: var(--tx);
-  font-family: var(--fb);
+  background: var(--kv-white);
+  color: var(--kv-black);
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-base);
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
-  line-height: 1.5;
   min-height: 100vh;
 }
 
 a { color: inherit; text-decoration: none; }
-button { font-family: var(--fb); }
+button { font-family: inherit; }
 ul { list-style: none; }
 
-/* ═══════════ LAYOUT ═══════════ */
-.ctn {
-  width: 100%;
-  max-width: var(--mw);
-  margin: 0 auto;
-  padding: 0 var(--px);
+*:focus { outline: none; }
+*:focus-visible {
+  outline: 1px solid rgba(0, 0, 0, 0.4);
+  outline-offset: 2px;
 }
 
-/* ═══════════ ANIMATIONS ═══════════ */
-@keyframes fd {
-  from { opacity: 0; transform: translateY(-10px); }
-  to   { opacity: 1; transform: translateY(0); }
+::selection { background: var(--kv-green-tint); color: var(--kv-black); }
+
+/* ══════════════════════════════════════════════════════════
+   LAYOUT
+   ══════════════════════════════════════════════════════════ */
+/* ──────────────────────────────────────────────────────────────
+   COMING SOON — shared treatment for surfaces showing data we
+   don't yet collect (e.g. monthly trend snapshots, period-over-
+   period movements). Blurs the stub content and overlays a pill
+   + short caption. Used on Market trend chart and Landing MMI.
+   ────────────────────────────────────────────────────────────── */
+.kv-coming {
+  position: relative;
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-paper);
+  padding: 24px;
+  overflow: hidden;
+  min-height: 220px;
 }
-@keyframes fu {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+.kv-coming-content {
+  filter: blur(5px);
+  opacity: 0.45;
+  pointer-events: none;
+  user-select: none;
 }
-@keyframes ci {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
+.kv-coming-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  padding: 24px;
 }
+.kv-coming-overlay .kv-pill {
+  background: var(--kv-paper);
+  border-color: var(--kv-black);
+}
+.kv-coming-overlay p {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin: 0;
+  max-width: 360px;
+}
+
+@media (max-width: 640px) {
+  .kv-coming { padding: 18px; min-height: 180px; }
+  .kv-coming-overlay { padding: 18px; }
+  .kv-coming-overlay p { font-size: 10px; }
+}
+
+/* App-level wrapper. Intentionally a no-op for horizontal layout —
+   max-width + gutter live ONLY on *-inner wrappers (canonical pattern
+   below). This means full-bleed sections (nav, footer, hero bands,
+   newsletter) flow naturally to viewport width without needing the
+   100vw + margin-left escape trick. Single source of truth: any
+   section that wants centered content puts it inside a *-inner. */
+.ctn {
+  width: 100%;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   CANONICAL CONTAINER — every aligned content block uses this
+   pattern (or aliases it). DO NOT introduce new ad-hoc wrappers
+   with hardcoded 1200px / 24px values; alias to this instead so
+   the gutter token responsively adjusts on every surface.
+   ────────────────────────────────────────────────────────────── */
+.kv-container,
+.nav-inner,
+.ft-inner,
+.nl-cta-inner,
+.kv-l-hero-inner,
+.kv-l-mmi-inner,
+.kv-l-guides-inner,
+.kv-l-feat-inner,
+.kv-m-inner {
+  width: 100%;
+  max-width: var(--kv-content-w);
+  margin-inline: auto;
+  padding-inline: var(--kv-gutter);
+}
+
+/* ══════════════════════════════════════════════════════════
+   TYPOGRAPHY PRIMITIVES
+   Reusable text styles — prefer these over rebuilding ad hoc
+   ══════════════════════════════════════════════════════════ */
+
+.kv-eyebrow {
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-sm);
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: var(--kv-ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  display: inline-block;
+}
+.kv-eyebrow b { color: var(--kv-black); font-weight: var(--kv-fw-semibold); }
+
+.kv-label {
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-xs);
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: var(--kv-ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+}
+
+.kv-meta {
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-sm);
+  letter-spacing: var(--kv-ls-meta);
+  color: var(--kv-gray-500);
+  font-variant-numeric: tabular-nums;
+}
+.kv-meta b { color: var(--kv-black); font-weight: var(--kv-fw-medium); }
+
+.kv-h1 {
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-h1);
+  font-weight: var(--kv-fw-regular);
+  letter-spacing: var(--kv-ls-display);
+  line-height: 1.12;
+  color: var(--kv-black);
+}
+
+.kv-h2 {
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-h2);
+  font-weight: var(--kv-fw-regular);
+  letter-spacing: var(--kv-ls-display);
+  line-height: 1.18;
+  color: var(--kv-black);
+}
+
+.kv-h3 {
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-h3);
+  font-weight: var(--kv-fw-medium);
+  letter-spacing: var(--kv-ls-display);
+  line-height: 1.25;
+  color: var(--kv-black);
+}
+
+.kv-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--kv-ls-display);
+}
+
+.kv-disclaimer {
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-sm);
+  letter-spacing: 0.04em;
+  color: var(--kv-gray-500);
+  line-height: 1.6;
+}
+
+/* Sans body — for long-form text (article paragraphs, footer copy).
+   Mono is great for UI/data but reads cold for >2-3 paragraphs;
+   sans is the editorial convention. Use as wrapper class. */
+.kv-prose {
+  font-family: var(--kv-sans);
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--kv-ink-700);
+}
+.kv-prose p { margin-bottom: 14px; }
+.kv-prose p:last-child { margin-bottom: 0; }
+.kv-prose strong { color: var(--kv-black); font-weight: 600; }
+.kv-prose a { border-bottom: 1px solid var(--kv-rule); transition: border-color 0.15s; }
+.kv-prose a:hover { border-color: var(--kv-black); }
+
+/* Section eyebrow with category colour-dot — used on article cards
+   and article headers. Default dot is brand green; data-cat
+   modifiers swap to ocean (market) or lavender (legal). */
+.kv-eyebrow-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-xs);
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: var(--kv-ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--kv-black);
+}
+.kv-eyebrow-cat::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: var(--kv-green);
+  flex-shrink: 0;
+}
+.kv-eyebrow-cat[data-cat="market"]::before { background: var(--kv-accent-ocean); }
+.kv-eyebrow-cat[data-cat="legal"]::before { background: var(--kv-accent-lavender); }
+.kv-eyebrow-cat[data-cat="buying"]::before { background: var(--kv-green); }
+.kv-eyebrow-cat[data-cat="tax"]::before { background: var(--kv-accent-lavender); }
+
+/* ══════════════════════════════════════════════════════════
+   BUTTON SYSTEM (KV)
+   .kv-btn         — outlined default (white bg / black border / black text)
+   .kv-btn-primary — filled green (green bg / black border)
+   .kv-btn-solid   — filled black (last-resort heavy CTA)
+   .kv-btn-ghost   — borderless, link-like
+   Modifiers: .kv-btn-block (full width), .kv-btn-sm (compact)
+   Hover convention: outlined → green fill; primary → black/green inverse.
+   ══════════════════════════════════════════════════════════ */
+
+/* Hover convention — relaxed: a button never changes its fundamental
+   character on hover. Outlined stays outlined, green stays green,
+   black stays black. Just a subtle tonal shift in the same family.
+   No inversions, no extreme contrast jumps.
+   - Outlined / chrome buttons → light gray fill (--kv-hover)
+   - Filled green primary       → slightly darker green (--kv-green-hover)
+   - Filled black solid         → slightly lighter black (--kv-black-hover)
+   - Ghost links                → text darkens, no fill */
+.kv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-sm);
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: var(--kv-ls-label);
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid var(--kv-black);
+  background: var(--kv-paper);
+  color: var(--kv-black);
+  cursor: pointer;
+  transition: background var(--kv-dur) var(--kv-ease),
+              color var(--kv-dur) var(--kv-ease),
+              border-color var(--kv-dur) var(--kv-ease);
+}
+.kv-btn:hover {
+  background: var(--kv-hover);
+  color: var(--kv-black);
+}
+.kv-btn:active { transform: translateY(1px); }
+
+.kv-btn-primary {
+  background: var(--kv-green);
+  color: var(--kv-black);
+  border-color: var(--kv-black);
+}
+.kv-btn-primary:hover {
+  background: var(--kv-green-hover);
+  color: var(--kv-black);
+}
+
+.kv-btn-solid {
+  background: var(--kv-black);
+  color: var(--kv-white);
+  border-color: var(--kv-black);
+}
+.kv-btn-solid:hover {
+  background: var(--kv-black-hover);
+  color: var(--kv-white);
+  border-color: var(--kv-black-hover);
+}
+
+.kv-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--kv-gray-500);
+  padding-left: 0;
+  padding-right: 0;
+}
+.kv-btn-ghost:hover {
+  background: transparent;
+  color: var(--kv-black);
+}
+
+.kv-btn-block { width: 100%; }
+.kv-btn-sm    { padding: 8px 14px; font-size: var(--kv-t-xs); }
+
+/* ══════════════════════════════════════════════════════════
+   CARD & SURFACE PRIMITIVES
+   ══════════════════════════════════════════════════════════ */
+
+.kv-card {
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-paper);
+}
+.kv-card-strong { border-color: var(--kv-black); }
+
+.kv-card-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--kv-rule);
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-xs);
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: var(--kv-ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+}
+
+.kv-card-body { padding: 14px; }
+
+.kv-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--kv-rule);
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-2xs);
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kv-black);
+  background: var(--kv-paper);
+}
+
+/* Hairline helpers */
+.kv-rule        { border-top: 1px solid var(--kv-rule); }
+.kv-rule-soft   { border-top: 1px solid var(--kv-rule-soft); }
+.kv-rule-strong { border-top: 1px solid var(--kv-rule-strong); }
+
+/* Full-bleed section divider — convention for the entire site:
+   every major section break line spans edge-to-edge (100vw).
+   Apply to a centered (max-width: 1200px) element to draw a 1px
+   line that ignores the content column and reaches the viewport edges. */
+.kv-bleed-rule        { position: relative; }
+.kv-bleed-rule::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(50% - 50vw);
+  width: 100vw;
+  height: 1px;
+  background: var(--kv-rule);
+  pointer-events: none;
+}
+.kv-bleed-rule-soft::before { background: var(--kv-rule-soft); }
+.kv-bleed-rule-strong::before { background: var(--kv-rule-strong); }
+
+/* Form primitives are intentionally NOT defined globally.
+   `.kv-field` is already used by the Listings filter bar with a
+   different intent (inline pill); a global form-wrapper class
+   collided with it. Page-local form styles (.kv-d-mc-field, etc.)
+   stay close to their feature for now.
+
+   What IS global: the design rule that inputs always sit transparent
+   on their surface. No coloured field backgrounds anywhere. Pages
+   add their own border + padding; bg stays transparent so the
+   green / white / black surface shows through cleanly. */
+input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: transparent;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ANIMATIONS
+   ══════════════════════════════════════════════════════════ */
+@keyframes fd { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fu { from { opacity: 0; transform: translateY(20px); }  to { opacity: 1; transform: translateY(0); } }
+@keyframes ci { from { opacity: 0; transform: translateY(24px); }  to { opacity: 1; transform: translateY(0); } }
 
 .anim-fd { animation: fd 0.5s ease both; }
 .anim-fu { animation: fu 0.6s ease both; }
 .anim-ci { animation: ci 0.5s ease both; }
 
-/* Stagger delays */
-.delay-1 { animation-delay: 0.1s; }
+.delay-1  { animation-delay: 0.10s; }
 .delay-15 { animation-delay: 0.15s; }
-.delay-2 { animation-delay: 0.2s; }
+.delay-2  { animation-delay: 0.20s; }
 .delay-25 { animation-delay: 0.25s; }
-.delay-3 { animation-delay: 0.3s; }
+.delay-3  { animation-delay: 0.30s; }
 .delay-35 { animation-delay: 0.35s; }
-.delay-4 { animation-delay: 0.4s; }
+.delay-4  { animation-delay: 0.40s; }
 
-/* ═══════════ BUTTONS ═══════════ */
+/* ══════════════════════════════════════════════════════════
+   LEGACY BUTTONS — used by chocolate-themed archived pages.
+   Remove together with the legacy pages.
+   ══════════════════════════════════════════════════════════ */
 .bp {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--bg);
-  background: var(--ac);
-  padding: 10px 22px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.25s;
-  display: inline-block;
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--bg); background: var(--ac);
+  padding: 10px 22px; border-radius: 8px; border: none;
+  cursor: pointer; transition: all 0.25s; display: inline-block;
 }
-.bp:hover {
-  background: var(--ac2);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-}
+.bp:hover { background: var(--ac2); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); }
 
 .bo {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--tx);
-  background: transparent;
-  padding: 10px 22px;
-  border-radius: 8px;
-  border: 1.5px solid var(--bd2);
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-block;
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--tx); background: transparent;
+  padding: 10px 22px; border-radius: 8px; border: 1.5px solid var(--bd2);
+  cursor: pointer; transition: all 0.2s; display: inline-block;
 }
-.bo:hover {
-  border-color: var(--tx);
-  background: rgba(255, 255, 255, 0.04);
-}
+.bo:hover { border-color: var(--tx); background: rgba(255, 255, 255, 0.04); }
 
-/* ═══════════ RESPONSIVE ═══════════ */
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
   .grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
   .grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
 }
-
 @media (max-width: 768px) {
-  :root { --px: 20px; }
-  .grid-3,
-  .grid-4 { grid-template-columns: 1fr !important; }
+  :root { --kv-gutter: 20px; --px: 20px; }
+  .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
   .hide-mobile { display: none !important; }
 }

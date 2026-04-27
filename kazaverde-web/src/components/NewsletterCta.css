@@ -1,101 +1,147 @@
+/* ════════════════════════════════════════════════════════════
+   NewsletterCta — KV master design (teal-grön band, editorial)
+   ──────────────────────────────────────────────────────────────
+   Adopted from archive cv-landing.html newsletter pattern:
+   - Left-aligned (not centered) — feels editorial, not marketing
+   - Stacked layout: eyebrow → h2 → description → form → fine
+   - Form input on transparent green-tinted bg with subtle border;
+     submit is outlined (.kv-btn-style transparent + black border),
+     fills on hover. Replaces the joined-pill input+button.
+   - Single email input only — name field would be conversion friction
+     for what is fundamentally a "give me one thing per month" pitch.
+   ════════════════════════════════════════════════════════════ */
+
 .nl-cta {
-  background: var(--bg2);
-  border: 1px solid var(--bd);
-  border-radius: 16px;
-  padding: 48px;
-  text-align: center;
-  margin: 64px 0 0;
+  /* Full-bleed teal-grön band. Width comes naturally from the no-op
+     .ctn wrapper; horizontal gutter lives on .nl-cta-inner so it
+     tracks --kv-gutter and aligns with every other section. */
+  background: var(--kv-green);
+  color: var(--kv-black);
+  padding: 80px 0 88px;
+  font-family: var(--kv-mono);
 }
+
+/* Inner column matches cv-landing.html .cta-inner (600px) — narrower
+   than the 1200px site grid so the heading + description read as a
+   focused editorial pitch, not a full-width banner. Outer wrapper
+   stays centered to the site grid; inner column sits left-aligned
+   within it. */
+.nl-cta-inner {
+  max-width: var(--kv-content-w);
+  margin: 0 auto;
+  padding: 0 var(--kv-gutter);
+}
+.nl-cta-inner > * { max-width: 600px; }
+
 .nl-overline {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-size: var(--kv-t-xs);
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--oc);
-  margin-bottom: 14px;
+  color: rgba(0, 0, 0, 0.6);
+  margin-bottom: 22px;
 }
+
 .nl-cta h2 {
-  font-family: var(--fd);
-  font-size: 2rem;
-  font-weight: 400;
-  margin-bottom: 8px;
+  font-family: var(--kv-mono);
+  font-size: clamp(28px, 3.6vw, 40px);
+  font-weight: var(--kv-fw-regular);
+  line-height: 1.15;
+  letter-spacing: var(--kv-ls-display);
+  color: var(--kv-black);
+  margin-bottom: 18px;
+  text-wrap: balance;
 }
-.nl-cta h2 em {
-  color: var(--ac);
-  font-style: italic;
-  font-weight: 500;
-}
+
 .nl-cta p {
-  font-size: 0.9rem;
-  color: var(--tx2);
-  max-width: 460px;
-  margin: 0 auto 28px;
-  line-height: 1.7;
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-base);
+  color: rgba(0, 0, 0, 0.72);
+  line-height: 1.65;
+  margin-bottom: 32px;
 }
+
+/* Form — stacked, left-aligned. Input has subtle border on green
+   so it reads as a separate field without being aggressive. */
 .nl-form {
   display: flex;
-  gap: 10px;
-  max-width: 440px;
-  margin: 0 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 420px;
 }
+
 .nl-input {
-  flex: 1;
-  padding: 13px 20px;
-  border-radius: 8px;
-  border: 1px solid var(--bd);
-  background: var(--bg);
-  color: var(--tx);
-  font-family: var(--fb);
-  font-size: 0.88rem;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: transparent;
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-base);
+  color: var(--kv-black);
   outline: none;
-  transition: border 0.2s;
+  transition: border-color var(--kv-dur-fast) var(--kv-ease);
 }
-.nl-input::placeholder { color: var(--tx3); }
-.nl-input:focus { border-color: var(--ac); }
+.nl-input::placeholder { color: rgba(0, 0, 0, 0.3); }
+.nl-input:focus { border-color: rgba(0, 0, 0, 0.5); }
+.nl-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Outlined submit — black border on transparent green, fills on
+   hover. Matches the editorial tone (no heavy black slabs). */
 .nl-submit {
-  padding: 13px 24px;
-  border-radius: 8px;
-  background: var(--ac);
-  color: var(--bg);
-  font-family: var(--fb);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 22px;
+  border: 1px solid var(--kv-black);
+  background: transparent;
+  color: var(--kv-black);
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-sm);
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: var(--kv-ls-label);
   text-transform: uppercase;
-  border: none;
   cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
+  transition: background var(--kv-dur) var(--kv-ease),
+              color var(--kv-dur) var(--kv-ease);
 }
-.nl-submit:hover { background: var(--ac2); }
-.nl-fine {
-  font-size: 0.72rem;
-  color: var(--tx3);
-  margin-top: 12px;
+.nl-submit:hover:not(:disabled) {
+  background: var(--kv-black);
+  color: var(--kv-green);
 }
+.nl-submit:active:not(:disabled) { transform: translateY(1px); }
+.nl-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* Success state */
 .nl-success {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--ac);
-  padding: 16px 0;
+  display: inline-block;
+  padding: 13px 22px;
+  border: 1px solid var(--kv-black);
+  background: rgba(255, 255, 255, 0.5);
+  font-size: var(--kv-t-sm);
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: var(--kv-ls-label);
+  text-transform: uppercase;
+  color: var(--kv-black);
 }
 
-/* Error state */
 .nl-error {
-  font-size: 0.78rem;
-  color: hsl(0 50% 55%);
-  margin-top: 8px;
+  margin-top: 14px;
+  font-size: var(--kv-t-sm);
+  color: #8b1f1c;
+  letter-spacing: 0.04em;
 }
 
-@media (max-width: 768px) {
-  .nl-cta { padding: 28px 20px; }
-  .nl-cta h2 { font-size: 1.5rem; }
-  .nl-cta h2 em {
-    display: block;
-    margin-top: 2px;
-  }
-  .nl-form { flex-direction: column; }
-  .nl-submit { width: 100%; }
+.nl-fine {
+  margin-top: 22px;
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-xs);
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.55);
+  max-width: 540px;
+}
+
+@media (max-width: 640px) {
+  .nl-cta { padding: 56px 24px 64px; }
+  .nl-form { max-width: 100%; }
+  .nl-submit { width: 100%; justify-content: center; }
 }

@@ -10,7 +10,8 @@ const spaFallbackPath = path.join(distDir, "spa-fallback", "index.html");
 const blogDataPath = path.resolve(__dirname, "../src/lib/blog-data.ts");
 const prerenderListingsPath = path.resolve(__dirname, "../src/lib/prerender-listings.ts");
 const siteUrl = "https://kazaverde.com";
-const ogImage = `${siteUrl}/favicon.svg`;
+const ogImage = `${siteUrl}/og-default.png`;
+const sitemapPath = path.join(distDir, "sitemap.xml");
 const publicSupabaseUrl = "https://bhqjdzjtiwckfuteycfl.supabase.co";
 const publicSupabaseAnonKey = "sb_publishable_fFm5NsC3cWLYr_Wnx9OLWQ_Ytmnn-Wd";
 
@@ -382,6 +383,79 @@ async function main() {
 
     await writeFile(outputPath, routeHtml, "utf8");
   }
+
+  /* Sitemap covers ALL listings (not just the prerendered subset) — those
+     are the source of organic traffic. Pulled fresh from Supabase so a new
+     listing appears in the sitemap on the next deploy without needing
+     prerender-listings.ts to be edited. */
+  const allListingRoutes = await getAllListingRoutesForSitemap(listingRoutes);
+  await writeSitemap([...routes.filter((r) => !r.route.startsWith("/listing/")), ...allListingRoutes]);
+}
+
+async function getAllListingRoutesForSitemap(prerenderedRoutes) {
+  try {
+    const client = new AREIClient({
+      supabaseUrl: process.env.VITE_SUPABASE_URL || publicSupabaseUrl,
+      supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY || publicSupabaseAnonKey,
+    });
+    const prerenderedById = new Map(
+      prerenderedRoutes.map((r) => [r.route, r]),
+    );
+    const all = [];
+    let page = 1;
+    const pageSize = 200;
+    /* Loop until we've drained the index. Cap at 50 pages (10k listings) so
+       a runaway query can't hang the build. */
+    for (let i = 0; i < 50; i++) {
+      const res = await client.getListings({ page, pageSize });
+      if (!res.data || res.data.length === 0) break;
+      all.push(...res.data);
+      if (all.length >= res.total) break;
+      page += 1;
+    }
+    return all.map((l) => {
+      const route = `/listing/${l.id}`;
+      const existing = prerenderedById.get(route);
+      if (existing) return existing;
+      return {
+        route,
+        lastmod: l.last_seen_at ? l.last_seen_at.slice(0, 10) : undefined,
+      };
+    });
+  } catch (error) {
+    console.warn("[prerender-phase1] Full listing sitemap skipped:", error instanceof Error ? error.message : error);
+    return prerenderedRoutes.filter((r) => r.route.startsWith("/listing/"));
+  }
+}
+
+/* Sitemap is regenerated from the same route list as the HTML output, so it
+   stays in sync with whatever we actually prerender. Static routes get the
+   default priority; blog articles are weighted slightly lower; listing pages
+   get the lowest because they churn (sold/withdrawn). lastmod is build time
+   for static and article publish date for blog posts. */
+async function writeSitemap(routes) {
+  const today = new Date().toISOString().slice(0, 10);
+  const entries = routes.map((r) => {
+    const loc = new URL(r.route, `${siteUrl}/`).toString();
+    let priority = "0.7";
+    let changefreq = "weekly";
+    if (r.route === "/") priority = "1.0";
+    else if (r.route.startsWith("/listing/")) {
+      priority = "0.5";
+      changefreq = "daily";
+    } else if (r.route.startsWith("/blog/")) {
+      priority = "0.6";
+      changefreq = "monthly";
+    } else if (r.route === "/listings" || r.route.startsWith("/listings/")) {
+      priority = "0.9";
+      changefreq = "daily";
+    }
+    const lastmod = r.lastmod ?? today;
+    return `  <url>\n    <loc>${escapeHtml(loc)}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+  });
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join("\n")}\n</urlset>\n`;
+  await writeFile(sitemapPath, xml, "utf8");
+  console.log(`[prerender-phase1] sitemap.xml written with ${routes.length} URLs`);
 }
 
 function renderRouteHtml(baseHtml, route) {
@@ -396,6 +470,10 @@ function renderRouteHtml(baseHtml, route) {
     `<meta property="og:url" content="${canonicalUrl}" />`,
     `<meta property="og:site_name" content="KazaVerde" />`,
     `<meta property="og:image" content="${escapeHtml(route.image ?? ogImage)}" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+    `<meta name="twitter:title" content="${escapeHtml(documentTitle)}" />`,
+    `<meta name="twitter:description" content="${escapeHtml(route.description)}" />`,
+    `<meta name="twitter:image" content="${escapeHtml(route.image ?? ogImage)}" />`,
   ].join("\n    ");
 
   return baseHtml
@@ -463,6 +541,7 @@ async function loadListingPrerenderIds() {
 function getBlogArticleRoutes(blogArticles) {
   return blogArticles.map((article) => ({
     route: `/blog/${article.slug}`,
+    lastmod: article.date,
     ...page(
       article.title,
       article.description,
@@ -518,6 +597,7 @@ async function getListingDetailRoutes() {
       .filter((detail) => detail !== null)
       .map((detail) => ({
         route: `/listing/${detail.id}`,
+        lastmod: detail.last_seen_at ? detail.last_seen_at.slice(0, 10) : undefined,
         ...page(
           buildListingSeoTitle(detail),
           buildListingSeoDescription(detail),

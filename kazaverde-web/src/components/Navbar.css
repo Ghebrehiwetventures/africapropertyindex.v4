@@ -1,187 +1,169 @@
+/* Navbar — KV handoff design, cv-listing.html nav pattern.
+   Sticky 52px green bar with logo + 5 inline links on desktop;
+   3-span burger that morphs to X + slide-from-right black drawer
+   on mobile. */
 .nav {
-  padding: 28px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 201;
+  background: var(--kv-green);
+  font-family: var(--kv-mono);
+  color: var(--kv-black);
+}
+
+.nav-inner {
+  max-width: var(--kv-content-w);
+  margin: 0 auto;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--kv-gutter);
 }
 
 .logo {
-  font-weight: 800;
-  font-size: 1.05rem;
-  letter-spacing: 0.1em;
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
+  color: var(--kv-black);
   line-height: 1.2;
   cursor: pointer;
   position: relative;
   z-index: 2;
 }
-.logo span { color: var(--ac); }
 
-.nc {
+/* ── Desktop links ── */
+.nav-links {
   display: flex;
+  align-items: center;
   gap: 28px;
 }
-.nc a {
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.07em;
+.nav-a {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--tx3);
-  transition: color 0.2s;
+  color: rgba(0, 0, 0, 0.5);
   padding: 4px 0;
-}
-.nc a:hover,
-.nc a.on,
-.nc a.active { color: var(--tx); }
-.nc-soon {
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--tx3);
-  opacity: 0.4;
-  cursor: default;
-  padding: 4px 0;
-}
-
-.nr {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  position: relative;
-  z-index: 2;
-}
-
-.nl {
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--tx2);
+  text-decoration: none;
   transition: color 0.2s;
 }
-.nl:hover { color: var(--tx); }
+.nav-a:hover,
+.nav-a.on { color: var(--kv-black); }
 
-.nav-saved {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.nav-saved svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
-}
-
-.saved-badge {
-  min-width: 18px;
-  height: 18px;
-  border-radius: 9px;
-  background: var(--ac);
-  color: var(--bg);
-  font-size: 0.65rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 5px;
-  transition: all 0.25s;
-}
-.saved-badge.hide {
-  opacity: 0;
-  transform: scale(0);
-}
-
-.nav-hamburger {
+/* ── Burger (mobile) ── 3 spans → X on .open. cv-listing pattern. */
+.nav-burger {
   display: none;
-  width: 44px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  border: none;
+  width: 36px;
+  height: 32px;
   background: transparent;
-  color: var(--tx2);
+  border: none;
   cursor: pointer;
-  border-radius: 8px;
-  transition: color 0.2s;
+  padding: 0;
   position: relative;
-  z-index: 2;
+  z-index: 220; /* above the drawer (210) so it stays clickable while open */
 }
-.nav-hamburger:hover { color: var(--tx); }
-.nav-hamburger svg { width: 24px; height: 24px; }
+.nav-burger span {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background: var(--kv-black);
+  transition: transform 0.25s, opacity 0.15s, top 0.25s, background 0.2s;
+}
+.nav-burger span:nth-child(1) { top: 9px; }
+.nav-burger span:nth-child(2) { top: 15px; }
+.nav-burger span:nth-child(3) { top: 21px; }
+.nav-burger.open span { background: var(--kv-white); }
+.nav-burger.open span:nth-child(1) { top: 15px; transform: rotate(45deg); }
+.nav-burger.open span:nth-child(2) { opacity: 0; }
+.nav-burger.open span:nth-child(3) { top: 15px; transform: rotate(-45deg); }
 
-.nc-mobile {
-  display: none;
+/* ── Drawer (mobile) ── slides from right, full-screen black. */
+.nav-drawer {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--bg);
-  z-index: 1;
+  inset: 0;
+  background: var(--kv-black);
+  color: var(--kv-white);
+  padding: 80px 28px 48px;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 210;
+  display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  font-family: var(--kv-mono);
+}
+.nav-drawer.open { transform: translateX(0); }
+
+/* Explicit close — top-right X. Sits inside the drawer so users
+   reading the overlay menu have an obvious escape that doesn't
+   require scrolling back to the burger. cv-listing.html pattern. */
+.nav-drawer-close {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--kv-white);
+  font-size: 22px;
+  line-height: 1;
+  font-family: var(--kv-mono);
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
-  padding: 80px 24px 24px;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.25s, visibility 0.25s;
+  transition: border-color 0.15s, background 0.15s;
+  z-index: 2;
 }
-.nc-mobile.open {
-  display: flex;
-  opacity: 1;
-  visibility: visible;
-  height: 100vh;
-  height: 100dvh;
+.nav-drawer-close:hover {
+  border-color: var(--kv-green);
+  background: rgba(255, 255, 255, 0.06);
 }
-.nc-mobile a {
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--tx2);
-  transition: color 0.2s;
-}
-.nc-mobile a:hover,
-.nc-mobile a.on { color: var(--tx); }
 
-.nav-saved-mobile {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--tx2);
-  transition: color 0.2s;
-  margin-top: 12px;
-  padding-top: 16px;
-  border-top: 1px solid var(--bd);
+.nav-drawer-link {
+  color: var(--kv-white);
+  display: block;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: var(--kv-mono);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  transition: color 0.15s;
 }
-.nav-saved-mobile:hover,
-.nav-saved-mobile.on { color: var(--tx); }
+.nav-drawer-link:hover,
+.nav-drawer-link.on { color: var(--kv-green); }
+
+.nav-drawer-cta {
+  margin-top: 28px;
+  padding: 16px 20px;
+  background: var(--kv-white);
+  color: var(--kv-black);
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.nav-drawer-cta:hover { background: var(--kv-hover); }
+
+body.nav-locked { overflow: hidden; }
 
 @media (max-width: 768px) {
-  .nav {
-    position: sticky;
-    top: 0;
-    background: var(--bg);
-    z-index: 201;
-    padding-top: 16px;
-    padding-bottom: 16px;
-  }
-  .nc { display: none; }
-  .hide-desktop { display: flex !important; }
+  .nav-links { display: none; }
+  .nav-burger { display: block; }
+  .hide-desktop { display: block !important; }
   .hide-mobile { display: none !important; }
-  .nr { display: none !important; }
-  .nav-hamburger { order: 2; }
 }
 @media (min-width: 769px) {
   .hide-desktop { display: none !important; }

@@ -1,3 +1,4 @@
+/* CookieBanner — KV design (mono, sharp corners, black+green CTA) */
 .ck-shell {
   position: fixed;
   left: auto;
@@ -12,14 +13,14 @@
 .ck-banner {
   display: flex;
   align-items: flex-end;
-  gap: 18px;
-  width: min(360px, calc(100vw - 40px));
+  gap: 16px;
+  width: min(380px, calc(100vw - 40px));
   padding: 16px 16px 14px;
-  background: linear-gradient(180deg, rgba(54, 42, 34, 0.97) 0%, rgba(42, 33, 27, 0.98) 100%);
-  border: 1px solid rgba(154, 138, 123, 0.32);
-  border-radius: 16px;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(18px);
+  background: var(--kv-paper);
+  border: 1px solid var(--kv-black);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.16);
+  font-family: var(--kv-mono);
+  color: var(--kv-black);
   animation: ck-slide 0.4s ease-out;
   pointer-events: auto;
 }
@@ -36,45 +37,40 @@
 .ck-eyebrow {
   display: inline-block;
   margin-bottom: 8px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--ac);
+  color: var(--kv-gray-500);
+  font-family: var(--kv-mono);
 }
 
 .ck-text {
-  font-size: 0.76rem;
-  color: hsl(36 24% 73%);
-  line-height: 1.5;
-  max-width: 30ch;
-}
-
-.ck-link {
-  color: var(--ac) !important;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.7);
+  line-height: 1.6;
+  max-width: 32ch;
+  font-family: var(--kv-mono);
 }
 
 .ck-btn {
   flex-shrink: 0;
   align-self: flex-end;
-  padding: 9px 16px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  padding: 9px 18px;
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--bg);
-  background: var(--ac);
-  border: none;
-  border-radius: 10px;
+  color: var(--kv-black);
+  background: transparent;
+  border: 1px solid var(--kv-black);
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(217, 221, 64, 0.18);
-  transition: background 0.2s, transform 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 .ck-btn:hover {
-  background: var(--ac2);
-  transform: translateY(-1px);
+  background: var(--kv-hover);
+  color: var(--kv-black);
 }
 
 @media (max-width: 640px) {
@@ -89,9 +85,8 @@
     flex-direction: column;
     align-items: stretch;
     gap: 14px;
-    width: min(100%, 360px);
+    width: min(100%, 380px);
     padding: 16px;
-    border-radius: 16px;
   }
 
   .ck-copy {
@@ -100,7 +95,7 @@
 
   .ck-text {
     max-width: none;
-    font-size: 0.78rem;
+    font-size: 13px;
   }
 
   .ck-btn {

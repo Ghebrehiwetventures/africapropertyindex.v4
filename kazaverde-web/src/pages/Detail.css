@@ -1,654 +1,1721 @@
-.db {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--tx2);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 36px 0 24px;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.db:hover { color: var(--ac); }
-.db svg {
-  width: 14px;
-  height: 14px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
+/* ════════════════════════════════════════════════════════════
+   Detail — KV master design (blended from KV handoff + listing-v1)
+   ──────────────────────────────────────────────────────────────
+   Editorial / index-record voice. Data-first layout:
+     breadcrumb → top meta rail → gallery → facts strip → main
+     (description + INDEX RECORD sidebar) → monthly → market → similar
+   ════════════════════════════════════════════════════════════ */
+
+/* Tokens come from globals.css :root — do not redeclare here.
+   No bottom padding on the page wrapper: the last section
+   (typically Similar properties on off-white) flows directly
+   into the Footer, which is also off-white. Master design rule:
+   bg-colour shifts establish section breaks, never blank strips. */
+.kv-d {
+  font-family: var(--kv-mono);
+  color: var(--kv-black);
+  background: var(--kv-white);
 }
 
-.dhi {
-  width: 100%;
-  height: 480px;
-  border-radius: 16px;
-  overflow: hidden;
-  margin-bottom: 48px;
-  position: relative;
+/* All direct children align to the canonical content column. */
+.kv-d > * {
+  max-width: var(--kv-content-w);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--kv-gutter);
+  padding-right: var(--kv-gutter);
 }
-.dhi .ph { width: 100%; height: 100%; }
-/* Badges on hero */
-.dhi-badge {
+
+/* ══════════ 1. Breadcrumb ══════════
+   Bottom divider goes edge-to-edge (full-bleed convention). */
+
+.kv-d-crumb {
+  position: relative;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+}
+.kv-d-crumb a { color: var(--kv-gray-500); transition: color 0.2s; }
+.kv-d-crumb a:hover { color: var(--kv-black); }
+.kv-d-crumb-sep { margin: 0 10px; color: rgba(0, 0, 0, 0.25); }
+/* Current crumb inherits .kv-d-crumb's uppercase + 0.14em tracking
+   so spacing reads consistent with the rest. (Earlier override broke
+   the rhythm — listing-v1.html keeps .cur uniform.) */
+.kv-d-crumb-cur { color: var(--kv-black); }
+.kv-d-crumb::after {
+  content: "";
   position: absolute;
-  top: 20px;
-  z-index: 3;
-  font-size: 0.68rem;
-  font-weight: 700;
+  bottom: 0;
+  left: calc(50% - 50vw);
+  width: 100vw;
+  height: 1px;
+  background: var(--kv-rule);
+  pointer-events: none;
+}
+
+/* ══════════ 2. Top meta rail ══════════ */
+
+.kv-d-top {
+  padding-top: 40px;
+  padding-bottom: 32px;
+}
+/* 3-row layout so price aligns with title (row 2) and the €/m²
+   slot reserves space below (row 3) even when data is missing.
+   Baseline alignment so subline and €/m² (different font-sizes,
+   different margins) sit on the same baseline — matches the
+   listing-v1.html reference where align-items: end achieves the
+   same effect. */
+.kv-d-top-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "eyebrow ."
+    "title   price"
+    "subline pricecve";
+  column-gap: 40px;
+  row-gap: 0;
+  align-items: baseline;
+}
+.kv-d-top-grid .kv-d-eyebrow { grid-area: eyebrow; }
+.kv-d-top-grid .kv-d-title { grid-area: title; }
+.kv-d-top-grid .kv-d-price-block { grid-area: price; }
+.kv-d-top-grid .kv-d-subline { grid-area: subline; }
+.kv-d-top-grid .kv-d-price-cve { grid-area: pricecve; }
+
+.kv-d-eyebrow {
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.kv-d-eyebrow b { color: var(--kv-black); font-weight: 600; }
+.kv-d-eyebrow-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--kv-rule);
+  display: inline-block;
+}
+.kv-d-eyebrow-id { text-transform: none; letter-spacing: 0.02em; font-weight: 400; }
+
+.kv-d-tag {
+  padding: 3px 9px;
+  border: 1px solid var(--kv-rule);
+  font-family: var(--kv-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kv-black);
+  background: var(--kv-white);
+}
+.kv-d-tag-new { background: var(--kv-green); border-color: var(--kv-black); }
+
+/* Property page title — wraps tokens from .kv-h1 with a max-width.
+   Values match listing-v1.html reference (line-height 1.15, mb 10). */
+.kv-d-title {
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-h1);
+  font-weight: var(--kv-fw-regular);
+  letter-spacing: var(--kv-ls-display);
+  line-height: 1.15;
+  max-width: 820px;
+  margin-bottom: 10px;
+  color: var(--kv-black);
+}
+
+.kv-d-subline {
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  color: var(--kv-gray-500);
+  font-variant-numeric: tabular-nums;
+}
+.kv-d-subline b { color: var(--kv-black); font-weight: 500; }
+
+.kv-d-price-block { text-align: right; }
+.kv-d-price {
+  font-family: var(--kv-mono);
+  /* Slightly larger than title (clamp 28-40) per listing-v1.html
+     reference — price gets explicit emphasis over the title. */
+  font-size: clamp(30px, 3.6vw, 42px);
+  font-weight: var(--kv-fw-regular);
+  letter-spacing: var(--kv-ls-display);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--kv-black);
+}
+/* Verified strip — small inline freshness signal under the top
+   header. Adopted from cv-listing.html `.l-verified`. Reads as
+   "this listing is current data" without burying the info in the
+   sidebar. Green dot = system-alive marker. */
+.kv-d-verified {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--kv-rule-soft);
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  color: var(--kv-gray-500);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.kv-d-verified-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--kv-green);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+.kv-d-verified-lbl {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  color: var(--kv-gray-500);
+}
+.kv-d-verified-val { color: var(--kv-black); font-weight: 500; }
+.kv-d-verified-sep { color: rgba(0, 0, 0, 0.25); margin: 0 4px; }
+
+/* €/m² strip — matches listing-v1.html .ppm:
+   bold value + uppercase " per m²" in mono, tracked. Empty reserves
+   space for future data. Sits in row 3 of .kv-d-top-grid alongside
+   the subline; baseline alignment on the parent grid keeps them on
+   the same baseline (margin-top removed — it created asymmetric
+   row offset vs subline which has no top margin). */
+.kv-d-price-cve {
+  text-align: right;
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  color: var(--kv-gray-500);
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 5px 12px;
-  border-radius: 6px;
+  min-height: 1em;
 }
-.dhi-new {
-  left: 20px;
-  background: var(--ac);
-  color: var(--bg);
+.kv-d-price-cve b { color: var(--kv-black); font-weight: 500; }
+.kv-d-ppm {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  color: var(--kv-gray-500);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 10px;
+  font-variant-numeric: tabular-nums;
 }
-.dhi-type {
-  right: 20px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
-  backdrop-filter: blur(4px);
-}
-.dhi-price {
-  display: none;
-  bottom: 20px;
-  left: 20px;
-  top: auto;
-  font-family: var(--fd);
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 8px 16px;
-  border-radius: 8px;
-  backdrop-filter: blur(4px);
-  letter-spacing: 0;
-  text-transform: none;
-}
+.kv-d-ppm b { color: var(--kv-black); font-weight: 500; }
 
-/* Image counter */
-.dg-counter {
+/* ══════════ 3. Gallery mosaic ══════════ */
+
+.kv-d-gallery {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-rows: repeat(2, 220px);
+  gap: 6px;
+  margin-bottom: 40px;
+  max-width: 1152px;
+  padding-left: 0;
+  padding-right: 0;
+}
+.kv-d-gtile {
+  position: relative;
+  overflow: hidden;
+  cursor: zoom-in;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--kv-off-white);
+}
+.kv-d-gtile-primary { grid-row: 1 / 3; }
+.kv-d-gtile::after {
+  content: "";
   position: absolute;
-  bottom: 28px;
-  right: 28px;
-  z-index: 3;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 18px,
+    rgba(0, 0, 0, 0.035) 18px 19px
+  );
+  pointer-events: none;
+}
+.kv-d-g-flag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--kv-white);
   padding: 4px 10px;
-  border-radius: 6px;
-  backdrop-filter: blur(4px);
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  z-index: 2;
+  color: var(--kv-black);
+}
+.kv-d-g-count {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: var(--kv-white);
+  padding: 5px 10px;
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  z-index: 2;
+  border: 1px solid var(--kv-rule);
+  color: var(--kv-black);
 }
 
-.dg-arrow {
+/* Single hero (fallback when < 5 images) */
+.kv-d-hero {
+  max-width: 1152px;
+  padding-left: 0;
+  padding-right: 0;
+  position: relative;
+  margin-bottom: 40px;
+  height: clamp(320px, 52vw, 560px);
+  overflow: hidden;
+  cursor: zoom-in;
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-off-white);
+}
+.kv-d-hero-img { position: absolute; inset: 0; }
+.kv-d-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(135deg, transparent 0 14px, rgba(0, 0, 0, 0.03) 14px 15px);
+  pointer-events: none;
+}
+
+.kv-d-flag {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 5px 12px;
+  background: var(--kv-white);
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kv-black);
+  z-index: 2;
+}
+
+.kv-d-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 3;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--kv-black);
+  color: var(--kv-black);
+  font-size: 22px;
+  line-height: 1;
   cursor: pointer;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
-.dg-arrow:hover { background: rgba(0, 0, 0, 0.7); }
-.dg-arrow svg { width: 24px; height: 24px; }
-.dg-arrow-prev { left: 16px; }
-.dg-arrow-next { right: 16px; }
+.kv-d-arrow:hover { background: var(--kv-hover); color: var(--kv-black); }
+.kv-d-arrow-prev { left: 16px; }
+.kv-d-arrow-next { right: 16px; }
 
-.dg-thumbs {
+.kv-d-counter {
   position: absolute;
-  bottom: 20px;
-  left: 28px;
-  display: flex;
-  gap: 8px;
+  bottom: 16px;
+  right: 16px;
+  padding: 5px 12px;
+  background: var(--kv-white);
+  border: 1px solid var(--kv-rule);
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--kv-black);
   z-index: 2;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  max-width: calc(100% - 160px);
-}
-.dg-thumb {
-  width: 56px;
-  height: 56px;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  background-size: cover;
-  background-position: center;
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  padding: 0;
-}
-.dg-thumb:hover { border-color: rgba(255,255,255,0.6); }
-.dg-thumb.on {
-  border-color: #fff;
-  box-shadow: 0 0 0 2px var(--ac);
+  font-variant-numeric: tabular-nums;
 }
 
-.dg {
+/* ══════════ 4. Facts strip ══════════ */
+
+.kv-d-facts {
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 64px;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid var(--kv-black);
+  border-bottom: 1px solid var(--kv-black);
+  margin-bottom: 48px;
+  /* Match gallery/hero outer width so the black rules don't extend
+     past the gallery edges. .kv-d > * defaults to 1200/24-padding;
+     facts mirrors gallery's flush 1152/no-padding instead. */
+  max-width: 1152px;
+  padding-left: 0;
+  padding-right: 0;
 }
-.dt {
-  font-family: var(--fd);
-  font-size: 2.4rem;
+.kv-d-fact {
+  /* 17px = card border (1) + card body padding (16) — keeps INTERIOR
+     label flush with the INDEX RECORD card's inner content below. */
+  padding: 18px 17px;
+  border-right: 1px solid var(--kv-rule);
+}
+.kv-d-fact:last-child { border-right: none; }
+.kv-d-fact-k {
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 6px;
+}
+.kv-d-fact-v {
+  font-family: var(--kv-mono);
+  font-size: 22px;
   font-weight: 400;
-  line-height: 1.1;
-  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--kv-black);
 }
-/* Mobile price + CTA bar — hidden on desktop */
-.dm-price-bar { display: none; }
+.kv-d-fact-v small { font-size: 12px; color: var(--kv-gray-500); font-weight: 400; margin-left: 4px; }
 
-.dl {
-  font-size: 0.88rem;
-  color: var(--tx2);
-  margin-bottom: 28px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.dl svg {
-  width: 14px;
-  height: 14px;
-  stroke: var(--oc);
-  fill: none;
-  stroke-width: 2;
-}
-
-.dsg {
+/* ══════════ 5. Main: body + INDEX RECORD sidebar ══════════
+   Inherits the 5-column rhythm of the facts strip above so that
+   the sidebar's left edge aligns with col 4 (INTERIOR) of facts.
+   - Description spans columns 1–3
+   - Sidebar     spans columns 4–5
+   Visual gap between them is provided by description's padding-right,
+   not by grid `gap`, so the column lines stay aligned with facts. */
+.kv-d-main {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 36px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  padding-bottom: 0;
+  margin-bottom: 56px;
+  /* Mirror gallery/facts: 1152/no-padding so column-4 grid line
+     (where the INDEX RECORD sidebar starts) lands at the same x as
+     INTERIOR's column edge in the facts strip above. */
+  max-width: 1152px;
+  padding-left: 0;
+  padding-right: 0;
 }
-.sb {
-  background: var(--bg2);
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-  border: 1px solid var(--bd);
+.kv-d-main > :first-child {
+  grid-column: 1 / 4;
+  padding-right: 48px;
+  min-width: 0;
 }
-.sb .v {
-  font-family: var(--fd);
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--ac);
+.kv-d-main > .kv-d-aside {
+  grid-column: 4 / 6;
 }
-.sb .l {
-  font-size: 0.72rem;
-  color: var(--tx3);
+
+.kv-d-block { margin-bottom: 52px; }
+.kv-d-block:last-child { margin-bottom: 0; }
+
+.kv-d-block-h {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-  margin-top: 4px;
+  color: var(--kv-gray-500);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--kv-rule);
 }
 
-.dd h3 {
-  font-family: var(--fd);
-  font-size: 1.4rem;
-  font-weight: 700;
-  margin-bottom: 14px;
-}
-.dd p {
-  font-size: 0.92rem;
-  color: var(--tx2);
-  line-height: 1.8;
-  margin-bottom: 20px;
-}
-.dd-html {
-  font-size: 0.92rem;
-  color: var(--tx2);
-  line-height: 1.8;
-  margin-bottom: 20px;
-}
-.dd-html h2,
-.dd-html h3,
-.dd-html h4 {
-  font-family: var(--fd);
-  font-weight: 700;
-  color: var(--tx);
-  margin: 24px 0 8px;
-}
-.dd-html h2 { font-size: 1.3rem; }
-.dd-html h3 { font-size: 1.15rem; }
-.dd-html h4 { font-size: 1rem; }
-.dd-html p {
-  margin: 0 0 12px;
-}
-.dd-html ul,
-.dd-html ol {
-  margin: 0 0 12px;
-  padding-left: 20px;
-}
-.dd-html li {
-  margin-bottom: 4px;
-}
-.dd-html strong {
-  color: var(--tx);
-  font-weight: 600;
-}
-.dd-html a {
-  color: var(--ac);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.dd-html a:hover {
-  opacity: 0.8;
-}
-
-.dd .dd-source {
-  font-size: 0.82rem;
-  color: var(--tx3);
-  border-top: 1px solid var(--bd);
-  padding-top: 16px;
-  margin-top: 16px;
-}
-.dd .last-checked {
-  font-size: 0.82rem;
-  color: var(--tx3);
-  font-style: italic;
-  margin-bottom: 0;
-}
-
-/* Sidebar CTA card */
-.ds { align-self: start; }
-.ds .cc {
-  background: var(--bg2);
-  border-radius: 16px;
-  padding: 32px;
-  border: 1px solid var(--bd);
-  position: sticky;
-  top: 32px;
-}
-.cc h4 {
-  font-family: var(--fd);
-  font-size: 1.2rem;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-.cc .src {
-  font-size: 0.78rem;
-  color: var(--tx3);
-  margin-bottom: 24px;
-}
-.cc .dp {
-  font-family: var(--fd);
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: var(--ac);
-  margin: 24px 0 6px;
-  line-height: 1;
-}
-.cc .dpn {
-  font-size: 0.78rem;
-  color: var(--tx3);
-  margin-bottom: 24px;
-}
-.cc-actions {
+/* Description heading row — eyebrow on the left, AI-rewrite badge on
+   the right. Shares the .kv-d-block-h border-bottom by hoisting the
+   rule onto the row wrapper so the h2 inside can drop its own.
+   cv-listing.html style: no headings ever fight a badge for vertical
+   real estate — they sit on the same baseline. */
+.kv-d-block-head {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--kv-rule);
 }
-.boc {
-  width: 100%;
-  text-align: center;
-  padding: 13px;
-  border-radius: 10px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--tx);
-  background: transparent;
-  border: 1.5px solid var(--bd2);
-  cursor: pointer;
-  transition: all 0.2s;
-  display: block;
-  font-family: var(--fb);
-  text-decoration: none;
-  box-sizing: border-box;
+.kv-d-block-head .kv-d-block-h {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
-.boc:hover { border-color: var(--tx); }
-.detail-save-sidebar {
+
+/* AI-rewrite badge — mono pill, soft border, dim text. The leading
+   dot is a 6px pulse-green identifier that ties to the "Live" status
+   language used elsewhere on the index without claiming the same
+   semantic. Sits to the right of the Description eyebrow. */
+.kv-d-ai-badge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
+  gap: 8px;
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  padding: 5px 10px;
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-white);
+  white-space: nowrap;
+  cursor: help;
 }
-.detail-save-sidebar svg {
-  width: 14px;
-  height: 14px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
+.kv-d-ai-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--kv-black);
   flex-shrink: 0;
 }
-.detail-save-sidebar.is-saved {
-  border-color: rgba(217, 221, 64, 0.34);
-  background: rgba(217, 221, 64, 0.12);
-  color: var(--ac);
-}
-.detail-save-sidebar.is-saved svg {
-  fill: currentColor;
+
+/* AI-rewrite caption — appears as a footnote under the description body.
+   The badge in the heading is the primary signal; this catches readers
+   who scrolled past the badge. Mono italic, dim, separated from the
+   prose with a hairline rule so it reads as metadata, not body copy. */
+.kv-d-ai-caption {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--kv-rule-soft, var(--kv-rule));
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--kv-gray-500);
+  line-height: 1.55;
+  max-width: 62ch;
 }
 
-/* Similar Properties section */
-.dsim {
-  margin-top: 64px;
-  padding-top: 48px;
-  border-top: 1px solid var(--bd);
+.kv-d-block p,
+.kv-d-html {
+  font-family: var(--kv-mono);
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--kv-black);
+  margin-bottom: 14px;
+  max-width: 62ch;
 }
-.dsim-header {
+.kv-d-html p { margin-bottom: 14px; }
+.kv-d-html ul,
+.kv-d-html ol { padding-left: 22px; margin-bottom: 14px; }
+.kv-d-html li { margin-bottom: 6px; }
+.kv-d-html strong { color: var(--kv-black); font-weight: 600; }
+.kv-d-html img { max-width: 100%; height: auto; margin: 14px 0; }
+
+/* Location rows */
+.kv-d-loc {
+  border: 1px solid var(--kv-rule);
+}
+.kv-d-loc-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--kv-rule);
+  font-family: var(--kv-mono);
+  font-size: 13px;
+}
+.kv-d-loc-row:last-child { border-bottom: none; }
+.kv-d-loc-k {
+  color: var(--kv-gray-500);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.kv-d-loc-v { font-weight: 500; color: var(--kv-black); }
+
+/* ══════════ 6. INDEX RECORD sidebar ══════════ */
+
+/* Sticky sidebar — z-index keeps the card above section bleed-rules
+   that scroll past underneath (they're absolutely-positioned ::before
+   pseudo-elements on later siblings, so without explicit z-index they
+   render on top of the card during scroll). */
+.kv-d-aside {
+  position: sticky;
+  top: 76px;
+  align-self: start;
+  height: fit-content;
+  z-index: 2;
+}
+
+/* All sidebar panels share the same border weight (--kv-rule). The
+   visual hierarchy comes from the SURFACE — white (action) /
+   transparent (data) / off-white (trust) — not from competing border
+   colours. Mirrors cv-listing.html .s-panel pattern. */
+.kv-d-card {
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-white);
+  margin-bottom: 16px;
+  padding: 24px 22px;
+}
+.kv-d-card-soft { border-color: var(--kv-rule); }
+
+.kv-d-card-h {
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--kv-rule);
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.kv-d-card-pill {
+  padding: 2px 8px;
+  border: 1px solid var(--kv-rule);
+  color: var(--kv-black);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+
+.kv-d-card-body { padding: 0; }
+
+.kv-d-prov {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+  margin-bottom: 14px;
+}
+.kv-d-prov-cell { min-width: 0; }
+.kv-d-prov-k {
+  font-family: var(--kv-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 4px;
+}
+.kv-d-prov-v {
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--kv-black);
+  word-break: break-word;
+}
+.kv-d-prov-mono {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+/* Sidebar CTAs — cv-listing.html .s-cta-* pattern. Title-case Mono
+   text (NOT uppercase) so they read relaxed and editorial. Primary
+   is a filled black bar (the action); secondary is a transparent
+   outline link.
+
+   These intentionally diverge from the global .kv-btn (which is
+   uppercase outlined) because the sidebar is a long-form action card
+   — uppercase + outlined was reading as too shouty there. */
+.kv-d-btn-primary {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 18px;
+  background: var(--kv-black);
+  color: var(--kv-white);
+  border: none;
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+  text-transform: none;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--kv-dur) var(--kv-ease);
+}
+.kv-d-btn-primary > span:first-child { flex: 1; min-width: 0; }
+.kv-d-btn-primary > span[aria-hidden] { flex-shrink: 0; }
+.kv-d-btn-primary:hover { background: var(--kv-black-hover); color: var(--kv-white); }
+.kv-d-btn-primary:active { transform: translateY(1px); }
+
+.kv-d-btn-ghost {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 18px;
+  margin-top: 8px;
+  background: transparent;
+  color: var(--kv-gray-500);
+  border: 1px solid var(--kv-rule);
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--kv-dur) var(--kv-ease),
+              color var(--kv-dur) var(--kv-ease);
+}
+.kv-d-btn-ghost:hover { border-color: var(--kv-black); color: var(--kv-black); }
+.kv-d-btn-ghost.is-saved {
+  background: var(--kv-green);
+  border-color: var(--kv-black);
+  color: var(--kv-black);
+}
+.kv-d-btn-ghost:active { transform: translateY(1px); }
+
+/* Listing-summary inner blocks — cv-listing.html .s-price/.s-specs.
+   Light-weight large price + tight subline, then specs row that
+   matches the inline mono pattern from the page header. */
+.kv-d-card-price-block {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--kv-rule-soft);
+}
+.kv-d-card-price {
+  font-family: var(--kv-mono);
+  font-size: clamp(36px, 4.5vw, 48px);
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: var(--kv-black);
+  font-variant-numeric: tabular-nums;
+}
+.kv-d-card-price-cve {
+  margin-top: 8px;
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-sm);
+  letter-spacing: var(--kv-ls-meta);
+  color: var(--kv-gray-500);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subline below the price in the listing-summary card.
+   Replaces the noisy "Approx. N CVE" with €/m² + "Asking price"
+   — a useful market signal plus a disclaimer that we show ask, not
+   transaction. Mono caps so it visually sits with the spec row. */
+.kv-d-card-subline {
+  margin-top: 10px;
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  font-variant-numeric: tabular-nums;
+}
+.kv-d-card-subline b {
+  color: var(--kv-black);
+  font-weight: var(--kv-fw-semibold);
+}
+.kv-d-card-subline-sep { color: rgba(0, 0, 0, 0.25); }
+
+/* (.kv-d-card-meta variants removed — those extra rows in the
+   listing-summary card created clutter that broke the cv-listing
+   harmony. vs-median lives in the meta-table below; type/location
+   already in the page-level eyebrow.) */
+.kv-d-card-listedby {
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-base);
+  color: var(--kv-gray-500);
+  margin-bottom: 16px;
+  letter-spacing: 0.02em;
+}
+.kv-d-card-listedby b {
+  color: var(--kv-black);
+  font-weight: var(--kv-fw-medium);
+}
+
+.kv-d-method {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--kv-gray-500);
+  padding: 14px 16px;
+  border-top: 1px dashed var(--kv-rule-soft);
+}
+.kv-d-method b { color: var(--kv-black); font-weight: 500; }
+
+/* ──────────────────────────────────────────────────────────
+   Sidebar Panel 1 — specs row (Beds · Bath · m²)
+   Inline mono row with dot separators. Mirrors the header
+   subline so the page reads as one editorial voice rather
+   than a chunky 2-col stat grid. */
+.kv-d-spec-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  padding: 12px 0 16px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--kv-rule-soft);
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  font-variant-numeric: tabular-nums;
+}
+.kv-d-spec-token b {
+  color: var(--kv-black);
+  font-weight: var(--kv-fw-semibold);
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  margin-right: 4px;
+}
+.kv-d-spec-token + .kv-d-spec-token::before {
+  content: "·";
+  color: rgba(0, 0, 0, 0.25);
+  margin: 0 10px;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Property details TABLE primitive — k/v table with off-white
+   key column + body value column, hairline rows, outer border.
+   Mirrors cv-listing.html .detail-table. Used in the description
+   column on Detail; reusable elsewhere when a section needs the
+   "labelled data table" treatment instead of the lighter
+   .kv-d-meta-row card pattern. */
+.kv-d-table-block { margin-bottom: 44px; }
+.kv-d-table-eyebrow {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--kv-rule);
+}
+.kv-d-table {
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-paper);
+}
+.kv-d-table-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  border-bottom: 1px solid var(--kv-rule-soft);
+}
+.kv-d-table-row:last-child { border-bottom: none; }
+.kv-d-table-k {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  background: var(--kv-off-white);
+  border-right: 1px solid var(--kv-rule);
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+}
+.kv-d-table-v {
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  color: var(--kv-black);
+  padding: 11px 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Sidebar Panel 2 — Status meta-table.
+   cv-listing.html .s-meta pattern: bordered grid where each row
+   is a 2-column cell pair (label | value) with internal hairlines.
+   Same border weight (--kv-rule) as Panels 1 + 3, transparent
+   surface — the column reads as one coherent stack. */
+.kv-d-meta-table {
+  border: 1px solid var(--kv-rule);
+  margin-bottom: 16px;
+}
+.kv-d-meta-table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--kv-rule-soft);
+}
+.kv-d-meta-table-row:last-child { border-bottom: none; }
+.kv-d-meta-table-k {
+  padding: 10px 14px;
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--kv-gray-500);
+  border-right: 1px solid var(--kv-rule-soft);
+}
+.kv-d-meta-table-v {
+  padding: 10px 14px;
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--kv-black);
+  font-variant-numeric: tabular-nums;
+}
+.kv-d-meta-table-v.is-lower { color: #b44; }
+.kv-d-meta-table-v.is-higher { color: var(--kv-black); }
+
+/* Legacy .kv-d-meta-row pattern — still used elsewhere (Market page
+   "Median price by island" card, etc). Kept intact. */
+.kv-d-meta { padding: 0; }
+.kv-d-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--kv-rule-soft);
+}
+.kv-d-meta-row:last-child { border-bottom: none; }
+.kv-d-meta-k {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+}
+.kv-d-meta-v {
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  font-weight: var(--kv-fw-medium);
+  color: var(--kv-black);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-align: right;
+}
+/* Directional accents for "vs median" — green when below (good
+   value), reserved color when above. Keeps semantics tied to the
+   editorial green/ocean palette so we don't introduce new tokens. */
+.kv-d-meta-v.is-lower  { color: var(--kv-green-deep); }
+.kv-d-meta-v.is-higher { color: var(--kv-accent-ocean); }
+
+/* ──────────────────────────────────────────────────────────
+   Sidebar Panel 3 — Original source
+   Trust block: small label, bold name, link, disclaimer. No
+   card header — the panel itself reads as the named block. */
+/* Original Source — third sidebar panel, off-white surface
+   distinguishes it from the white Listing Summary above. Same
+   border weight (--kv-rule) so the column reads as one stack. */
+.kv-d-source {
+  background: var(--kv-off-white);
+  padding: 18px;
+}
+.kv-d-source-lbl {
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 8px;
+}
+.kv-d-source-name {
+  font-family: var(--kv-mono);
+  font-size: 16px;
+  font-weight: var(--kv-fw-medium);
+  letter-spacing: -0.01em;
+  color: var(--kv-black);
+  margin-bottom: 10px;
+}
+.kv-d-source-link {
+  display: inline-block;
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--kv-black);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+  padding-bottom: 1px;
+  margin-bottom: 14px;
+  transition: border-color var(--kv-dur-fast) var(--kv-ease);
+}
+.kv-d-source-link:hover { border-color: var(--kv-black); }
+.kv-d-source-disc {
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  line-height: 1.65;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 14px 0 0;
+  padding: 0;
+  border: none;
+}
+
+/* ══════════ 7. Section primitives (shared by mortgage/market/similar) ══════════ */
+
+/* Section base — divider above each white-on-white section (Monthly
+   cost, Market context). Container-width 1px line, NOT full-bleed
+   per site rule. The tinted variant below opts out — its off-white
+   panel is its own separator. */
+.kv-d-section {
+  padding-top: 56px;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 56px;
+  position: relative;
+  border-top: 1px solid var(--kv-rule);
+}
+
+/* Tinted variant — full-bleed warm beige panel that replaces the
+   1px top line with a soft surface block. Mirrors cv-listing.html's
+   .similar pattern: section breaks out to 100vw with a direct
+   off-white background, inner content re-centers via .kv-d-section-inner.
+   IMPORTANT: explicitly opts out of `.kv-d > *`'s max-width:1200px and
+   side padding (which would otherwise cap this at the content column). */
+.kv-d > .kv-d-section-tinted {
+  max-width: none;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 0;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 56px;
+  padding-bottom: 64px;
+  background: var(--kv-off-white);
+  border-top: none;
+}
+.kv-d-section-tinted .kv-d-section-inner {
+  max-width: var(--kv-content-w);
+  margin: 0 auto;
+  padding: 0 var(--kv-gutter);
+}
+.kv-d-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
   margin-bottom: 28px;
 }
-.dsim-h {
-  font-family: var(--fd);
-  font-size: 1.6rem;
+/* Section eyebrow — same recipe as global .kv-eyebrow */
+.kv-d-ey {
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-sm);
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: var(--kv-ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 10px;
+}
+/* Section heading — uses .kv-h2 token scale for consistency */
+.kv-d-h2 {
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-h2);
+  font-weight: var(--kv-fw-regular);
+  letter-spacing: var(--kv-ls-display);
+  line-height: 1.18;
+  color: var(--kv-black);
+}
+.kv-d-disclaimer {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  color: var(--kv-gray-500);
+  letter-spacing: 0.04em;
+  margin-top: 20px;
+  line-height: 1.6;
+}
+
+/* ══════════ 8. Monthly Cost (tightened) ══════════ */
+
+/* Two equal columns, equal height — inputs (left) and result (right). */
+.kv-d-mc {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+/* Inputs box — same paper surface as the result box, hairline border.
+   (Earlier off-white fill removed — felt heavy against the page.) */
+.kv-d-mc-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 20px;
+  padding: 20px;
+  background: var(--kv-paper);
+  border: 1px solid var(--kv-rule);
+}
+.kv-d-mc-inputs .kv-d-mc-field-wide { grid-column: 1 / -1; }
+
+.kv-d-mc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kv-d-mc-field label {
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+}
+.kv-d-mc-field input[type="text"] {
+  padding: 9px 12px;
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-white);
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  color: var(--kv-black);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.kv-d-mc-field input[type="text"]:focus { border-color: var(--kv-black); }
+.kv-d-mc-field input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--kv-rule);
+  outline: none;
+  cursor: pointer;
+}
+.kv-d-mc-field input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--kv-black);
+  border: 2px solid var(--kv-black);
+  cursor: grab;
+}
+.kv-d-mc-field input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--kv-black);
+  border: 2px solid var(--kv-black);
+  cursor: grab;
+}
+
+/* Advanced-costs disclosure — wrapper uses display:contents so its
+   children participate in the parent grid as if the wrapper isn't
+   there. On desktop the toggle is hidden and the wrapper always shows;
+   on mobile the toggle appears and the wrapper hides until opened. */
+.kv-d-mc-advanced { display: contents; }
+.kv-d-mc-advanced-toggle { display: none; }
+
+.kv-d-mc-result {
+  border: 1px solid var(--kv-black);
+  padding: 20px;
+  background: var(--kv-paper);
+  display: flex;
+  flex-direction: column;
+}
+.kv-d-mc-hero {
+  text-align: center;
+  padding-bottom: 16px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--kv-rule-soft);
+}
+.kv-d-mc-hero-label {
+  display: block;
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 6px;
+}
+.kv-d-mc-hero-value {
+  display: block;
+  font-family: var(--kv-mono);
+  font-size: clamp(28px, 3.2vw, 36px);
   font-weight: 400;
-  margin-bottom: 0;
+  letter-spacing: -0.02em;
+  color: var(--kv-black);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
-.dsim-h em {
-  font-style: normal;
-  color: var(--ac);
+.kv-d-mc-hero-sub {
+  display: block;
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  color: var(--kv-gray-500);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 6px;
 }
-.dsim-nav {
+
+.kv-d-mc-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.kv-d-mc-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.7);
+}
+.kv-d-mc-val {
+  color: var(--kv-black);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.kv-d-mc-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--kv-rule-soft);
+}
+.kv-d-mc-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--kv-gray-500);
+  font-variant-numeric: tabular-nums;
+}
+.kv-d-mc-summary-row span:last-child {
+  color: var(--kv-black);
+  font-weight: 500;
+}
+
+/* ══════════ 9. Market Context ══════════ */
+
+.kv-d-mctx-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border: 1px solid var(--kv-rule);
+}
+.kv-d-mctx-3 { grid-template-columns: repeat(3, 1fr); }
+.kv-d-mctx-2 { grid-template-columns: repeat(2, 1fr); }
+.kv-d-mctx-1 { grid-template-columns: 1fr; }
+
+.kv-d-mctx-card {
+  padding: 20px 22px;
+  border-right: 1px solid var(--kv-rule);
+}
+.kv-d-mctx-card:last-child { border-right: none; }
+.kv-d-mctx-value {
+  font-family: var(--kv-mono);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--kv-black);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 4px;
+}
+.kv-d-mctx-label {
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+}
+.kv-d-mctx-note {
+  margin-top: 10px;
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.4);
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+}
+.kv-d-mctx-bar { margin-top: 12px; }
+.kv-d-mctx-bar-track {
+  position: relative;
+  height: 4px;
+  background: var(--kv-rule);
+  margin-bottom: 6px;
+}
+.kv-d-mctx-bar-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  background: var(--kv-black);
+}
+.kv-d-mctx-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--kv-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+}
+
+/* ══════════ 10. Similar Properties — horizontal scroll ══════════ */
+
+.kv-d-sim-nav {
   display: flex;
   gap: 8px;
 }
-.dsim-arrow {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1.5px solid var(--bd2);
-  background: transparent;
-  color: var(--tx);
+.kv-d-sim-arrow {
+  width: 32px;
+  height: 32px;
+  background: var(--kv-white);
+  border: 1px solid var(--kv-black);
+  color: var(--kv-black);
+  font-size: 18px;
+  line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.2s, background 0.2s;
+  transition: background 0.2s, color 0.2s, opacity 0.2s;
 }
-.dsim-arrow:hover { border-color: var(--ac); background: rgba(255,255,255,0.04); }
-.dsim-arrow svg { width: 20px; height: 20px; }
-.dsim-arrow-off {
-  opacity: 0.3;
-  pointer-events: none;
+.kv-d-sim-arrow:hover:not(:disabled) { background: var(--kv-hover); color: var(--kv-black); }
+.kv-d-sim-arrow-off,
+.kv-d-sim-arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
-.dsim-grid {
-  display: flex;
+
+.kv-d-sim-scroll {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 2 * 20px) / 3);
   gap: 20px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
+  scroll-padding-left: 0;
   scrollbar-width: none;
-  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
 }
-.dsim-grid::-webkit-scrollbar { display: none; }
-.dsim-grid > * {
-  flex: 0 0 260px;
-  scroll-snap-align: start;
-}
-.dsim-grid .ca { display: none; }
-.dsim-grid .pc:hover .pct { color: var(--ac); }
-.dsim-grid .pct { transition: color 0.2s; }
+.kv-d-sim-scroll::-webkit-scrollbar { display: none; }
 
-/* Lightbox */
-.lb-overlay {
+.kv-d-sim-card {
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-white);
+  color: var(--kv-black);
+  text-decoration: none;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.kv-d-sim-card:hover {
+  border-color: rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.kv-d-sim-img {
+  position: relative;
+  height: 160px;
+  background: linear-gradient(135deg, #c9d4c8 0%, #a8bea4 100%);
+}
+.kv-d-sim-img::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(135deg, transparent 0 14px, rgba(0, 0, 0, 0.03) 14px 15px);
+  pointer-events: none;
+}
+.kv-d-sim-flag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 10px;
+  background: var(--kv-white);
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kv-black);
+  z-index: 2;
+}
+/* Matches listing-v1.html .rc-* — minimal: type|city / price / title.
+   No specs or provenance row; that data lives on the full Listings card. */
+.kv-d-sim-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.kv-d-sim-top {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 6px;
+}
+.kv-d-sim-loc { color: var(--kv-gray-500); }
+.kv-d-sim-price {
+  font-family: var(--kv-mono);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--kv-black);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 6px;
+}
+.kv-d-sim-title {
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.7);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ══════════ 11. Lightbox ══════════ */
+
+.kv-d-lb {
   position: fixed;
   inset: 0;
-  z-index: 500;
-  background: #000;
+  background: rgba(10, 10, 10, 0.96);
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: lb-in 0.2s ease;
+  cursor: zoom-out;
+  padding: 40px;
 }
-@keyframes lb-in { from { opacity: 0; } to { opacity: 1; } }
-.lb-img {
-  max-width: calc(100% - 120px);
-  max-height: calc(100% - 100px);
+.kv-d-lb-img {
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
-  border-radius: 4px;
-  user-select: none;
+  cursor: default;
 }
-.lb-close {
+.kv-d-lb-close {
   position: absolute;
   top: 20px;
   right: 20px;
-  width: 44px;
-  height: 44px;
-  border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid #fafafa;
+  color: #fafafa;
+  font-size: 22px;
+  line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
-  z-index: 2;
+  transition: background 0.2s, color 0.2s;
 }
-.lb-close:hover { background: rgba(255, 255, 255, 0.2); }
-.lb-close svg { width: 22px; height: 22px; }
-.lb-arrow {
+.kv-d-lb-close:hover { background: #fafafa; color: #0a0a0a; }
+.kv-d-lb-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   width: 48px;
   height: 48px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: transparent;
+  border: 1px solid #fafafa;
+  color: #fafafa;
+  font-size: 26px;
+  line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
-  z-index: 2;
+  transition: background 0.2s, color 0.2s;
 }
-.lb-arrow:hover { background: rgba(255, 255, 255, 0.2); }
-.lb-arrow svg { width: 24px; height: 24px; }
-.lb-prev { left: 16px; }
-.lb-next { right: 16px; }
-.lb-counter {
+.kv-d-lb-arrow:hover { background: #fafafa; color: #0a0a0a; }
+.kv-d-lb-prev { left: 24px; }
+.kv-d-lb-next { right: 24px; }
+.kv-d-lb-counter {
   position: absolute;
-  bottom: 24px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
-  z-index: 2;
-}
-.lb-thumbstrip {
-  position: absolute;
-  bottom: 56px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 6px;
-  max-width: calc(100% - 120px);
-  overflow-x: auto;
-  z-index: 2;
-  padding: 4px;
-}
-.lb-th {
-  width: 48px;
-  height: 48px;
-  border-radius: 6px;
-  border: 2px solid transparent;
-  background-size: cover;
-  background-position: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  padding: 0;
-  opacity: 0.5;
-  transition: opacity 0.2s, border-color 0.2s;
-}
-.lb-th:hover { opacity: 0.8; }
-.lb-th.on {
-  opacity: 1;
-  border-color: #fff;
+  padding: 6px 14px;
+  color: #fafafa;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid rgba(250, 250, 250, 0.4);
 }
 
-/* Hero image click hint */
-.dhi { cursor: pointer; }
+/* ══════════ 12. Responsive ══════════ */
 
-@media (max-width: 1024px) {
-  .dg { grid-template-columns: 1fr; }
-  .dsg { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 768px) {
-  .dhi { height: 280px; }
-  .dhi-price { display: none; }
-  .dl { margin-bottom: 16px; }
-  .dm-price-bar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    column-gap: 12px;
-    row-gap: 8px;
-    margin-bottom: 24px;
-    padding: 14px 16px;
-    background: var(--bg2);
-    border-radius: 12px;
-    border: 1px solid var(--bd);
+@media (max-width: 960px) {
+  .kv-d-top-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "eyebrow"
+      "title"
+      "price"
+      "pricecve"
+      "subline";
+    gap: 12px;
   }
-  .dm-price-bar.dm-price-bar-tight {
-    column-gap: 10px;
-    padding: 12px 14px;
+  .kv-d-price-block { text-align: left; }
+  .kv-d-price-cve { text-align: left; }
+  .kv-d-gallery {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, 180px);
   }
-  .dm-price-copy {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-width: 0;
-    align-self: start;
+  .kv-d-gtile-primary { grid-row: 1 / 2; grid-column: 1 / 3; }
+  /* Facts strip — shift the whole box (incl. its top/bottom borders)
+     in 24px from each edge instead of padding the inside. Padding
+     would leave the borders extending past content to the viewport
+     edge, which read as broken. */
+  .kv-d-facts {
+    grid-template-columns: repeat(3, 1fr);
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 24px;
+    margin-right: 24px;
+    /* max-width was set on desktop to match gallery's flush 1152;
+       on mobile let it shrink to viewport - margins. */
+    max-width: none;
   }
-  .dm-price-copy > * {
-    white-space: nowrap;
+  .kv-d-fact:nth-child(n + 4) { border-top: 1px solid var(--kv-rule); }
+  /* Main grid: same trick — stack single column, shift via margin
+     so any internal borders don't extend past content. Reset the
+     desktop grid-column overrides on description (was 1/4) and aside
+     (was 4/6) so they don't create implicit narrow tracks. */
+  .kv-d-main {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 24px;
+    margin-right: 24px;
+    max-width: none;
+    /* margin: auto from .kv-d > * would re-center; lock to start. */
+    width: auto;
   }
-  .dm-price-copy .dm-price-cve {
-    min-width: 0;
-    white-space: normal;
+  .kv-d-main > :first-child {
+    grid-column: 1;
+    padding-right: 0;
   }
-  .dm-price {
-    font-family: var(--fd);
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--ac);
-    line-height: 0.96;
-    letter-spacing: -0.01em;
+  .kv-d-main > .kv-d-aside {
+    grid-column: 1;
+    position: static;
   }
-  .dm-price.dm-price-long {
-    font-size: 1.36rem;
-    letter-spacing: -0.02em;
-  }
-  .dm-price.dm-price-xlong {
-    font-size: 1.28rem;
-    letter-spacing: -0.03em;
-  }
-  .dm-price-exact {
-    font-size: 0.76rem;
-    color: var(--tx2);
-    margin-top: 6px;
-  }
-  .dm-price-cve {
-    font-size: 0.7rem;
-    color: var(--tx3);
-    margin-top: 2px;
-  }
-  .dm-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    justify-self: end;
-    flex-wrap: nowrap;
-  }
-  .dm-cta {
-    flex-shrink: 0;
-    min-height: 42px;
-    padding: 11px 16px;
-    border-radius: 8px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    background: var(--ac);
-    color: var(--bg);
-    text-decoration: none;
-    font-family: var(--fb);
-    white-space: nowrap;
-  }
-  .dm-save {
-    width: 42px;
-    height: 42px;
-    border: 1px solid var(--bd2);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.03);
-    color: var(--tx2);
+  .kv-d-mc { grid-template-columns: 1fr; }
+  .kv-d-mc-inputs { grid-template-columns: 1fr; }
+  .kv-d-mc-inputs .kv-d-mc-field-wide { grid-column: 1; }
+  /* Hide carrying-cost fields until reader opens the disclosure. The
+     button sits as the last grid row; tapping it toggles data-open on
+     the wrapper and rerenders. Defaults are sane so power users can
+     skip the expand. */
+  .kv-d-mc-advanced[data-open="false"] { display: none; }
+  .kv-d-mc-advanced-toggle {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    padding: 0;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--kv-white);
+    color: var(--kv-black);
+    border: 1px solid var(--kv-rule);
+    font-family: var(--kv-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     cursor: pointer;
+    width: 100%;
+  }
+  .kv-d-mc-advanced-toggle:hover { border-color: var(--kv-black); }
+  .kv-d-mc-advanced-toggle > span:last-child {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+  }
+  .kv-d-mctx-grid,
+  .kv-d-mctx-4,
+  .kv-d-mctx-3 { grid-template-columns: repeat(2, 1fr); }
+  .kv-d-mctx-card:nth-child(2n) { border-right: none; }
+  .kv-d-sim-scroll { grid-auto-columns: calc((100% - 20px) / 2); }
+}
+
+@media (max-width: 640px) {
+  /* Keep the AI badge on the same row as the heading — the badge
+     is short enough to fit. Center on baseline so the dot lines up
+     with the heading capline. */
+  .kv-d-block-head {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+  .kv-d-block-head .kv-d-ai-badge {
+    margin-left: auto;
     flex-shrink: 0;
-    transition: color 0.2s, background 0.2s, border-color 0.2s, transform 0.2s;
   }
-  .dm-save:hover {
-    transform: translateY(-1px);
-    color: var(--tx);
-    border-color: var(--tx2);
-    background: rgba(255, 255, 255, 0.05);
+  .kv-d-ai-caption { font-size: 11.5px; }
+  .kv-d-top { padding-top: 28px; padding-bottom: 24px; }
+  .kv-d-gallery { grid-template-rows: repeat(3, 140px); }
+  .kv-d-hero { height: 260px; margin-bottom: 24px; }
+  /* Cap title on phones — raw scraper titles can run 60+ chars on a
+     mono font, which shoots the h1 to 4+ lines and pushes the price
+     below the fold. Tighter font + 3-line clamp keeps the header
+     compact without truncating most real titles. */
+  .kv-d-title {
+    font-size: clamp(20px, 5.5vw, 26px);
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
-  .dm-save svg {
-    width: 15px;
-    height: 15px;
-    stroke: currentColor;
-    fill: none;
-    stroke-width: 2;
-  }
-  .dm-save.is-saved {
-    color: var(--ac);
-    border-color: rgba(217, 221, 64, 0.34);
-    background: rgba(217, 221, 64, 0.12);
-  }
-  .dm-save.is-saved svg {
-    fill: currentColor;
-  }
-  .dm-save:focus-visible {
-    outline: 2px solid rgba(217, 221, 64, 0.75);
-    outline-offset: 2px;
-  }
+  /* Bring price closer to title on mobile — desktop's 30-42px is too
+     dominant against the 22-26px title at narrow widths. */
+  .kv-d-price { font-size: clamp(24px, 7vw, 30px); }
+  /* Bump spec subline so it reads as specs, not a footnote next to
+     the price. */
+  .kv-d-subline { font-size: 14px; }
+  /* Extra breathing between price block and the subline so the two
+     read as distinct units. */
+  .kv-d-top-grid { gap: 16px; }
+  /* Tighten the property-details k column on mobile so values aren't
+     cramped against the right edge. */
+  .kv-d-table-row { grid-template-columns: 120px 1fr; }
+  .kv-d-table-v { font-size: 12px; }
+  /* Hide the facts strip on phone — the same beds/baths/m² already
+     show in the header subline above and again in the Listing summary
+     card below. Three repetitions is the main reason the page reads
+     as cluttered on mobile. */
+  .kv-d-facts { display: none; }
+  /* When the facts list has an odd number of cells, the last one
+     would orphan in column 1 of its row. Span both columns instead
+     so it doesn't read as a half-empty card. */
+  .kv-d-fact:last-child:nth-child(odd) { grid-column: 1 / 3; }
+  .kv-d-fact-v { font-size: 18px; }
+  /* Market context — keep 2x2 on phone for 4-cell variant; 1-col only
+     when the data is just 1 stat. Easier to scan than tall stack. */
+  .kv-d-mctx-grid,
+  .kv-d-mctx-4 { grid-template-columns: repeat(2, 1fr); }
+  .kv-d-mctx-3,
+  .kv-d-mctx-2 { grid-template-columns: 1fr; }
+  /* Re-enable border-right on left column of the 2x2 layout, kill on
+     right; bottom border only on the top row. */
+  .kv-d-mctx-card { border-right: 1px solid var(--kv-rule); border-bottom: 1px solid var(--kv-rule); }
+  .kv-d-mctx-card:nth-child(2n) { border-right: none; }
+  .kv-d-mctx-card:nth-last-child(-n+2) { border-bottom: none; }
+  /* When the variant collapses to 1-col (3 or 2 cells), strip side
+     borders and use bottom-only between rows. */
+  .kv-d-mctx-3 .kv-d-mctx-card,
+  .kv-d-mctx-2 .kv-d-mctx-card { border-right: none; border-bottom: 1px solid var(--kv-rule); }
+  .kv-d-mctx-3 .kv-d-mctx-card:last-child,
+  .kv-d-mctx-2 .kv-d-mctx-card:last-child { border-bottom: none; }
+  .kv-d-sim-scroll { grid-auto-columns: 85%; }
+}
 
-  @media (max-width: 380px) {
-    .dm-price-bar {
-      grid-template-columns: 1fr;
-      row-gap: 10px;
-    }
+/* Empty/loading */
+.kv-empty {
+  padding: 60px 20px;
+  text-align: center;
+  border: 1px dashed var(--kv-rule);
+  color: rgba(0, 0, 0, 0.5);
+  font-family: var(--kv-mono);
+  font-size: var(--kv-t-base);
+}
+.kv-empty strong {
+  display: block;
+  font-size: var(--kv-t-xl);
+  color: var(--kv-black);
+  margin-bottom: 8px;
+}
 
-    .dm-actions {
-      justify-self: start;
-    }
+/* Legacy topbar (loading state + back button) */
+.kv-d-topbar {
+  padding-top: 24px;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+.kv-d-back {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--kv-gray-500);
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.kv-d-back:hover { color: var(--kv-black); }
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE STICKY CTA
+   Visible <768px only. Mirrors aside's "View on source" so
+   the primary action stays one tap away while the user scrolls
+   long descriptions / Mortgage / Market context / Similar.
+   Hidden on desktop where the sidebar already provides this CTA.
+   ══════════════════════════════════════════════════════════ */
+.kv-d-mcta { display: none; }
+
+@media (max-width: 768px) {
+  .kv-d-mcta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 90;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--kv-paper);
+    border-top: 1px solid var(--kv-rule);
+    box-shadow: 0 -2px 14px rgba(0, 0, 0, 0.06);
+    font-family: var(--kv-mono);
   }
-  .ds { display: none; }
-  .dsim { margin-top: 48px; padding-top: 32px; }
-  .lb-img { max-width: calc(100% - 24px); max-height: calc(100% - 80px); }
-  .lb-prev { left: 8px; width: 40px; height: 40px; }
-  .lb-next { right: 8px; width: 40px; height: 40px; }
-  .lb-thumbstrip { display: none; }
+  .kv-d-mcta-info { flex: 1; min-width: 0; }
+  .kv-d-mcta-price {
+    font-size: 15px;
+    font-weight: var(--kv-fw-medium);
+    color: var(--kv-black);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+  .kv-d-mcta-source {
+    font-size: var(--kv-t-2xs);
+    letter-spacing: var(--kv-ls-eyebrow);
+    text-transform: uppercase;
+    color: var(--kv-gray-500);
+    margin-top: 3px;
+  }
+  .kv-d-mcta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 18px;
+    background: var(--kv-black);
+    color: var(--kv-white);
+    border: 1px solid var(--kv-black);
+    font-family: var(--kv-mono);
+    font-size: var(--kv-t-sm);
+    font-weight: var(--kv-fw-semibold);
+    letter-spacing: var(--kv-ls-label);
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .kv-d-mcta-btn:hover { opacity: 0.85; }
 }

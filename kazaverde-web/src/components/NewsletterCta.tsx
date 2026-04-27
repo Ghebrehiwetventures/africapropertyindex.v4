@@ -10,7 +10,7 @@ interface Props {
 
 export default function NewsletterCta({
   overline = "Monthly Property Index",
-  heading = <>Cape Verde <em>market intelligence</em></>,
+  heading = "Cape Verde market intelligence.",
   description = "Median prices by island, inventory trends, new development alerts, and regulatory changes.",
 }: Props) {
   const [email, setEmail] = useState("");
@@ -43,32 +43,37 @@ export default function NewsletterCta({
 
   return (
     <div className="nl-cta anim-fu delay-4">
-      <div className="nl-overline">{overline}</div>
-      <h2>{heading}</h2>
-      <p>{description}</p>
-      {status === "success" ? (
-        <div className="nl-success">You're subscribed! We'll be in touch.</div>
-      ) : (
-        <form className="nl-form" onSubmit={handleSubmit}>
-          <input
-            type="email"
-            className="nl-input"
-            placeholder="you@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={status === "submitting"}
-          />
-          <button
-            type="submit"
-            className="nl-submit"
-            disabled={status === "submitting"}
-          >
-            {status === "submitting" ? "SENDING..." : "SUBSCRIBE"}
-          </button>
-        </form>
-      )}
-      {status === "error" && <div className="nl-error">{errorMsg}</div>}
-      <div className="nl-fine">Free. Unsubscribe anytime. No spam, just data.</div>
+      <div className="nl-cta-inner">
+        <div className="nl-overline">{overline}</div>
+        <h2>{heading}</h2>
+        <p>{description}</p>
+        {status === "success" ? (
+          <div className="nl-success">You're subscribed!</div>
+        ) : (
+          <form className="nl-form" onSubmit={handleSubmit}>
+            <input
+              type="email"
+              className="nl-input"
+              placeholder="Your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={status === "submitting"}
+              aria-label="Your email"
+            />
+            <button
+              type="submit"
+              className="nl-submit"
+              disabled={status === "submitting"}
+            >
+              {status === "submitting" ? "Sending..." : <>Subscribe <span aria-hidden="true">[→]</span></>}
+            </button>
+          </form>
+        )}
+        {status === "error" && <div className="nl-error">{errorMsg}</div>}
+        <div className="nl-fine">
+          Free. Unsubscribe any time. Every email has a direct reply-to.
+        </div>
+      </div>
     </div>
   );
 }

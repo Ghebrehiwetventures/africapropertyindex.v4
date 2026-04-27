@@ -8,6 +8,16 @@
       "has": [{ "type": "host", "value": "www.kazaverde.com" }],
       "destination": "https://kazaverde.com/:path*",
       "permanent": true
+    },
+    {
+      "source": "/listings/sal",
+      "destination": "/?island=Sal",
+      "permanent": true
+    },
+    {
+      "source": "/listings/boa-vista",
+      "destination": "/?island=Boa+Vista",
+      "permanent": true
     }
   ],
   "rewrites": [

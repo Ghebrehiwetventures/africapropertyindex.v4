@@ -46,5 +46,10 @@ export function useSaved() {
 
   const isSaved = useCallback((id: string) => saved.includes(id), [saved]);
 
-  return { saved, toggle, isSaved, count: saved.length };
+  const clear = useCallback(() => {
+    write([]);
+    setSaved([]);
+  }, []);
+
+  return { saved, toggle, isSaved, clear, count: saved.length };
 }
