@@ -1,0 +1,164 @@
+/* ════════════════════════════════════════════════════════════
+   Policy — shared shell for About, Privacy, Cookie Policy.
+   ──────────────────────────────────────────────────────────────
+   Reuses Market primitives (kv-hero-slim, kv-m-intro, kv-m-section,
+   kv-m-section-head, kv-m-acc) and adds a small kv-pol-* layer
+   for prose, lists, dt/dd-style key/value rows, and storage cards.
+   ════════════════════════════════════════════════════════════ */
+
+.kv-pol {
+  font-family: var(--kv-mono);
+  color: var(--kv-black);
+  background: var(--kv-white);
+}
+
+/* Body prose inside policy sections — sans for readability,
+   capped width, dim ink so the heading stays the anchor. */
+.kv-pol-prose {
+  font-family: var(--kv-sans);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--kv-ink-700);
+  max-width: 720px;
+}
+.kv-pol-prose + .kv-pol-prose { margin-top: 14px; }
+.kv-pol-prose strong { color: var(--kv-black); font-weight: 600; }
+.kv-pol-prose a {
+  color: var(--kv-black);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+  transition: border-color var(--kv-dur-fast) var(--kv-ease);
+}
+.kv-pol-prose a:hover { border-color: var(--kv-black); }
+
+/* Bullet list with mono leader — same hairline rhythm as Market. */
+.kv-pol-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 720px;
+}
+.kv-pol-list li {
+  position: relative;
+  padding: 12px 0 12px 22px;
+  border-bottom: 1px solid var(--kv-rule-soft, var(--kv-rule));
+  font-family: var(--kv-sans);
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--kv-ink-700);
+}
+.kv-pol-list li:last-child { border-bottom: none; }
+.kv-pol-list li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  font-family: var(--kv-mono);
+  color: var(--kv-gray-500);
+}
+.kv-pol-list strong { color: var(--kv-black); font-weight: 600; }
+.kv-pol-list a {
+  color: var(--kv-black);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+}
+.kv-pol-list a:hover { border-bottom-color: var(--kv-black); }
+
+/* Card grid — used for Cookie Policy storage types and
+   About quality notes. Mirrors kv-m-bars rhythm but as cards. */
+.kv-pol-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  max-width: 960px;
+}
+.kv-pol-card {
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-paper);
+  padding: 18px 20px;
+}
+.kv-pol-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--kv-black);
+  font-weight: 600;
+}
+.kv-pol-card-head svg {
+  color: var(--kv-green-deep, var(--kv-green));
+  flex-shrink: 0;
+}
+.kv-pol-card p {
+  font-family: var(--kv-sans);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--kv-ink-700);
+  margin: 0;
+}
+
+/* Pull-quote / highlight box — used for About coverage statement
+   and Privacy "what we don't collect" emphasis. */
+.kv-pol-pull {
+  border-left: 2px solid var(--kv-green-deep, var(--kv-green));
+  background: var(--kv-paper);
+  padding: 18px 22px;
+  max-width: 720px;
+  font-family: var(--kv-sans);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--kv-black);
+}
+.kv-pol-pull strong { font-weight: 600; }
+
+/* Updated-date stamp under hero subtitle. */
+.kv-pol-stamp {
+  display: inline-block;
+  margin-top: 14px;
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+}
+
+/* Coverage statistics box — used by About. */
+.kv-pol-coverage {
+  margin-top: 20px;
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-paper);
+  padding: 22px 24px;
+  max-width: 720px;
+}
+.kv-pol-coverage-k {
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 8px;
+}
+.kv-pol-coverage-v {
+  font-family: var(--kv-sans);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--kv-ink-700);
+}
+.kv-pol-coverage-note {
+  margin-top: 12px;
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--kv-gray-500);
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+  .kv-pol-prose, .kv-pol-list, .kv-pol-pull { font-size: 14.5px; }
+  .kv-pol-cards { grid-template-columns: 1fr; }
+}
