@@ -285,7 +285,17 @@
   position: relative;
   height: 220px;
   overflow: hidden;
-  background: linear-gradient(135deg, #c9d4c8 0%, #a8bea4 100%);
+  background: var(--kv-off-white);
+}
+/* Sits on top of the off-white box; if the URL 404s, SmartImage tells
+   the parent Card to unmount entirely — we don't ship empty cards. */
+.kv-lc-img-tag {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .kv-lc-img::after {
   content: "";

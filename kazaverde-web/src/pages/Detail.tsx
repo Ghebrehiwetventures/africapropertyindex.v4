@@ -19,6 +19,7 @@ import {
 import { looksItalian, stripHtml, translateItalianToEnglish } from "../lib/translation";
 import { calcMortgage, type MortgageInput } from "../lib/calcMortgage";
 import NotFound from "./NotFound";
+import SmartImage from "../components/SmartImage";
 import "./Detail.css";
 
 /** Collapse WP size variants (-1024x768.jpg) into one image per base filename, keeping the largest. */
@@ -506,18 +507,16 @@ export default function Detail() {
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         >
-          <div
-            className="kv-d-hero-img"
-            style={
-              images.length > 0
-                ? {
-                    backgroundImage: `url(${images[galleryIndex]})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }
-                : { background: "linear-gradient(135deg, #c9d4c8 0%, #a8bea4 100%)" }
-            }
-          />
+          <div className="kv-d-hero-img">
+            {images.length > 0 && (
+              <SmartImage
+                src={images[galleryIndex]}
+                alt={`Property photo ${galleryIndex + 1}`}
+                className="kv-d-hero-img-tag"
+                loading="eager"
+              />
+            )}
+          </div>
           {detail.is_new && <span className="kv-d-flag">New</span>}
           {hasMultipleImages && (
             <>
@@ -930,11 +929,16 @@ function GalleryMosaic({
           <div
             key={url + i}
             className={`kv-d-gtile${isPrimary ? " kv-d-gtile-primary" : ""}`}
-            style={{ backgroundImage: `url(${url})` }}
             onClick={() => onOpen(i)}
             role="button"
             tabIndex={0}
           >
+            <SmartImage
+              src={url}
+              alt={isPrimary ? "Primary photo" : `Photo ${i + 1}`}
+              className="kv-d-gtile-img"
+              loading={isPrimary ? "eager" : "lazy"}
+            />
             {isPrimary && isNew && <span className="kv-d-g-flag">New</span>}
             {isPrimary && !isNew && <span className="kv-d-g-flag">Primary</span>}
             {isLast && extraCount > 0 && (
@@ -1265,6 +1269,12 @@ function KvSimilar({ cards }: { cards: ListingCard[] }) {
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
 
+  // Cards whose hero image 404'd — drop them from the strip entirely.
+  // Policy: no image → not shown. Filter on each render so the horizontal
+  // scroll re-flows without empty gaps.
+  const [brokenIds, setBrokenIds] = useState<Set<string>>(new Set());
+  const visible = cards.filter((c) => !brokenIds.has(c.id));
+
   const updateArrows = () => {
     const el = ref.current;
     if (!el) return;
@@ -1282,7 +1292,7 @@ function KvSimilar({ cards }: { cards: ListingCard[] }) {
       el.removeEventListener("scroll", updateArrows);
       window.removeEventListener("resize", updateArrows);
     };
-  }, [cards]);
+  }, [visible]);
 
   const scroll = (dir: -1 | 1) => {
     const el = ref.current;
@@ -1326,15 +1336,25 @@ function KvSimilar({ cards }: { cards: ListingCard[] }) {
       </div>
 
       <div className="kv-d-sim-scroll" ref={ref}>
-        {cards.map((l) => {
+        {visible.map((l) => {
           const loc = [l.city, l.island].filter(Boolean).join(", ");
           const imgUrl = l.image_urls?.[0] || l.image_url;
-          const bg: React.CSSProperties = imgUrl
-            ? { backgroundImage: `url("${imgUrl}")`, backgroundSize: "cover", backgroundPosition: "center" }
-            : { backgroundImage: "linear-gradient(135deg, #c9d4c8 0%, #a8bea4 100%)" };
           return (
             <Link key={l.id} to={`/listing/${l.id}`} className="kv-d-sim-card">
-              <div className="kv-d-sim-img" style={bg}>
+              <div className="kv-d-sim-img">
+                <SmartImage
+                  src={imgUrl}
+                  alt={l.title || ""}
+                  className="kv-d-sim-img-tag"
+                  onFail={() =>
+                    setBrokenIds((prev) => {
+                      if (prev.has(l.id)) return prev;
+                      const next = new Set(prev);
+                      next.add(l.id);
+                      return next;
+                    })
+                  }
+                />
                 {l.is_new && <span className="kv-d-sim-flag">New</span>}
               </div>
               <div className="kv-d-sim-body">
