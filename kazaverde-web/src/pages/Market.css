@@ -114,6 +114,58 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
+   Island medians table — three-column grid (Island / Listings /
+   Median price). Replaces the older 2-col flex card where
+   listings count and median were jammed into one cell. Headers
+   align to data columns; numbers right-aligned, tabular nums.
+   ───────────────────────────────────────────────────────────── */
+.kv-m-island-table {
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-white);
+}
+.kv-m-island-h,
+.kv-m-island-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(80px, auto) minmax(140px, auto);
+  gap: 24px;
+  align-items: baseline;
+  padding: 14px 18px;
+}
+.kv-m-island-h {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  border-bottom: 1px solid var(--kv-rule);
+}
+.kv-m-island-h > span:nth-child(2),
+.kv-m-island-h > span:nth-child(3) {
+  text-align: right;
+}
+.kv-m-island-row {
+  border-bottom: 1px solid var(--kv-rule-soft);
+}
+.kv-m-island-row:last-child { border-bottom: none; }
+.kv-m-island-name {
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--kv-black);
+}
+.kv-m-island-count,
+.kv-m-island-median {
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--kv-black);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  letter-spacing: 0.02em;
+}
+
+/* ─────────────────────────────────────────────────────────────
    Distribution bars — single primitive used on Market only.
    Mono labels left, hairline track, green-deep fill, count right.
    ───────────────────────────────────────────────────────────── */

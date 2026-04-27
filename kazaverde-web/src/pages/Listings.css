@@ -577,6 +577,26 @@
     padding-bottom: 12px;
     border-bottom: 1px solid var(--kv-rule);
   }
+
+  /* Pager on mobile — three flex columns ("Showing X" / [button] / "Page Y")
+     squeeze the button into ~120px on phones, which clips the icon and
+     reads as cramped. Stack vertically: button first as a full-width
+     primary action, then the meta line ("Showing X · Page Y") below as
+     a single row of subtle context. */
+  .kv-pager {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .kv-pager-btn {
+    order: -1;
+    width: 100%;
+    padding: 14px 20px;
+    text-align: center;
+  }
+  .kv-pager > div {
+    text-align: center;
+  }
 }
 
 /* Filter popover backdrop — only rendered when a popover is open
