@@ -593,6 +593,13 @@ export function Card({ l }: { l: ListingCard; index?: number }) {
   const location = [l.city, l.island].filter(Boolean).join(", ");
   const imgUrl = l.image_urls?.[0] || l.image_url;
 
+  // Policy: a listing without a usable image must not appear at all.
+  // The SDK already filters image_urls IS NOT NULL server-side, but URLs
+  // can still 404 at the source (e.g. Terra Cabo Verde returns 404 on
+  // its own image paths). When that happens, the card unmounts itself.
+  const [imgFailed, setImgFailed] = useState(false);
+  if (!imgUrl || imgFailed) return null;
+
   const isLand = (l.property_type || "").toLowerCase() === "land";
 
   // Build only the specs we actually have data for. Empty placeholders
@@ -609,7 +616,12 @@ export function Card({ l }: { l: ListingCard; index?: number }) {
   return (
     <Link className="kv-lcard" to={`/listing/${l.id}`}>
       <div className="kv-lc-img">
-        <SmartImage src={imgUrl} alt={l.title || ""} className="kv-lc-img-tag" />
+        <SmartImage
+          src={imgUrl}
+          alt={l.title || ""}
+          className="kv-lc-img-tag"
+          onFail={() => setImgFailed(true)}
+        />
         {isNew && <span className="kv-lc-flag">New</span>}
       </div>
       <div className="kv-lc-body">

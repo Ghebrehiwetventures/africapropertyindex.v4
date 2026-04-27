@@ -1269,6 +1269,12 @@ function KvSimilar({ cards }: { cards: ListingCard[] }) {
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
 
+  // Cards whose hero image 404'd — drop them from the strip entirely.
+  // Policy: no image → not shown. Filter on each render so the horizontal
+  // scroll re-flows without empty gaps.
+  const [brokenIds, setBrokenIds] = useState<Set<string>>(new Set());
+  const visible = cards.filter((c) => !brokenIds.has(c.id));
+
   const updateArrows = () => {
     const el = ref.current;
     if (!el) return;
@@ -1286,7 +1292,7 @@ function KvSimilar({ cards }: { cards: ListingCard[] }) {
       el.removeEventListener("scroll", updateArrows);
       window.removeEventListener("resize", updateArrows);
     };
-  }, [cards]);
+  }, [visible]);
 
   const scroll = (dir: -1 | 1) => {
     const el = ref.current;
@@ -1330,13 +1336,25 @@ function KvSimilar({ cards }: { cards: ListingCard[] }) {
       </div>
 
       <div className="kv-d-sim-scroll" ref={ref}>
-        {cards.map((l) => {
+        {visible.map((l) => {
           const loc = [l.city, l.island].filter(Boolean).join(", ");
           const imgUrl = l.image_urls?.[0] || l.image_url;
           return (
             <Link key={l.id} to={`/listing/${l.id}`} className="kv-d-sim-card">
               <div className="kv-d-sim-img">
-                <SmartImage src={imgUrl} alt={l.title || ""} className="kv-d-sim-img-tag" />
+                <SmartImage
+                  src={imgUrl}
+                  alt={l.title || ""}
+                  className="kv-d-sim-img-tag"
+                  onFail={() =>
+                    setBrokenIds((prev) => {
+                      if (prev.has(l.id)) return prev;
+                      const next = new Set(prev);
+                      next.add(l.id);
+                      return next;
+                    })
+                  }
+                />
                 {l.is_new && <span className="kv-d-sim-flag">New</span>}
               </div>
               <div className="kv-d-sim-body">

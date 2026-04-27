@@ -110,6 +110,11 @@ export class AREIClient {
       .from(VIEW)
       .select(CARD_COLUMNS, { count: "exact" });
 
+    // Image gate — listings without a usable image array are not shown.
+    // Clients (e.g. KazaVerde) treat "no image" as "do not list at all".
+    // The view exposes image_urls as text[]; we require it to be NOT NULL.
+    query = query.not("image_urls", "is", null);
+
     // Island filter
     if (island) {
       query = query.eq("island", island);

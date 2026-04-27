@@ -5,26 +5,25 @@ interface Props {
   alt?: string;
   className?: string;
   loading?: "lazy" | "eager";
+  /** Called when the image fails to load (404, network error, decode fail).
+   *  Parents typically use this to drop the surrounding card from the list,
+   *  since KazaVerde's policy is "no image → not shown". */
+  onFail?: () => void;
 }
 
-/* SmartImage — renders <img> only when the URL exists AND loads.
-   On 404/network-error, the img unmounts so the parent's CSS background
-   (typically a placeholder gradient or off-white) shows through.
-
-   Why this exists: the pipeline currently stores image URLs from sources
-   that no longer serve them (e.g. Terra Cabo Verde returns 404 on its
-   own image paths). CSS `background-image` cannot signal load-failure,
-   which is why those rows rendered as empty cards. With <img onError>,
-   we can detect the failure and fall back gracefully. */
+/* SmartImage — renders an <img> only when the URL exists AND loads.
+   On error, it unmounts itself and fires onFail so the parent can react
+   (usually by removing the card entirely). No visual placeholder. */
 export default function SmartImage({
   src,
   alt = "",
   className,
   loading = "lazy",
+  onFail,
 }: Props) {
   const [failed, setFailed] = useState(false);
 
-  // Reset failure state when src changes (e.g. gallery navigation).
+  // Reset failure state when the URL changes (e.g. gallery navigation).
   useEffect(() => {
     setFailed(false);
   }, [src]);
@@ -38,7 +37,10 @@ export default function SmartImage({
       className={className}
       loading={loading}
       decoding="async"
-      onError={() => setFailed(true)}
+      onError={() => {
+        setFailed(true);
+        onFail?.();
+      }}
     />
   );
 }
