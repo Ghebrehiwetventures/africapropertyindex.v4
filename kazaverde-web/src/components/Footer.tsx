@@ -36,6 +36,7 @@ export default function Footer() {
             <Link to="/blog">Guides &amp; FAQ</Link>
             <Link to="/blog/buying-property-cape-verde-guide">Buying guide</Link>
             <Link to="/market#methodology">Methodology</Link>
+            <Link to="/about">About</Link>
           </div>
 
           <div className="footer-col">
@@ -43,6 +44,8 @@ export default function Footer() {
             <a href="mailto:info@kazaverde.com">Contact</a>
             <a href="https://instagram.com/kazaverde.cv" target="_blank" rel="noopener noreferrer">Instagram</a>
             <a href="https://x.com/kazaverdecv" target="_blank" rel="noopener noreferrer">X / Twitter</a>
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/cookie-policy">Cookies</Link>
           </div>
         </div>
 
