@@ -1,15 +1,22 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useLayoutEffect, lazy, Suspense } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import NotFound from "./pages/NotFound";
 import CookieBanner from "./components/CookieBanner";
-import Listings from "./pages/Listings";
+import Landing from "./pages/Landing";
 
-// Phase A live: /, /listings, /listing/:id, /saved.
-// Other routes still redirect to / until they're rebuilt in the KV design.
+// Phase A live: / (landing), /listings (grid), /listing/:id, /saved,
+// /market, /blog, /blog/:slug. Other routes still redirect to /
+// until they're rebuilt in the KV design.
+const Listings = lazy(() => import("./pages/Listings"));
 const Detail = lazy(() => import("./pages/Detail"));
 const Saved = lazy(() => import("./pages/Saved"));
+const BlogList = lazy(() => import("./pages/BlogList"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
+const Market = lazy(() => import("./pages/Market"));
+const Rent = lazy(() => import("./pages/Rent"));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -48,17 +55,18 @@ export default function App() {
       <Navbar />
       <Suspense fallback={null}>
         <Routes>
-          <Route path="/" element={<Listings />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/listings" element={<Listings />} />
           <Route path="/listing/:id" element={<Detail />} />
           <Route path="/saved" element={<Saved />} />
           {/* v1 redirects — pages not yet rebuilt in KV design */}
           <Route path="/listings/sal" element={<Navigate to="/?island=Sal" replace />} />
           <Route path="/listings/boa-vista" element={<Navigate to="/?island=Boa+Vista" replace />} />
-          <Route path="/market" element={<Navigate to="/" replace />} />
+          <Route path="/market" element={<Market />} />
+          <Route path="/rent" element={<Rent />} />
           <Route path="/about" element={<Navigate to="/" replace />} />
-          <Route path="/blog" element={<Navigate to="/" replace />} />
-          <Route path="/blog/:slug" element={<Navigate to="/" replace />} />
+          <Route path="/blog" element={<BlogList />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/privacy" element={<Navigate to="/" replace />} />
           <Route path="/cookie-policy" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
@@ -66,6 +74,7 @@ export default function App() {
       </Suspense>
       <CookieBanner />
       <Footer />
+      <Analytics />
     </div>
   );
 }

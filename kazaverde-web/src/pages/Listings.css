@@ -11,15 +11,29 @@
    Tightened — was 96/48 padding which made the band dominate the
    first viewport. The page is index-first; let the cards breathe. */
 .kv-hero {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
   background: var(--kv-green);
   padding: 56px 0 32px;
 }
 .kv-hero-inner {
-  max-width: 1200px;
+  max-width: var(--kv-content-w);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--kv-gutter);
+}
+/* Slim hero variant — used on /listings since brand lives on /.
+   Smaller padding, eyebrow + tighter title, no sub-paragraph. */
+.kv-hero-slim { padding: 56px 0 36px; }
+.kv-hero-eyebrow {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.55);
+  margin-bottom: 14px;
+}
+.kv-hero-slim h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  margin-bottom: 18px;
 }
 .kv-hero h1 {
   font-family: var(--kv-mono);
@@ -60,9 +74,6 @@
 
 /* ═══════════ STICKY FILTER BAR ═══════════ */
 .kv-filters {
-  /* Break out of .ctn */
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
   background: var(--kv-white);
   border-bottom: 1px solid var(--kv-rule);
   padding: 20px 0;
@@ -71,9 +82,9 @@
   z-index: 100;
 }
 .kv-filters-inner {
-  max-width: 1200px;
+  max-width: var(--kv-content-w);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--kv-gutter);
   display: flex;
   gap: 12px;
   align-items: center;
@@ -190,19 +201,16 @@
 
 /* ═══════════ SECTION ═══════════ */
 .kv-section {
-  /* Break out of .ctn to full-bleed white */
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
   background: var(--kv-white);
   padding: 56px 0;
   font-family: var(--kv-mono);
 }
 .kv-section > * {
-  max-width: 1200px;
+  max-width: var(--kv-content-w);
   margin-left: auto;
   margin-right: auto;
-  padding-left: 24px;
-  padding-right: 24px;
+  padding-left: var(--kv-gutter);
+  padding-right: var(--kv-gutter);
 }
 
 .kv-section-head {
@@ -459,11 +467,31 @@
   .kv-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 640px) {
-  /* Tighter hero so first listing card is reachable in ~1 scroll
-     instead of ~1.5 — vertical padding cut, stats row gap cut. */
-  .kv-hero { padding: 48px 0 28px; }
+  .kv-hero { padding: 40px 0 24px; }
   .kv-grid { grid-template-columns: 1fr; }
-  .kv-hero-meta { gap: 16px; padding-top: 14px; }
+  /* Subtitle stays — hides looked too "thin" without the explainer.
+     Keep the brand voice but at 13px so it's ~3 lines, not 5. */
+  .kv-hero-sub {
+    font-size: 13px;
+    line-height: 1.55;
+    margin-bottom: 18px;
+  }
+  /* Title smaller on phone so it doesn't break to 3 lines. */
+  .kv-hero h1 { font-size: clamp(24px, 6vw, 32px); margin-bottom: 14px; }
+  /* Stats wrap naturally — horizontal-scroll trick was worse than
+     letting items break to a second row when they don't fit. Keep
+     dot separators for the dashboard strip feel. */
+  .kv-hero-meta {
+    gap: 6px 0;
+    padding-top: 14px;
+    flex-wrap: wrap;
+  }
+  .kv-hero-meta > * { flex: 0 0 auto; }
+  .kv-hero-meta > * + *::before {
+    content: "·";
+    margin: 0 10px;
+    color: rgba(0, 0, 0, 0.3);
+  }
   /* RESULTS section header is redundant with hero on mobile (same
      "browse the index" message). Hide eyebrow + h2; keep only the
      SORT BY chip so users can still re-sort. */
@@ -477,8 +505,11 @@
   .kv-filters { top: 52px; }
   /* Horizontal scroll for filter chips — mobile-native pattern.
      Chips keep natural width; user swipes right to reveal extras.
-     (Targeting .kv-field, the actual chip class — earlier draft used
-     .kv-filter-field which doesn't exist, so nothing applied.) */
+     mask-image fades the right 10% of the scroll container so the
+     overflow signals scrollability instead of looking abruptly cut.
+     (mask scrolls *with* the container — overlay::after on the
+     parent ended up at the wrong x because the group bleeds past
+     it via negative margin.) */
   .kv-filter-group {
     display: flex;
     flex-wrap: nowrap;
@@ -491,6 +522,8 @@
        scroll edge-to-edge without an awkward right gutter. */
     margin: 0 -24px;
     padding: 4px 24px;
+    mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
   }
   .kv-filter-group::-webkit-scrollbar { display: none; }
   .kv-field {
@@ -499,5 +532,78 @@
     /* Lock chip text to one line — without this, "ALL ISLANDS" wraps
        inside the flex item to "ALL\nISLANDS". */
     white-space: nowrap;
+  }
+
+  /* Filter popover on mobile — bottom sheet.
+     Without this rule the popover stays absolute inside .kv-field-wrap,
+     which sits inside the .kv-filter-group horizontal-scroll container.
+     Once that container has overflow-x: auto, overflow-y is implicitly
+     auto too — so the popover (top: 100%) is clipped vertically and
+     reads as "the button does nothing." Promoting to position: fixed
+     escapes the clipping context. Bottom-sheet placement also matches
+     the mobile-drawer language used in the nav. */
+  .kv-pop {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    min-width: 0;
+    max-height: 70vh;
+    overflow-y: auto;
+    border: 0;
+    border-top: 1px solid var(--kv-black);
+    box-shadow: 0 -16px 40px -12px rgba(0, 0, 0, 0.18);
+    padding: 18px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+    z-index: 320;
+    /* Sheet handle — 36×4 grey bar centred at the top edge so the
+       surface reads as a draggable mobile sheet, even though we don't
+       actually wire drag-to-dismiss (tap-outside is enough). */
+    background-image: radial-gradient(circle, var(--kv-rule) 0 2px, transparent 2px);
+    background-position: top 8px center;
+    background-size: 36px 4px;
+    background-repeat: no-repeat;
+    padding-top: 24px;
+  }
+  /* kv-pop-right is a desktop-only alignment override — flatten on
+     phone so the sort sheet uses the same full-width treatment. */
+  .kv-pop.kv-pop-right { left: 0; right: 0; }
+  /* Bigger tap targets inside the sheet — the desktop 8/10px option
+     padding is too small for thumbs. */
+  .kv-pop-opt { padding: 14px 6px; font-size: 14px; }
+  .kv-pop-h {
+    font-size: 11px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--kv-rule);
+  }
+}
+
+/* Filter popover backdrop — only rendered when a popover is open
+   (see Listings.tsx). Hidden on desktop; on mobile it dims the page
+   under the bottom sheet so taps on listings don't accidentally
+   navigate while a filter is open. The document-level click handler
+   in Listings.tsx still does the actual close — backdrop just gives
+   the tap somewhere safe to land.
+
+   Z-index sits BELOW .kv-filters (100) on purpose: the filter bar
+   creates a sticky stacking context at z=100, and the popover lives
+   inside that context. If the backdrop sat above 100 it would also
+   cover the popover — which is exactly the bug this CSS is reverting.
+   At z=50 the backdrop dims the cards (z=auto=0) but the filter bar
+   and the bottom-sheet popover inside it both paint above. */
+.kv-pop-backdrop { display: none; }
+@media (max-width: 640px) {
+  .kv-pop-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 50;
+    animation: kv-pop-backdrop-in 0.15s ease-out;
+  }
+  @keyframes kv-pop-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 }

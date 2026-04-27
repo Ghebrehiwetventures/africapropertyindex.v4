@@ -1,24 +1,24 @@
-/* Navbar — KV handoff design (full-bleed green sticky 52px bar, mono) */
+/* Navbar — KV handoff design, cv-listing.html nav pattern.
+   Sticky 52px green bar with logo + 5 inline links on desktop;
+   3-span burger that morphs to X + slide-from-right black drawer
+   on mobile. */
 .nav {
   position: sticky;
   top: 0;
   z-index: 201;
   background: var(--kv-green);
-  /* Break out of .ctn to full viewport width */
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
   font-family: var(--kv-mono);
   color: var(--kv-black);
 }
 
 .nav-inner {
-  max-width: 1200px;
+  max-width: var(--kv-content-w);
   margin: 0 auto;
   height: 52px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 var(--kv-gutter);
 }
 
 .logo {
@@ -33,14 +33,14 @@
   position: relative;
   z-index: 2;
 }
-.logo span { color: var(--kv-black); }
 
-.nc {
+/* ── Desktop links ── */
+.nav-links {
   display: flex;
   align-items: center;
   gap: 28px;
 }
-.nc a {
+.nav-a {
   font-family: var(--kv-mono);
   font-size: 11px;
   font-weight: 500;
@@ -48,137 +48,122 @@
   text-transform: uppercase;
   color: rgba(0, 0, 0, 0.5);
   padding: 4px 0;
+  text-decoration: none;
   transition: color 0.2s;
 }
-.nc a:hover,
-.nc a.on,
-.nc a.active { color: var(--kv-black); }
+.nav-a:hover,
+.nav-a.on { color: var(--kv-black); }
 
-/* "Alerts"-style CTA pill — matches .nav-btn in the design file */
-.nav-saved {
-  display: inline-flex !important;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px !important;
-  border: 1px solid var(--kv-black);
-  color: var(--kv-black) !important;
-  font-family: var(--kv-mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  background: transparent;
-  transition: background 0.2s, color 0.2s;
-}
-.nav-saved:hover {
-  background: var(--kv-hover);
-  color: var(--kv-black) !important;
-}
-.nav-saved svg {
-  width: 12px;
-  height: 12px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
-}
-
-/* Count badge — uses currentColor so it inverts naturally with the button */
-.saved-badge {
-  min-width: 16px;
-  height: 16px;
-  border-radius: 8px;
-  border: 1px solid currentColor;
-  color: inherit;
-  background: transparent;
-  font-size: 9px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  transition: opacity 0.25s, transform 0.25s;
-}
-.saved-badge.hide { opacity: 0; transform: scale(0); }
-
-.nav-hamburger {
+/* ── Burger (mobile) ── 3 spans → X on .open. cv-listing pattern. */
+.nav-burger {
   display: none;
   width: 36px;
-  height: 36px;
-  align-items: center;
-  justify-content: center;
-  border: none;
+  height: 32px;
   background: transparent;
-  color: var(--kv-black);
+  border: none;
   cursor: pointer;
-  transition: opacity 0.2s;
+  padding: 0;
   position: relative;
-  z-index: 2;
+  z-index: 220; /* above the drawer (210) so it stays clickable while open */
 }
-.nav-hamburger:hover { opacity: 0.7; }
-.nav-hamburger svg { width: 20px; height: 20px; }
+.nav-burger span {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background: var(--kv-black);
+  transition: transform 0.25s, opacity 0.15s, top 0.25s, background 0.2s;
+}
+.nav-burger span:nth-child(1) { top: 9px; }
+.nav-burger span:nth-child(2) { top: 15px; }
+.nav-burger span:nth-child(3) { top: 21px; }
+.nav-burger.open span { background: var(--kv-white); }
+.nav-burger.open span:nth-child(1) { top: 15px; transform: rotate(45deg); }
+.nav-burger.open span:nth-child(2) { opacity: 0; }
+.nav-burger.open span:nth-child(3) { top: 15px; transform: rotate(-45deg); }
 
-.nc-mobile {
-  display: none;
+/* ── Drawer (mobile) ── slides from right, full-screen black. */
+.nav-drawer {
   position: fixed;
-  top: 52px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--kv-white);
-  z-index: 200;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  padding: 40px 24px;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.25s, visibility 0.25s;
-}
-.nc-mobile.open {
+  inset: 0;
+  background: var(--kv-black);
+  color: var(--kv-white);
+  padding: 80px 28px 48px;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 210;
   display: flex;
-  opacity: 1;
-  visibility: visible;
-}
-.nc-mobile a {
+  flex-direction: column;
+  overflow-y: auto;
   font-family: var(--kv-mono);
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(0, 0, 0, 0.55);
-  transition: color 0.2s;
 }
-.nc-mobile a:hover,
-.nc-mobile a.on { color: var(--kv-black); }
+.nav-drawer.open { transform: translateX(0); }
 
-.nav-saved-mobile {
+/* Explicit close — top-right X. Sits inside the drawer so users
+   reading the overlay menu have an obvious escape that doesn't
+   require scrolling back to the burger. cv-listing.html pattern. */
+.nav-drawer-close {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--kv-white);
+  font-size: 22px;
+  line-height: 1;
+  font-family: var(--kv-mono);
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 18px;
-  border: 1px solid var(--kv-black);
-  color: var(--kv-black);
-  margin-top: 12px;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+  z-index: 2;
+}
+.nav-drawer-close:hover {
+  border-color: var(--kv-green);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-drawer-link {
+  color: var(--kv-white);
+  display: block;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   font-family: var(--kv-mono);
-  font-size: 11px;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.nav-drawer-link:hover,
+.nav-drawer-link.on { color: var(--kv-green); }
+
+.nav-drawer-cta {
+  margin-top: 28px;
+  padding: 16px 20px;
+  background: var(--kv-white);
+  color: var(--kv-black);
+  border: none;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s;
 }
-.nav-saved-mobile svg {
-  width: 14px;
-  height: 14px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
-}
+.nav-drawer-cta:hover { background: var(--kv-hover); }
+
+body.nav-locked { overflow: hidden; }
 
 @media (max-width: 768px) {
-  .nc { display: none; }
-  .hide-desktop { display: flex !important; }
+  .nav-links { display: none; }
+  .nav-burger { display: block; }
+  .hide-desktop { display: block !important; }
   .hide-mobile { display: none !important; }
-  .nav-hamburger { display: flex; order: 2; }
 }
 @media (min-width: 769px) {
   .hide-desktop { display: none !important; }

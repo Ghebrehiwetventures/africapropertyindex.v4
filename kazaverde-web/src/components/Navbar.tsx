@@ -1,8 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useSaved } from "../hooks/useSaved";
 import "./Navbar.css";
 
+/* Five-link nav — Listings · Rent · Market · Guides · Shortlist.
+   Mobile menu is the cv-listing.html drawer pattern: 3-span burger
+   that morphs to X on open, full-screen black panel that slides in
+   from the right (translateX 100% → 0). Body scroll lock via the
+   .nav-locked class on <body>. Drawer rendered to body via portal
+   so it escapes the sticky nav's stacking context. */
 export default function Navbar() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -10,41 +17,86 @@ export default function Navbar() {
 
   const closeMenu = () => setMenuOpen(false);
 
-  // Shortlist label includes a count when the user has saved anything,
-  // so they can see at a glance their list has things in it.
-  const shortlistLabel = count > 0 ? `SHORTLIST · ${count}` : "SHORTLIST";
+  // Lock body scroll while drawer is open (matches cv-listing).
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.classList.add("nav-locked");
+      return () => document.body.classList.remove("nav-locked");
+    }
+  }, [menuOpen]);
+
+  const links = [
+    { to: "/", label: "Listings", end: true },
+    { to: "/rent", label: "Rent" },
+    { to: "/market", label: "Market" },
+    { to: "/blog", label: "Guides" },
+    { to: "/saved", label: count > 0 ? `Shortlist · ${count}` : "Shortlist" },
+  ];
 
   return (
     <nav className="nav anim-fd">
       <div className="nav-inner">
         <a className="logo" onClick={() => navigate("/")} role="button" tabIndex={0}>
-          CV · Real Estate Index
+          KazaVerde
         </a>
 
-        <div className="nc hide-mobile">
-          <NavLink to="/" end className={({ isActive }) => (isActive ? "on" : "")}>LISTINGS</NavLink>
-          <NavLink to="/saved" className={({ isActive }) => (isActive ? "on" : "")}>{shortlistLabel}</NavLink>
+        <div className="nav-links hide-mobile">
+          {links.map((l) => (
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end={l.end}
+              className={({ isActive }) => `nav-a${isActive ? " on" : ""}`}
+            >
+              {l.label}
+            </NavLink>
+          ))}
         </div>
 
         <button
           type="button"
-          className="nav-hamburger hide-desktop"
+          className={`nav-burger hide-desktop${menuOpen ? " open" : ""}`}
           onClick={() => setMenuOpen((o) => !o)}
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
         >
-          {menuOpen ? (
-            <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          ) : (
-            <svg viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" fill="none"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-          )}
+          <span></span><span></span><span></span>
         </button>
-
-        <div className={`nc-mobile${menuOpen ? " open" : ""}`}>
-          <NavLink to="/" end className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>LISTINGS</NavLink>
-          <NavLink to="/saved" className={({ isActive }) => (isActive ? "on" : "")} onClick={closeMenu}>{shortlistLabel}</NavLink>
-        </div>
       </div>
+
+      {/* Drawer — rendered to body via portal so .nav's sticky+z-index
+          stacking context can't trap the overlay. */}
+      {createPortal(
+        <div className={`nav-drawer${menuOpen ? " open" : ""}`} aria-hidden={!menuOpen}>
+          {/* Explicit X close — matches cv-listing.html drawer.
+              The morphing burger above stays clickable too, but this
+              gives users an obvious in-drawer escape they expect. */}
+          <button
+            type="button"
+            className="nav-drawer-close"
+            onClick={closeMenu}
+            aria-label="Close menu"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+
+          {links.map((l) => (
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end={l.end}
+              className={({ isActive }) => `nav-drawer-link${isActive ? " on" : ""}`}
+              onClick={closeMenu}
+            >
+              {l.label}
+            </NavLink>
+          ))}
+          <NavLink to="/listings" onClick={closeMenu} className="nav-drawer-cta">
+            All listings →
+          </NavLink>
+        </div>,
+        document.body,
+      )}
     </nav>
   );
 }

@@ -204,13 +204,12 @@ export default function Listings() {
 
   return (
     <>
-      {/* HERO */}
-      <section className="kv-hero">
+      {/* HERO — slim. Brand voice now lives on /; this is just a
+          page identifier + count. */}
+      <section className="kv-hero kv-hero-slim">
         <div className="kv-hero-inner">
-          <h1>Every home for sale in Cape Verde, in one place.</h1>
-          <p className="kv-hero-sub">
-            We index public listings from the agents working the islands, clean the data, and show you the market. We don't sell properties — we make them findable.
-          </p>
+          <div className="kv-hero-eyebrow">All listings</div>
+          <h1>The full Cape Verde index.</h1>
           <div className="kv-hero-meta">
             <div><b>{(indexTotal || total).toLocaleString("en")}</b>&nbsp; listings indexed</div>
             <div><b>{Math.max(islands.length, 1)}</b>&nbsp; islands covered</div>
@@ -374,6 +373,13 @@ export default function Listings() {
           </div>
         </div>
       </div>
+
+      {/* Mobile-only backdrop — visible whenever any filter popover is
+          open. Sits below the popover sheet, above the page content,
+          so a tap on listings/cards behind closes the popover via the
+          existing document-click handler instead of triggering the
+          card's navigation. Hidden on desktop via CSS. */}
+      {openPop && <div className="kv-pop-backdrop" aria-hidden="true" />}
 
       {/* RESULTS */}
       <section className="kv-section">

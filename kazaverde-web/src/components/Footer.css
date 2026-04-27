@@ -1,24 +1,24 @@
-/* Footer — KV handoff design (4-col grid, CV·01 watermark, mono) */
+/* Footer — KV handoff design (4-col grid, CV·01 watermark, mono).
+   Background is always --kv-white. On pages where the section above
+   is off-white (Similar properties on Detail, MMI on Landing, etc.),
+   the colour shift from off-white → white establishes the section
+   break naturally — no horizontal rule needed. */
 .ft {
-  /* Break out of .ctn to full-bleed white */
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
   background: var(--kv-white);
   color: var(--kv-black);
-  border-top: 1px solid var(--kv-rule);
   padding: 60px 0 40px;
   font-family: var(--kv-mono);
 }
 
 .ft-inner {
-  max-width: 1200px;
+  max-width: var(--kv-content-w);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--kv-gutter);
 }
 
 .fg {
   display: grid;
-  grid-template-columns: 1.8fr 1fr 1fr;
+  grid-template-columns: 1.8fr 1fr 1fr 1fr;
   gap: 40px;
   align-items: start;
 }
@@ -82,25 +82,16 @@
 }
 .footer-col a:hover { color: var(--kv-black); }
 
-/* Edge-to-edge divider above the copyright row (matches the rest of
-   the site's full-bleed section rules). */
+/* Internal divider between the columns and the copyright row.
+   Stays within .ft-inner content width (no full-bleed) — matches
+   cv-listing.html footer pattern. */
 .footer-bottom {
   margin-top: 40px;
   padding-top: 24px;
-  position: relative;
+  border-top: 1px solid var(--kv-rule);
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-}
-.footer-bottom::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: calc(50% - 50vw);
-  width: 100vw;
-  height: 1px;
-  background: var(--kv-rule);
-  pointer-events: none;
 }
 
 .footer-copy {
@@ -126,11 +117,20 @@
 }
 
 @media (max-width: 960px) {
-  .fg { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .fg { grid-template-columns: 1fr 1fr 1fr; gap: 32px; }
   .footer-brand { grid-column: 1 / -1; }
 }
+@media (max-width: 720px) {
+  .fg { grid-template-columns: 1fr 1fr; gap: 28px; }
+}
+@media (max-width: 768px) {
+  /* Extra bottom on mobile so the © row clears the Detail-page
+     sticky CTA bar (~70px tall + safe-area). On pages without
+     the sticky CTA the extra space reads as a clean tail. */
+  .ft { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+}
 @media (max-width: 640px) {
-  .ft { padding: 48px 0 32px; }
+  .ft { padding-top: 48px; }
   .fg { gap: 28px; }
   .footer-bottom { flex-direction: column; gap: 12px; align-items: flex-start; }
 }

@@ -1,40 +1,344 @@
-.rent-coming-soon {
-  text-align: center;
-  padding: 120px 0;
+/* ════════════════════════════════════════════════════════════
+   Rent — two-sided marketplace waitlist (renters + owners)
+   ──────────────────────────────────────────────────────────────
+   Three bands so the page doesn't read as one monotone slab:
+     1. Off-white editorial header with intent toggle + form
+     2. White content section with intent-aware promise list
+     3. Green NewsletterCta (rendered by the component) as accent
+   ════════════════════════════════════════════════════════════ */
+
+.kv-rent {
+  font-family: var(--kv-mono);
+  color: var(--kv-black);
+  background: var(--kv-white);
 }
-.rent-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: var(--bg2);
-  border: 1px solid var(--bd);
+
+/* ─── Header band — off-white, editorial ─── */
+.kv-rent-head {
+  background: var(--kv-off-white);
+  border-bottom: 1px solid var(--kv-rule);
+  padding: 72px 0 56px;
+}
+.kv-rent-head-inner {
+  max-width: var(--kv-content-w);
+  margin: 0 auto;
+  padding: 0 var(--kv-gutter);
+}
+.kv-rent-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 16px;
+}
+.kv-rent-title {
+  font-family: var(--kv-mono);
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: var(--kv-fw-regular);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: var(--kv-black);
+  max-width: 880px;
+  margin-bottom: 18px;
+  text-wrap: balance;
+}
+.kv-rent-lede {
+  font-family: var(--kv-mono);
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.7);
+  max-width: 720px;
+  margin-bottom: 32px;
+}
+
+/* ─── Intent picker — native <select> styled as a form field.
+   Sits as the first row of the form-block, above the heading, so the
+   user picks their cohort before seeing intent-aware copy. Label is
+   the small uppercase eyebrow; the select itself carries the heavier
+   visual weight via paper bg + black border on focus + chevron. */
+.kv-rent-intent-field {
+  display: block;
+  margin-bottom: 18px;
+}
+.kv-rent-intent-field-lbl {
+  display: block;
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 8px;
+}
+.kv-rent-intent-select {
+  display: block;
+  width: 100%;
+  height: 48px;
+  padding: 0 40px 0 14px;
+  background-color: var(--kv-paper);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%23000' stroke-width='1.5' fill='none' stroke-linecap='square'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  border: 1px solid var(--kv-rule-strong, var(--kv-rule));
+  font-family: var(--kv-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--kv-black);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  outline: none;
+  transition: border-color var(--kv-dur-fast) var(--kv-ease),
+              background-color var(--kv-dur-fast) var(--kv-ease);
+}
+.kv-rent-intent-select:hover { border-color: var(--kv-black); }
+.kv-rent-intent-select:focus { border-color: var(--kv-black); background-color: var(--kv-white); }
+
+/* ─── Form block (sits inside header, switches with intent) ─── */
+.kv-rent-form-block {
+  max-width: 540px;
+  padding: 24px;
+  background: var(--kv-white);
+  border: 1px solid var(--kv-rule);
+  margin-bottom: 24px;
+}
+.kv-rent-form-head {
+  font-family: var(--kv-mono);
+  font-size: 18px;
+  font-weight: var(--kv-fw-regular);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--kv-black);
+  margin: 0 0 8px;
+}
+.kv-rent-form-sub {
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.65);
+  margin: 0 0 18px;
+}
+
+.kv-rent-form {
   display: flex;
+  align-items: stretch;
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-white);
+  transition: border-color var(--kv-dur-fast) var(--kv-ease);
+}
+.kv-rent-form:focus-within { border-color: var(--kv-black); }
+.kv-rent-form-input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0 16px;
+  border: none;
+  background: transparent;
+  font-family: var(--kv-mono);
+  font-size: 14px;
+  color: var(--kv-black);
+  outline: none;
+}
+.kv-rent-form-input::placeholder { color: var(--kv-gray-500); }
+.kv-rent-form-input:disabled { opacity: 0.6; cursor: not-allowed; }
+.kv-rent-form-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  background: var(--kv-black);
+  color: var(--kv-white);
+  border: none;
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  transition: background var(--kv-dur) var(--kv-ease);
+  flex-shrink: 0;
+}
+.kv-rent-form-submit:hover:not(:disabled) { background: var(--kv-black-hover); }
+.kv-rent-form-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.kv-rent-form-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-paper);
+}
+.kv-rent-form-success-icon {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 24px;
-}
-.rent-icon svg {
   width: 28px;
   height: 28px;
-  stroke: var(--oc);
-  fill: none;
-  stroke-width: 1.5;
+  background: var(--kv-black);
+  color: var(--kv-green);
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
-.rent-coming-soon h1 {
-  font-family: var(--fd);
-  font-size: 2.4rem;
-  font-weight: 400;
-  margin-bottom: 12px;
-}
-.rent-coming-soon h1 em {
-  color: var(--ac);
-  font-style: italic;
+.kv-rent-form-success-head {
+  font-family: var(--kv-mono);
+  font-size: 14px;
   font-weight: 500;
+  color: var(--kv-black);
+  margin-bottom: 4px;
 }
-.rent-coming-soon p {
-  color: var(--tx2);
-  font-size: 0.95rem;
-  max-width: 420px;
-  margin: 0 auto 28px;
-  line-height: 1.7;
+.kv-rent-form-success-sub {
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.65);
+}
+.kv-rent-form-success-sub b { color: var(--kv-black); font-weight: 500; }
+
+.kv-rent-form-error {
+  margin-top: 10px;
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  color: #8b1f1c;
+}
+.kv-rent-form-fine {
+  margin-top: 14px;
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--kv-gray-500);
+}
+
+.kv-rent-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--kv-gray-500);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.kv-rent-meta b { color: var(--kv-black); font-weight: 600; }
+.kv-rent-meta > * + *::before {
+  content: "·";
+  margin-right: 8px;
+  color: rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Body band — white surface, intent-aware content ─── */
+.kv-rent-body {
+  background: var(--kv-white);
+  padding: 72px 0 80px;
+}
+.kv-rent-body-inner {
+  max-width: var(--kv-content-w);
+  margin: 0 auto;
+  padding: 0 var(--kv-gutter);
+}
+
+.kv-rent-col-head { max-width: 720px; margin-bottom: 32px; }
+.kv-rent-col-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 14px;
+}
+.kv-rent-col-title {
+  font-family: var(--kv-mono);
+  font-size: clamp(22px, 2.8vw, 32px);
+  font-weight: var(--kv-fw-regular);
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+  color: var(--kv-black);
+  text-wrap: balance;
+}
+.kv-rent-col-sub {
+  font-family: var(--kv-mono);
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgba(0, 0, 0, 0.68);
+  max-width: 660px;
+}
+
+.kv-rent-promise {
+  border-top: 1px solid var(--kv-rule);
+  padding-top: 28px;
+}
+.kv-rent-promise-head {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 18px;
+}
+.kv-rent-promise-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+.kv-rent-promise-list li {
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.78);
+  padding: 14px 0;
+  border-bottom: 1px solid var(--kv-rule-soft);
+}
+.kv-rent-promise-list li:nth-child(odd) { padding-right: 24px; }
+.kv-rent-promise-list li:nth-child(even) { padding-left: 24px; }
+
+@media (max-width: 960px) {
+  .kv-rent-head { padding: 56px 0 40px; }
+  .kv-rent-body { padding: 56px 0 64px; }
+  .kv-rent-promise-list { grid-template-columns: 1fr; }
+  .kv-rent-promise-list li,
+  .kv-rent-promise-list li:nth-child(odd),
+  .kv-rent-promise-list li:nth-child(even) {
+    padding: 14px 0;
+  }
+}
+@media (max-width: 640px) {
+  .kv-rent-head { padding: 40px 0 32px; }
+  .kv-rent-body { padding: 40px 0 48px; }
+
+  /* Drop the white card on phones so the form stops looking like
+     "card inside card" against the off-white hero. The form sits
+     directly on the hero surface with only internal spacing — much
+     more breathing room at 320–390px widths where padding + border
+     + border-radius all eat into a too-small content box. The intent
+     select, heading, and form are still visually grouped via vertical
+     rhythm, no surface needed. */
+  .kv-rent-form-block {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    max-width: none;
+    margin-bottom: 28px;
+  }
+  .kv-rent-form-head {
+    font-size: 16px;
+    line-height: 1.3;
+  }
+  .kv-rent-form-sub { font-size: 12.5px; }
+
+  /* Stack input + submit on phones — full-width tap targets */
+  .kv-rent-form { flex-direction: column; align-items: stretch; }
+  .kv-rent-form-input {
+    border-bottom: 1px solid var(--kv-rule);
+  }
+  .kv-rent-form-submit {
+    height: 48px;
+    padding: 0 18px;
+    justify-content: space-between;
+  }
 }

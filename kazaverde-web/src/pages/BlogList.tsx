@@ -1,6 +1,9 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import { BLOG_ARTICLES } from "../lib/blog-data";
+import { FAQ_ENTRIES, type FaqEntry } from "../lib/faq-data";
+import NewsletterCta from "../components/NewsletterCta";
 import "./BlogList.css";
 
 function fmtDate(iso: string): string {
@@ -11,56 +14,206 @@ function fmtDate(iso: string): string {
   });
 }
 
+function categoryFor(tags: string[]): "buying" | "market" | "legal" | "tax" {
+  const t = tags.map((s) => s.toLowerCase());
+  if (t.some((x) => x.includes("legal"))) return "legal";
+  if (t.some((x) => x.includes("tax"))) return "tax";
+  if (t.some((x) => x.includes("market") || x.includes("yield"))) return "market";
+  return "buying";
+}
+
+function categoryLabel(cat: string): string {
+  return cat.charAt(0).toUpperCase() + cat.slice(1);
+}
+
+function matches(query: string, ...fields: string[]): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const haystack = fields.join(" \u2007 ").toLowerCase();
+  return q.split(/\s+/).every((token) => haystack.includes(token));
+}
+
 export default function BlogList() {
   useDocumentMeta(
-    "Cape Verde property guides — KazaVerde",
-    "Cape Verde real estate insights, buying guides, market analysis, legal requirements and investment tips. Independent reporting from the Cape Verde Real Estate Index.",
+    "Guides — KazaVerde",
+    "Independent explainers and a buyer's FAQ for Cape Verde property — legal process, island comparisons, tax changes, and residence options.",
   );
 
-  // Articles are stored newest-first in blog-data.ts; respect that order.
-  const articles = BLOG_ARTICLES;
+  const [query, setQuery] = useState("");
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  const filteredArticles = useMemo(
+    () =>
+      BLOG_ARTICLES.filter((a) =>
+        matches(query, a.title, a.description, a.tags.join(" ")),
+      ),
+    [query],
+  );
+
+  const filteredFaq = useMemo(
+    () =>
+      FAQ_ENTRIES.filter((f: FaqEntry) =>
+        matches(query, f.question, f.answer, f.topic),
+      ),
+    [query],
+  );
+
+  const isSearching = query.trim().length > 0;
+  const totalHits = filteredArticles.length + filteredFaq.length;
 
   return (
     <div className="kv-blog">
-      {/* Hero — same green band rhythm as Listings/Saved */}
-      <header className="kv-blog-hero">
-        <div className="kv-blog-hero-inner">
-          <div className="kv-blog-eyebrow">Knowledge index</div>
+      {/* Off-white header band — quieter than the main hero */}
+      <header className="kv-blog-head">
+        <div className="kv-blog-head-inner">
+          <div className="kv-blog-eyebrow">Guides &amp; Knowledge Base</div>
           <h1 className="kv-blog-title">
-            How Cape Verde property actually works.
+            Buying property in Cape Verde, explained.
           </h1>
           <p className="kv-blog-sub">
-            Independent guides from the Cape Verde Real Estate Index. Buying
-            process, taxes, residency, rental yields, and the differences between
-            islands — written for buyers who want the data, not the pitch.
+            Independent explainers on the legal process, island comparisons, tax
+            changes, and residence options — plus a searchable FAQ for the
+            questions buyers ask most.
           </p>
-          <div className="kv-blog-meta">
-            <span><b>{articles.length}</b> articles</span>
-            <span>· Updated continuously</span>
-          </div>
+
+          <form
+            className="kv-blog-search"
+            onSubmit={(e) => e.preventDefault()}
+            role="search"
+          >
+            <span className="kv-blog-search-icon" aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              className="kv-blog-search-input"
+              placeholder="Search guides and FAQ — e.g. 'NIF', 'mortgage', 'IUP'"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search guides and FAQ"
+            />
+            {isSearching && (
+              <button
+                type="button"
+                className="kv-blog-search-clear"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </form>
+
+          {isSearching && (
+            <div className="kv-blog-search-meta">
+              <b>{totalHits}</b> {totalHits === 1 ? "result" : "results"}
+              {" · "}
+              {filteredArticles.length} {filteredArticles.length === 1 ? "guide" : "guides"}
+              {" · "}
+              {filteredFaq.length} FAQ
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Article grid */}
       <section className="kv-blog-body">
-        <div className="kv-blog-grid">
-          {articles.map((a) => (
-            <Link key={a.slug} to={`/blog/${a.slug}`} className="kv-blog-card">
-              <div className="kv-blog-card-meta">
-                <span>{fmtDate(a.date)}</span>
-                <span>· {a.readTime}</span>
+        {/* Articles — hide block when searching narrows it to zero */}
+        {(filteredArticles.length > 0 || !isSearching) && (
+          <div className="kv-blog-section">
+            <div className="kv-blog-section-head">
+              <div className="kv-blog-section-eyebrow">Guides</div>
+              <h2 className="kv-blog-section-title">
+                Long-form explainers
+              </h2>
+            </div>
+
+            {filteredArticles.length === 0 ? (
+              <div className="kv-blog-empty">
+                No guides match <b>"{query}"</b>. Check the FAQ below — short
+                answers to the most common buyer questions.
               </div>
-              <h2 className="kv-blog-card-title">{a.title}</h2>
-              <p className="kv-blog-card-desc">{a.description}</p>
-              <div className="kv-blog-card-tags">
-                {a.tags.map((t) => (
-                  <span key={t} className="kv-blog-tag">{t}</span>
-                ))}
+            ) : (
+              <div className="kv-blog-grid">
+                {filteredArticles.map((a, i) => {
+                  const cat = categoryFor(a.tags);
+                  return (
+                    <Link
+                      key={a.slug}
+                      to={`/blog/${a.slug}`}
+                      className="kv-blog-card"
+                      data-cat={cat}
+                    >
+                      <div className="kv-blog-card-band">
+                        <span className="kv-eyebrow-cat" data-cat={cat}>{categoryLabel(cat)}</span>
+                        <span className="kv-blog-card-num">№ {String(i + 1).padStart(2, "0")}</span>
+                      </div>
+                      <div className="kv-blog-card-title">{a.title}</div>
+                      <div className="kv-blog-card-excerpt">{a.description}</div>
+                      <div className="kv-blog-card-foot">
+                        <span>{fmtDate(a.date)}</span>
+                        <span>{a.readTime}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
-            </Link>
-          ))}
-        </div>
+            )}
+          </div>
+        )}
+
+        {/* FAQ — accordion. Hide block entirely if search filters it to zero
+            AND there are guide hits, so the page doesn't show an empty FAQ
+            section beneath a populated guide grid. */}
+        {(filteredFaq.length > 0 || !isSearching || filteredArticles.length === 0) && (
+          <div className="kv-blog-section kv-blog-faq-section">
+            <div className="kv-blog-section-head">
+              <div className="kv-blog-section-eyebrow">FAQ</div>
+              <h2 className="kv-blog-section-title">
+                The questions buyers ask most.
+              </h2>
+              <p className="kv-blog-section-sub">
+                Short, direct answers — sourced from the long-form guides above.
+                If the FAQ doesn't cover it, the guides go deeper.
+              </p>
+            </div>
+
+            {filteredFaq.length === 0 ? (
+              <div className="kv-blog-empty">
+                No FAQ entries match <b>"{query}"</b>.
+              </div>
+            ) : (
+              <div className="kv-faq">
+                {filteredFaq.map((f, i) => {
+                  const isOpen = openFaq === i;
+                  return (
+                    <div key={f.question} className={`kv-faq-row${isOpen ? " is-open" : ""}`}>
+                      <button
+                        type="button"
+                        className="kv-faq-q"
+                        aria-expanded={isOpen}
+                        onClick={() => setOpenFaq(isOpen ? null : i)}
+                      >
+                        <span className="kv-faq-q-topic">{f.topic}</span>
+                        <span className="kv-faq-q-text">{f.question}</span>
+                        <span className="kv-faq-q-icon" aria-hidden="true">
+                          {isOpen ? "−" : "+"}
+                        </span>
+                      </button>
+                      {isOpen && (
+                        <div className="kv-faq-a">{f.answer}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </section>
+
+      <NewsletterCta
+        overline="Monthly update"
+        heading={<>One email a month. Everything that changed on the index.</>}
+        description="New listings, median-price shifts, island activity, sources added. No promotional mail, no listings to feature, no spam — just the month in Cape Verde property."
+      />
     </div>
   );
 }

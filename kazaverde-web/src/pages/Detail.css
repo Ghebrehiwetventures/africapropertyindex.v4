@@ -6,24 +6,24 @@
      (description + INDEX RECORD sidebar) → monthly → market → similar
    ════════════════════════════════════════════════════════════ */
 
-/* Tokens come from globals.css :root — do not redeclare here. */
+/* Tokens come from globals.css :root — do not redeclare here.
+   No bottom padding on the page wrapper: the last section
+   (typically Similar properties on off-white) flows directly
+   into the Footer, which is also off-white. Master design rule:
+   bg-colour shifts establish section breaks, never blank strips. */
 .kv-d {
   font-family: var(--kv-mono);
   color: var(--kv-black);
   background: var(--kv-white);
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  padding: 0 0 var(--kv-s-12);
 }
 
-/* All direct children align to 1200px content column with 24px padding,
-   matching nav logo and footer brand at 111px in a 1374 viewport. */
+/* All direct children align to the canonical content column. */
 .kv-d > * {
-  max-width: 1200px;
+  max-width: var(--kv-content-w);
   margin-left: auto;
   margin-right: auto;
-  padding-left: 24px;
-  padding-right: 24px;
+  padding-left: var(--kv-gutter);
+  padding-right: var(--kv-gutter);
 }
 
 /* ══════════ 1. Breadcrumb ══════════
@@ -43,7 +43,10 @@
 .kv-d-crumb a { color: var(--kv-gray-500); transition: color 0.2s; }
 .kv-d-crumb a:hover { color: var(--kv-black); }
 .kv-d-crumb-sep { margin: 0 10px; color: rgba(0, 0, 0, 0.25); }
-.kv-d-crumb-cur { color: var(--kv-black); text-transform: none; letter-spacing: 0.02em; }
+/* Current crumb inherits .kv-d-crumb's uppercase + 0.14em tracking
+   so spacing reads consistent with the rest. (Earlier override broke
+   the rhythm — listing-v1.html keeps .cur uniform.) */
+.kv-d-crumb-cur { color: var(--kv-black); }
 .kv-d-crumb::after {
   content: "";
   position: absolute;
@@ -62,7 +65,11 @@
   padding-bottom: 32px;
 }
 /* 3-row layout so price aligns with title (row 2) and the €/m²
-   slot reserves space below (row 3) even when data is missing. */
+   slot reserves space below (row 3) even when data is missing.
+   Baseline alignment so subline and €/m² (different font-sizes,
+   different margins) sit on the same baseline — matches the
+   listing-v1.html reference where align-items: end achieves the
+   same effect. */
 .kv-d-top-grid {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -72,7 +79,7 @@
     "subline pricecve";
   column-gap: 40px;
   row-gap: 0;
-  align-items: start;
+  align-items: baseline;
 }
 .kv-d-top-grid .kv-d-eyebrow { grid-area: eyebrow; }
 .kv-d-top-grid .kv-d-title { grid-area: title; }
@@ -140,16 +147,56 @@
 .kv-d-price-block { text-align: right; }
 .kv-d-price {
   font-family: var(--kv-mono);
-  font-size: var(--kv-t-h1);
+  /* Slightly larger than title (clamp 28-40) per listing-v1.html
+     reference — price gets explicit emphasis over the title. */
+  font-size: clamp(30px, 3.6vw, 42px);
   font-weight: var(--kv-fw-regular);
   letter-spacing: var(--kv-ls-display);
   font-variant-numeric: tabular-nums;
   line-height: 1;
   color: var(--kv-black);
 }
+/* Verified strip — small inline freshness signal under the top
+   header. Adopted from cv-listing.html `.l-verified`. Reads as
+   "this listing is current data" without burying the info in the
+   sidebar. Green dot = system-alive marker. */
+.kv-d-verified {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--kv-rule-soft);
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  color: var(--kv-gray-500);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.kv-d-verified-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--kv-green);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+.kv-d-verified-lbl {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  color: var(--kv-gray-500);
+}
+.kv-d-verified-val { color: var(--kv-black); font-weight: 500; }
+.kv-d-verified-sep { color: rgba(0, 0, 0, 0.25); margin: 0 4px; }
+
 /* €/m² strip — matches listing-v1.html .ppm:
    bold value + uppercase " per m²" in mono, tracked. Empty reserves
-   space for future data. Sits in row 3 of .kv-d-top-grid. */
+   space for future data. Sits in row 3 of .kv-d-top-grid alongside
+   the subline; baseline alignment on the parent grid keeps them on
+   the same baseline (margin-top removed — it created asymmetric
+   row offset vs subline which has no top margin). */
 .kv-d-price-cve {
   text-align: right;
   font-family: var(--kv-mono);
@@ -158,7 +205,6 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-top: 8px;
   min-height: 1em;
 }
 .kv-d-price-cve b { color: var(--kv-black); font-weight: 500; }
@@ -394,6 +440,70 @@
   border-bottom: 1px solid var(--kv-rule);
 }
 
+/* Description heading row — eyebrow on the left, AI-rewrite badge on
+   the right. Shares the .kv-d-block-h border-bottom by hoisting the
+   rule onto the row wrapper so the h2 inside can drop its own.
+   cv-listing.html style: no headings ever fight a badge for vertical
+   real estate — they sit on the same baseline. */
+.kv-d-block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--kv-rule);
+}
+.kv-d-block-head .kv-d-block-h {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* AI-rewrite badge — mono pill, soft border, dim text. The leading
+   dot is a 6px pulse-green identifier that ties to the "Live" status
+   language used elsewhere on the index without claiming the same
+   semantic. Sits to the right of the Description eyebrow. */
+.kv-d-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  padding: 5px 10px;
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-white);
+  white-space: nowrap;
+  cursor: help;
+}
+.kv-d-ai-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--kv-black);
+  flex-shrink: 0;
+}
+
+/* AI-rewrite caption — appears as a footnote under the description body.
+   The badge in the heading is the primary signal; this catches readers
+   who scrolled past the badge. Mono italic, dim, separated from the
+   prose with a hairline rule so it reads as metadata, not body copy. */
+.kv-d-ai-caption {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--kv-rule-soft, var(--kv-rule));
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--kv-gray-500);
+  line-height: 1.55;
+  max-width: 62ch;
+}
+
 .kv-d-block p,
 .kv-d-html {
   font-family: var(--kv-mono);
@@ -445,19 +555,26 @@
   z-index: 2;
 }
 
+/* All sidebar panels share the same border weight (--kv-rule). The
+   visual hierarchy comes from the SURFACE — white (action) /
+   transparent (data) / off-white (trust) — not from competing border
+   colours. Mirrors cv-listing.html .s-panel pattern. */
 .kv-d-card {
-  border: 1px solid var(--kv-black);
+  border: 1px solid var(--kv-rule);
   background: var(--kv-white);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding: 24px 22px;
 }
+.kv-d-card-soft { border-color: var(--kv-rule); }
 
 .kv-d-card-h {
-  padding: 12px 16px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
   border-bottom: 1px solid var(--kv-rule);
   font-family: var(--kv-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--kv-gray-500);
   display: flex;
@@ -473,7 +590,7 @@
   font-weight: 600;
 }
 
-.kv-d-card-body { padding: 14px 16px 16px; }
+.kv-d-card-body { padding: 0; }
 
 .kv-d-prov {
   display: grid;
@@ -502,55 +619,62 @@
   font-size: 12px;
 }
 
-/* Sidebar CTA — outlined neutral (matches the system: white surface,
-   1px black hairline, mono caps; calm gray fill on hover). Block width
-   only override. Same recipe as global .kv-btn. */
+/* Sidebar CTAs — cv-listing.html .s-cta-* pattern. Title-case Mono
+   text (NOT uppercase) so they read relaxed and editorial. Primary
+   is a filled black bar (the action); secondary is a transparent
+   outline link.
+
+   These intentionally diverge from the global .kv-btn (which is
+   uppercase outlined) because the sidebar is a long-form action card
+   — uppercase + outlined was reading as too shouty there. */
 .kv-d-btn-primary {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
-  padding: 13px 16px;
-  background: var(--kv-paper);
-  color: var(--kv-black);
-  border: 1px solid var(--kv-black);
+  padding: 14px 18px;
+  background: var(--kv-black);
+  color: var(--kv-white);
+  border: none;
   font-family: var(--kv-mono);
-  font-size: var(--kv-t-sm);
-  font-weight: var(--kv-fw-semibold);
-  letter-spacing: var(--kv-ls-label);
-  text-transform: uppercase;
-  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+  text-transform: none;
+  text-align: left;
   text-decoration: none;
-  transition: background var(--kv-dur) var(--kv-ease),
-              color var(--kv-dur) var(--kv-ease);
+  cursor: pointer;
+  transition: background var(--kv-dur) var(--kv-ease);
 }
-.kv-d-btn-primary:hover { background: var(--kv-hover); color: var(--kv-black); }
+.kv-d-btn-primary > span:first-child { flex: 1; min-width: 0; }
+.kv-d-btn-primary > span[aria-hidden] { flex-shrink: 0; }
+.kv-d-btn-primary:hover { background: var(--kv-black-hover); color: var(--kv-white); }
 .kv-d-btn-primary:active { transform: translateY(1px); }
 
-/* Secondary CTA — outlined ghost. Toggles to filled green when saved. */
 .kv-d-btn-ghost {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 8px;
   width: 100%;
-  padding: 11px 16px;
-  margin-top: 10px;
+  padding: 12px 18px;
+  margin-top: 8px;
   background: transparent;
-  color: var(--kv-black);
+  color: var(--kv-gray-500);
   border: 1px solid var(--kv-rule);
   font-family: var(--kv-mono);
-  font-size: var(--kv-t-sm);
-  font-weight: var(--kv-fw-semibold);
-  letter-spacing: var(--kv-ls-label);
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: left;
   cursor: pointer;
   transition: border-color var(--kv-dur) var(--kv-ease),
-              background var(--kv-dur) var(--kv-ease),
               color var(--kv-dur) var(--kv-ease);
 }
-.kv-d-btn-ghost:hover { border-color: var(--kv-black); }
+.kv-d-btn-ghost:hover { border-color: var(--kv-black); color: var(--kv-black); }
 .kv-d-btn-ghost.is-saved {
   background: var(--kv-green);
   border-color: var(--kv-black);
@@ -558,21 +682,22 @@
 }
 .kv-d-btn-ghost:active { transform: translateY(1px); }
 
-/* INDEX RECORD card — buyer-facing info hierarchy
-   ──────────────────────────────────────────────── */
+/* Listing-summary inner blocks — cv-listing.html .s-price/.s-specs.
+   Light-weight large price + tight subline, then specs row that
+   matches the inline mono pattern from the page header. */
 .kv-d-card-price-block {
-  padding-bottom: 14px;
-  margin-bottom: 14px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
   border-bottom: 1px solid var(--kv-rule-soft);
 }
 .kv-d-card-price {
   font-family: var(--kv-mono);
-  font-size: clamp(26px, 2.4vw, 32px);
-  font-weight: var(--kv-fw-regular);
-  letter-spacing: var(--kv-ls-display);
-  font-variant-numeric: tabular-nums;
+  font-size: clamp(36px, 4.5vw, 48px);
+  font-weight: 300;
+  letter-spacing: -0.035em;
   line-height: 1;
   color: var(--kv-black);
+  font-variant-numeric: tabular-nums;
 }
 .kv-d-card-price-cve {
   margin-top: 8px;
@@ -582,6 +707,30 @@
   color: var(--kv-gray-500);
   font-variant-numeric: tabular-nums;
 }
+
+/* Subline below the price in the listing-summary card.
+   Replaces the noisy "Approx. N CVE" with €/m² + "Asking price"
+   — a useful market signal plus a disclaimer that we show ask, not
+   transaction. Mono caps so it visually sits with the spec row. */
+.kv-d-card-subline {
+  margin-top: 10px;
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  font-variant-numeric: tabular-nums;
+}
+.kv-d-card-subline b {
+  color: var(--kv-black);
+  font-weight: var(--kv-fw-semibold);
+}
+.kv-d-card-subline-sep { color: rgba(0, 0, 0, 0.25); }
+
+/* (.kv-d-card-meta variants removed — those extra rows in the
+   listing-summary card created clutter that broke the cv-listing
+   harmony. vs-median lives in the meta-table below; type/location
+   already in the page-level eyebrow.) */
 .kv-d-card-listedby {
   font-family: var(--kv-mono);
   font-size: var(--kv-t-base);
@@ -604,26 +753,249 @@
 }
 .kv-d-method b { color: var(--kv-black); font-weight: 500; }
 
+/* ──────────────────────────────────────────────────────────
+   Sidebar Panel 1 — specs row (Beds · Bath · m²)
+   Inline mono row with dot separators. Mirrors the header
+   subline so the page reads as one editorial voice rather
+   than a chunky 2-col stat grid. */
+.kv-d-spec-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  padding: 12px 0 16px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--kv-rule-soft);
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  font-variant-numeric: tabular-nums;
+}
+.kv-d-spec-token b {
+  color: var(--kv-black);
+  font-weight: var(--kv-fw-semibold);
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  margin-right: 4px;
+}
+.kv-d-spec-token + .kv-d-spec-token::before {
+  content: "·";
+  color: rgba(0, 0, 0, 0.25);
+  margin: 0 10px;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Property details TABLE primitive — k/v table with off-white
+   key column + body value column, hairline rows, outer border.
+   Mirrors cv-listing.html .detail-table. Used in the description
+   column on Detail; reusable elsewhere when a section needs the
+   "labelled data table" treatment instead of the lighter
+   .kv-d-meta-row card pattern. */
+.kv-d-table-block { margin-bottom: 44px; }
+.kv-d-table-eyebrow {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--kv-rule);
+}
+.kv-d-table {
+  border: 1px solid var(--kv-rule);
+  background: var(--kv-paper);
+}
+.kv-d-table-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  border-bottom: 1px solid var(--kv-rule-soft);
+}
+.kv-d-table-row:last-child { border-bottom: none; }
+.kv-d-table-k {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  background: var(--kv-off-white);
+  border-right: 1px solid var(--kv-rule);
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+}
+.kv-d-table-v {
+  font-family: var(--kv-mono);
+  font-size: 13px;
+  color: var(--kv-black);
+  padding: 11px 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Sidebar Panel 2 — Status meta-table.
+   cv-listing.html .s-meta pattern: bordered grid where each row
+   is a 2-column cell pair (label | value) with internal hairlines.
+   Same border weight (--kv-rule) as Panels 1 + 3, transparent
+   surface — the column reads as one coherent stack. */
+.kv-d-meta-table {
+  border: 1px solid var(--kv-rule);
+  margin-bottom: 16px;
+}
+.kv-d-meta-table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--kv-rule-soft);
+}
+.kv-d-meta-table-row:last-child { border-bottom: none; }
+.kv-d-meta-table-k {
+  padding: 10px 14px;
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--kv-gray-500);
+  border-right: 1px solid var(--kv-rule-soft);
+}
+.kv-d-meta-table-v {
+  padding: 10px 14px;
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--kv-black);
+  font-variant-numeric: tabular-nums;
+}
+.kv-d-meta-table-v.is-lower { color: #b44; }
+.kv-d-meta-table-v.is-higher { color: var(--kv-black); }
+
+/* Legacy .kv-d-meta-row pattern — still used elsewhere (Market page
+   "Median price by island" card, etc). Kept intact. */
+.kv-d-meta { padding: 0; }
+.kv-d-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--kv-rule-soft);
+}
+.kv-d-meta-row:last-child { border-bottom: none; }
+.kv-d-meta-k {
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+}
+.kv-d-meta-v {
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  font-weight: var(--kv-fw-medium);
+  color: var(--kv-black);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-align: right;
+}
+/* Directional accents for "vs median" — green when below (good
+   value), reserved color when above. Keeps semantics tied to the
+   editorial green/ocean palette so we don't introduce new tokens. */
+.kv-d-meta-v.is-lower  { color: var(--kv-green-deep); }
+.kv-d-meta-v.is-higher { color: var(--kv-accent-ocean); }
+
+/* ──────────────────────────────────────────────────────────
+   Sidebar Panel 3 — Original source
+   Trust block: small label, bold name, link, disclaimer. No
+   card header — the panel itself reads as the named block. */
+/* Original Source — third sidebar panel, off-white surface
+   distinguishes it from the white Listing Summary above. Same
+   border weight (--kv-rule) so the column reads as one stack. */
+.kv-d-source {
+  background: var(--kv-off-white);
+  padding: 18px;
+}
+.kv-d-source-lbl {
+  font-family: var(--kv-mono);
+  font-size: 10px;
+  font-weight: var(--kv-fw-semibold);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kv-gray-500);
+  margin-bottom: 8px;
+}
+.kv-d-source-name {
+  font-family: var(--kv-mono);
+  font-size: 16px;
+  font-weight: var(--kv-fw-medium);
+  letter-spacing: -0.01em;
+  color: var(--kv-black);
+  margin-bottom: 10px;
+}
+.kv-d-source-link {
+  display: inline-block;
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--kv-black);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+  padding-bottom: 1px;
+  margin-bottom: 14px;
+  transition: border-color var(--kv-dur-fast) var(--kv-ease);
+}
+.kv-d-source-link:hover { border-color: var(--kv-black); }
+.kv-d-source-disc {
+  font-family: var(--kv-mono);
+  font-size: 12px;
+  line-height: 1.65;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 14px 0 0;
+  padding: 0;
+  border: none;
+}
+
 /* ══════════ 7. Section primitives (shared by mortgage/market/similar) ══════════ */
 
-/* Each major section opens with an edge-to-edge divider (full-bleed
-   100vw) — matches site-wide rule convention. */
+/* Section base — divider above each white-on-white section (Monthly
+   cost, Market context). Container-width 1px line, NOT full-bleed
+   per site rule. The tinted variant below opts out — its off-white
+   panel is its own separator. */
 .kv-d-section {
-  padding-top: 40px;
+  padding-top: 56px;
   padding-bottom: 0;
   margin-top: 0;
   margin-bottom: 56px;
   position: relative;
+  border-top: 1px solid var(--kv-rule);
 }
-.kv-d-section::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: calc(50% - 50vw);
-  width: 100vw;
-  height: 1px;
-  background: var(--kv-rule);
-  pointer-events: none;
+
+/* Tinted variant — full-bleed warm beige panel that replaces the
+   1px top line with a soft surface block. Mirrors cv-listing.html's
+   .similar pattern: section breaks out to 100vw with a direct
+   off-white background, inner content re-centers via .kv-d-section-inner.
+   IMPORTANT: explicitly opts out of `.kv-d > *`'s max-width:1200px and
+   side padding (which would otherwise cap this at the content column). */
+.kv-d > .kv-d-section-tinted {
+  max-width: none;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 0;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 56px;
+  padding-bottom: 64px;
+  background: var(--kv-off-white);
+  border-top: none;
+}
+.kv-d-section-tinted .kv-d-section-inner {
+  max-width: var(--kv-content-w);
+  margin: 0 auto;
+  padding: 0 var(--kv-gutter);
 }
 .kv-d-section-head {
   display: flex;
@@ -731,6 +1103,13 @@
   border: 2px solid var(--kv-black);
   cursor: grab;
 }
+
+/* Advanced-costs disclosure — wrapper uses display:contents so its
+   children participate in the parent grid as if the wrapper isn't
+   there. On desktop the toggle is hidden and the wrapper always shows;
+   on mobile the toggle appears and the wrapper hides until opened. */
+.kv-d-mc-advanced { display: contents; }
+.kv-d-mc-advanced-toggle { display: none; }
 
 .kv-d-mc-result {
   border: 1px solid var(--kv-black);
@@ -1135,6 +1514,34 @@
   .kv-d-mc { grid-template-columns: 1fr; }
   .kv-d-mc-inputs { grid-template-columns: 1fr; }
   .kv-d-mc-inputs .kv-d-mc-field-wide { grid-column: 1; }
+  /* Hide carrying-cost fields until reader opens the disclosure. The
+     button sits as the last grid row; tapping it toggles data-open on
+     the wrapper and rerenders. Defaults are sane so power users can
+     skip the expand. */
+  .kv-d-mc-advanced[data-open="false"] { display: none; }
+  .kv-d-mc-advanced-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--kv-white);
+    color: var(--kv-black);
+    border: 1px solid var(--kv-rule);
+    font-family: var(--kv-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    width: 100%;
+  }
+  .kv-d-mc-advanced-toggle:hover { border-color: var(--kv-black); }
+  .kv-d-mc-advanced-toggle > span:last-child {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+  }
   .kv-d-mctx-grid,
   .kv-d-mctx-4,
   .kv-d-mctx-3 { grid-template-columns: repeat(2, 1fr); }
@@ -1143,10 +1550,53 @@
 }
 
 @media (max-width: 640px) {
+  /* Keep the AI badge on the same row as the heading — the badge
+     is short enough to fit. Center on baseline so the dot lines up
+     with the heading capline. */
+  .kv-d-block-head {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+  .kv-d-block-head .kv-d-ai-badge {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .kv-d-ai-caption { font-size: 11.5px; }
   .kv-d-top { padding-top: 28px; padding-bottom: 24px; }
   .kv-d-gallery { grid-template-rows: repeat(3, 140px); }
   .kv-d-hero { height: 260px; margin-bottom: 24px; }
-  .kv-d-facts { grid-template-columns: repeat(2, 1fr); }
+  /* Cap title on phones — raw scraper titles can run 60+ chars on a
+     mono font, which shoots the h1 to 4+ lines and pushes the price
+     below the fold. Tighter font + 3-line clamp keeps the header
+     compact without truncating most real titles. */
+  .kv-d-title {
+    font-size: clamp(20px, 5.5vw, 26px);
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  /* Bring price closer to title on mobile — desktop's 30-42px is too
+     dominant against the 22-26px title at narrow widths. */
+  .kv-d-price { font-size: clamp(24px, 7vw, 30px); }
+  /* Bump spec subline so it reads as specs, not a footnote next to
+     the price. */
+  .kv-d-subline { font-size: 14px; }
+  /* Extra breathing between price block and the subline so the two
+     read as distinct units. */
+  .kv-d-top-grid { gap: 16px; }
+  /* Tighten the property-details k column on mobile so values aren't
+     cramped against the right edge. */
+  .kv-d-table-row { grid-template-columns: 120px 1fr; }
+  .kv-d-table-v { font-size: 12px; }
+  /* Hide the facts strip on phone — the same beds/baths/m² already
+     show in the header subline above and again in the Listing summary
+     card below. Three repetitions is the main reason the page reads
+     as cluttered on mobile. */
+  .kv-d-facts { display: none; }
   /* When the facts list has an odd number of cells, the last one
      would orphan in column 1 of its row. Span both columns instead
      so it doesn't read as a half-empty card. */
@@ -1208,3 +1658,64 @@
   transition: color 0.2s;
 }
 .kv-d-back:hover { color: var(--kv-black); }
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE STICKY CTA
+   Visible <768px only. Mirrors aside's "View on source" so
+   the primary action stays one tap away while the user scrolls
+   long descriptions / Mortgage / Market context / Similar.
+   Hidden on desktop where the sidebar already provides this CTA.
+   ══════════════════════════════════════════════════════════ */
+.kv-d-mcta { display: none; }
+
+@media (max-width: 768px) {
+  .kv-d-mcta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 90;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--kv-paper);
+    border-top: 1px solid var(--kv-rule);
+    box-shadow: 0 -2px 14px rgba(0, 0, 0, 0.06);
+    font-family: var(--kv-mono);
+  }
+  .kv-d-mcta-info { flex: 1; min-width: 0; }
+  .kv-d-mcta-price {
+    font-size: 15px;
+    font-weight: var(--kv-fw-medium);
+    color: var(--kv-black);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+  .kv-d-mcta-source {
+    font-size: var(--kv-t-2xs);
+    letter-spacing: var(--kv-ls-eyebrow);
+    text-transform: uppercase;
+    color: var(--kv-gray-500);
+    margin-top: 3px;
+  }
+  .kv-d-mcta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 18px;
+    background: var(--kv-black);
+    color: var(--kv-white);
+    border: 1px solid var(--kv-black);
+    font-family: var(--kv-mono);
+    font-size: var(--kv-t-sm);
+    font-weight: var(--kv-fw-semibold);
+    letter-spacing: var(--kv-ls-label);
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .kv-d-mcta-btn:hover { opacity: 0.85; }
+}

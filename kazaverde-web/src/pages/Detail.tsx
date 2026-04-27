@@ -80,7 +80,79 @@ function fmtDateTime(iso: string | null | undefined): string {
   );
 }
 
+/** Friendly "Today, 06:14" / "Yesterday, 14:22" / "12 Apr, 09:30" for
+ *  the inline verified strip — feels alive vs raw timestamps. */
+function fmtVerifiedTime(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffH = diffMs / 3_600_000;
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  if (diffH < 24 && now.getDate() === d.getDate()) return `Today, ${time}`;
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (yesterday.toDateString() === d.toDateString()) return `Yesterday, ${time}`;
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + `, ${time}`;
+}
+
+/** "48 days ago" / "2 days ago" — for first-seen freshness. */
+function fmtDaysAgo(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const days = Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000));
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  return `${days} days ago`;
+}
+
+/** Number of whole days since `iso` (clamped to 0). Used for "Days on index". */
+function daysSince(iso: string | null | undefined): number {
+  if (!iso) return 0;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 0;
+  return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000));
+}
+
+/** ±N% string for "vs median" cell. Returns null when the comparison
+ *  isn't meaningful — e.g. land priced against an overall house median
+ *  produces 1000%+ noise; bail out and let the row be hidden. */
+function priceVsMedian(price: number | null, median: number | null): { pct: number; label: string } | null {
+  if (price == null || median == null || median <= 0) return null;
+  const pct = Math.round(((price - median) / median) * 100);
+  // Above this band the comparison is almost certainly cross-category
+  // (land vs house, hotel vs apartment) — better to hide than to lie.
+  if (Math.abs(pct) > 200) return null;
+  if (pct === 0) return { pct: 0, label: "On median" };
+  const sign = pct > 0 ? "+" : "−";
+  return { pct, label: `${sign}${Math.abs(pct)}%` };
+}
+
+/** "gabetti.cv" from a full URL — used in the source-panel link label. */
+function hostFromUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
 /** Extract a short slug from source_id (e.g. "cv_gabetticasecapoverde:CV-TER339" → "TCV") */
+/* Map our free-form property_type onto schema.org Residence subtypes.
+   Falls back to "Residence" when nothing matches — still valid per the
+   schema and Google ignores rather than rejects. */
+function mapResidenceType(propertyType: string | null | undefined): string {
+  const t = (propertyType || "").toLowerCase();
+  if (/apart|flat|condo/.test(t)) return "Apartment";
+  if (/villa|house|moradia|casa|chalet/.test(t)) return "House";
+  if (/single.?family/.test(t)) return "SingleFamilyResidence";
+  if (/land|plot|terreno|parcela|terrain|lot/.test(t)) return "Place";
+  return "Residence";
+}
+
 function sourceSlug(sourceId: string): string {
   const before = sourceId.split(":")[0] || sourceId;
   // Take letters from after first underscore, uppercased, first 3-4 chars
@@ -113,6 +185,59 @@ export default function Detail() {
       : "Property listing in Cape Verde",
     images[0] ? { image: images[0] } : undefined
   );
+
+  /* JSON-LD RealEstateListing — gives Google the structured data needed for
+     property rich results. Injected as a single <script> tag in the head and
+     replaced (not duplicated) on each detail load. The mainEntity type maps
+     the listing's property_type onto the closest schema.org Residence type
+     so Google can categorize correctly. */
+  useEffect(() => {
+    if (!detail) return;
+    const SCRIPT_ID = "kv-jsonld-listing";
+    document.getElementById(SCRIPT_ID)?.remove();
+    const url = `https://kazaverde.com/listing/${detail.id}`;
+    const residenceType = mapResidenceType(detail.property_type);
+    const ld: Record<string, unknown> = {
+      "@context": "https://schema.org",
+      "@type": "RealEstateListing",
+      name: displayTitle,
+      url,
+      description: detail.description?.slice(0, 500) || displayTitle,
+      datePosted: detail.first_seen_at ?? detail.last_seen_at ?? undefined,
+      image: images.length > 0 ? images.slice(0, 6) : undefined,
+      mainEntity: {
+        "@type": residenceType,
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: detail.city || undefined,
+          addressRegion: detail.island,
+          addressCountry: "CV",
+        },
+        numberOfRooms: detail.bedrooms ?? undefined,
+        numberOfBathroomsTotal: detail.bathrooms ?? undefined,
+        floorSize: detail.property_size_sqm
+          ? { "@type": "QuantitativeValue", value: detail.property_size_sqm, unitCode: "MTK" }
+          : undefined,
+      },
+      offers: detail.price
+        ? {
+            "@type": "Offer",
+            price: detail.price,
+            priceCurrency: detail.currency || "EUR",
+            availability: "https://schema.org/InStock",
+            url,
+          }
+        : undefined,
+    };
+    const script = document.createElement("script");
+    script.id = SCRIPT_ID;
+    script.type = "application/ld+json";
+    script.text = JSON.stringify(ld);
+    document.head.appendChild(script);
+    return () => {
+      document.getElementById(SCRIPT_ID)?.remove();
+    };
+  }, [detail, images, displayTitle]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -168,7 +293,11 @@ export default function Detail() {
     };
   }, [detail?.description, detail?.description_html]);
 
-  // Similar properties — fetch up to 9 so user can scroll through
+  // Similar properties — fetch up to 9 so user can scroll through.
+  // minResults: 3 so the SDK keeps broadening its fallback chain (price
+  // ±30%, then type-only, then island-only) until at least 3 cards are
+  // available. Otherwise sparse niches (e.g. type "property" with a
+  // narrow price band) bottom out at 2 and the UI hides the section.
   useEffect(() => {
     if (!detail) {
       setSimilar([]);
@@ -176,7 +305,7 @@ export default function Detail() {
     }
     let cancelled = false;
     arei
-      .getSimilarListings({ listing: detail, limit: 9 })
+      .getSimilarListings({ listing: detail, limit: 9, minResults: 3 })
       .then((cards) => {
         if (!cancelled) setSimilar(cards);
       })
@@ -309,8 +438,8 @@ export default function Detail() {
             {detail.property_type && <b>{typeLabel}</b>}
             <span className="kv-d-eyebrow-dot" aria-hidden="true" />
             <span>{formatLocation(detail.city, detail.island)}</span>
-            <span className="kv-d-eyebrow-dot" aria-hidden="true" />
-            <span>{formatSourceLabel(detail.source_id)}</span>
+            {/* Source name intentionally omitted here — already shown
+                on the sidebar CTA button and the Original Source panel. */}
           </div>
           <h1 className="kv-d-title">{displayTitle}</h1>
           <div className="kv-d-price-block">
@@ -340,6 +469,21 @@ export default function Detail() {
           <div className="kv-d-price-cve">
             {pricePerSqm ? <><b>€{pricePerSqm.toLocaleString()}</b> per m²</> : ""}
           </div>
+        </div>
+
+        {/* Verified strip — freshness signal inline with the header per
+            cv-listing.html. Reads as "this is current data" instead of
+            burying first/last-seen in the sidebar. */}
+        <div className="kv-d-verified">
+          <span className="kv-d-verified-dot" aria-hidden="true" />
+          <span className="kv-d-verified-lbl">Last verified</span>
+          <span className="kv-d-verified-val">{fmtVerifiedTime(detail.last_seen_at)}</span>
+          {detail.first_seen_at && (
+            <>
+              <span className="kv-d-verified-sep" aria-hidden="true">·</span>
+              <span className="kv-d-verified-val">Indexed {fmtDaysAgo(detail.first_seen_at)}</span>
+            </>
+          )}
         </div>
       </header>
 
@@ -449,9 +593,22 @@ export default function Detail() {
       {/* Main 2-col: description + INDEX RECORD sidebar */}
       <div className="kv-d-main">
         <div>
-          {/* Description */}
+          {/* Description — descriptions are rewritten with AI before
+              publish to normalize tone and strip sales language.
+              The badge in the heading is the primary tell; a small
+              footnote after the body catches readers who scrolled past
+              the heading. Source agent stays credited in the sidebar. */}
           <div className="kv-d-block">
-            <h2 className="kv-d-block-h">Description</h2>
+            <div className="kv-d-block-head">
+              <h2 className="kv-d-block-h">Description</h2>
+              <span
+                className="kv-d-ai-badge"
+                title="Rewritten with AI to normalize tone and remove sales language. Source attribution unchanged — see Original source panel."
+              >
+                <span className="kv-d-ai-dot" aria-hidden="true" />
+                AI · Rewritten
+              </span>
+            </div>
             {translatedDescription ? (
               <p>{translatedDescription}</p>
             ) : detail.description_html ? (
@@ -463,20 +620,73 @@ export default function Detail() {
                 This property is located in {formatLocation(detail.city, detail.island)}, Cape Verde.
               </p>
             )}
+            <p className="kv-d-ai-caption">
+              Description rewritten with AI for clarity — original source attribution unchanged.
+            </p>
           </div>
 
-          {/* Location was rendered here; removed because the breadcrumb and
-              top meta rail already surface island/city/country. Will return
-              as a proper map card once we have lat/lng. */}
+          {/* Property details — vertical k/v table mirroring cv-listing
+              reference. Each row is the same .kv-d-meta-row primitive
+              used by the sidebar Index Record (no new visual idiom).
+              Only rows with real data render — and the whole section
+              hides itself if fewer than 4 fields are available, so the
+              card never reads as a half-empty stub for sparse listings.
+              Fields beyond beds/baths/areas (year built, condition,
+              parking, …) light up automatically once the ingestion
+              pipeline starts extracting them. */}
+          {(() => {
+            const rows: { k: string; v: React.ReactNode }[] = [];
+            if (detail.property_type) rows.push({ k: "Type", v: typeLabel });
+            if (!isLand && detail.bedrooms != null) {
+              rows.push({ k: "Bedrooms", v: detail.bedrooms === 0 ? "Studio" : detail.bedrooms });
+            }
+            if (!isLand && detail.bathrooms != null && detail.bathrooms > 0) {
+              rows.push({ k: "Bathrooms", v: detail.bathrooms });
+            }
+            if (detail.property_size_sqm != null) {
+              rows.push({ k: "Living area", v: <>{detail.property_size_sqm.toLocaleString()} m²</> });
+            }
+            if (detail.land_area_sqm != null) {
+              rows.push({ k: "Plot area", v: <>{detail.land_area_sqm.toLocaleString()} m²</> });
+            }
+            if (detail.city) {
+              rows.push({ k: "Location", v: formatLocation(detail.city, detail.island) });
+            }
+            if (rows.length < 4) return null;
+            return (
+              <div className="kv-d-table-block">
+                <div className="kv-d-table-eyebrow">Property details</div>
+                <div className="kv-d-table">
+                  {rows.map((r) => (
+                    <div className="kv-d-table-row" key={r.k}>
+                      <div className="kv-d-table-k">{r.k}</div>
+                      <div className="kv-d-table-v">{r.v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
         </div>
 
-        {/* INDEX RECORD sidebar — info hierarchy mirrors the kazaverde
-            buyer-facing sidebar: price (prominent) → who's listing it →
-            attestation dates → CTA → "how we index" disclosure. */}
+        {/* Buyer-facing sidebar — three stacked panels mirroring the
+            cv-listing reference rhythm:
+              1. ACT   — Listing summary (price + specs + CTAs, strong border)
+              2. KNOW  — Index record (k/v data rows, soft border)
+              3. TRUST — Original source (attribution + disclaimer, soft border)
+            Visual hierarchy: Panel 1 carries the action and gets the
+            strong black hairline; Panels 2/3 use the softer rule so the
+            row reads as a sequence, not three competing boxes. */}
         <aside className="kv-d-aside">
+          {/* Panel 1 — Listing summary. Same border weight (--kv-rule)
+              as the meta table and source panel below; only the surface
+              changes (white / transparent / off-white) so the column
+              reads as one harmonised stack instead of three competing
+              card treatments. cv-listing.html .s-panel pattern. */}
           <div className="kv-d-card">
             <div className="kv-d-card-h">
-              <span>Index record</span>
+              <span>Listing summary</span>
             </div>
             <div className="kv-d-card-body">
               {detail.price && (
@@ -484,28 +694,37 @@ export default function Detail() {
                   <div className="kv-d-card-price">
                     {formatPrice(detail.price, detail.currency)}
                   </div>
-                  {detail.currency !== "CVE" && (
-                    <div className="kv-d-card-price-cve">
-                      Approx. {Math.round(detail.price * 110.265).toLocaleString("en-US")} CVE
-                    </div>
-                  )}
+                  <div className="kv-d-card-subline">
+                    {pricePerSqm != null && (
+                      <>
+                        <b>€{pricePerSqm.toLocaleString()}</b>/m²
+                        <span className="kv-d-card-subline-sep"> · </span>
+                      </>
+                    )}
+                    <span>Asking price</span>
+                  </div>
                 </div>
               )}
 
-              <div className="kv-d-card-listedby">
-                Listed by <b>{formatSourceLabel(detail.source_id)}</b>
-              </div>
-
-              <div className="kv-d-prov">
-                <div className="kv-d-prov-cell">
-                  <div className="kv-d-prov-k">First seen</div>
-                  <div className="kv-d-prov-v kv-d-prov-mono">{fmtShortDate(detail.first_seen_at)}</div>
+              {(detail.bedrooms != null || detail.bathrooms != null || detail.property_size_sqm != null || detail.land_area_sqm != null) && (
+                <div className="kv-d-spec-row">
+                  {detail.bedrooms != null && (
+                    <span className="kv-d-spec-token">
+                      <b>{detail.bedrooms === 0 ? "Studio" : detail.bedrooms}</b> {detail.bedrooms === 1 ? "bed" : "beds"}
+                    </span>
+                  )}
+                  {detail.bathrooms != null && detail.bathrooms > 0 && (
+                    <span className="kv-d-spec-token">
+                      <b>{detail.bathrooms}</b> {detail.bathrooms === 1 ? "bath" : "baths"}
+                    </span>
+                  )}
+                  {(detail.property_size_sqm ?? detail.land_area_sqm) != null && (
+                    <span className="kv-d-spec-token">
+                      <b>{detail.property_size_sqm ?? detail.land_area_sqm}</b> m²
+                    </span>
+                  )}
                 </div>
-                <div className="kv-d-prov-cell">
-                  <div className="kv-d-prov-k">Last indexed</div>
-                  <div className="kv-d-prov-v kv-d-prov-mono">{fmtDateTime(detail.last_seen_at)}</div>
-                </div>
-              </div>
+              )}
 
               {detail.source_url && (
                 <a
@@ -514,7 +733,8 @@ export default function Detail() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  View on {formatSourceLabel(detail.source_id)} ↗
+                  <span>View on {formatSourceLabel(detail.source_id)}</span>
+                  <span aria-hidden="true">→</span>
                 </a>
               )}
               <button
@@ -523,13 +743,74 @@ export default function Detail() {
                 onClick={() => toggle(detail.id)}
                 aria-pressed={isSaved(detail.id)}
               >
-                {isSaved(detail.id) ? "✓ Saved to shortlist" : "Save to shortlist"}
+                <span>{isSaved(detail.id) ? "✓ Saved to shortlist" : "Save to shortlist"}</span>
+                <span aria-hidden="true">↗</span>
               </button>
             </div>
-            <div className="kv-d-method">
-              <b>How we index.</b> This record is aggregated from a public listing. KazaVerde does
-              not broker, negotiate, or handle transactions — to enquire, visit the original source.
-            </div>
+          </div>
+
+          {/* Panel 2 — Status table. Same border weight as Panel 1 + 3,
+              transparent surface. cv-listing.html .s-meta pattern: a
+              clean tabular grid (1fr 1fr per row) with no eyebrow
+              header — the data IS the section. */}
+          {(() => {
+            const days = daysSince(detail.first_seen_at);
+            const vsMed = priceVsMedian(detail.price, marketCtx?.medianPrice ?? null);
+            return (
+              <div className="kv-d-meta-table">
+                <div className="kv-d-meta-table-row">
+                  <div className="kv-d-meta-table-k">Status</div>
+                  <div className="kv-d-meta-table-v">Active</div>
+                </div>
+                <div className="kv-d-meta-table-row">
+                  <div className="kv-d-meta-table-k">First indexed</div>
+                  <div className="kv-d-meta-table-v">{fmtShortDate(detail.first_seen_at)}</div>
+                </div>
+                <div className="kv-d-meta-table-row">
+                  <div className="kv-d-meta-table-k">Days on index</div>
+                  <div className="kv-d-meta-table-v">{days} {days === 1 ? "day" : "days"}</div>
+                </div>
+                <div className="kv-d-meta-table-row">
+                  <div className="kv-d-meta-table-k">Last verified</div>
+                  <div className="kv-d-meta-table-v">{fmtDateTime(detail.last_seen_at)}</div>
+                </div>
+                {marketCtx?.medianPrice != null && (
+                  <div className="kv-d-meta-table-row">
+                    <div className="kv-d-meta-table-k">{detail.island} median</div>
+                    <div className="kv-d-meta-table-v">{formatMedian(marketCtx.medianPrice)}</div>
+                  </div>
+                )}
+                {vsMed && (
+                  <div className="kv-d-meta-table-row">
+                    <div className="kv-d-meta-table-k">vs median</div>
+                    <div className={`kv-d-meta-table-v${vsMed.pct < 0 ? " is-lower" : vsMed.pct > 0 ? " is-higher" : ""}`}>
+                      {vsMed.label}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Panel 3 — Original source (trust + disclaimer) */}
+          <div className="kv-d-card kv-d-card-soft kv-d-source">
+            <div className="kv-d-source-lbl">Original source</div>
+            <div className="kv-d-source-name">{formatSourceLabel(detail.source_id)}</div>
+            {detail.source_url && (
+              <a
+                className="kv-d-source-link"
+                href={detail.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View on {hostFromUrl(detail.source_url) || "source"} →
+              </a>
+            )}
+            <p className="kv-d-source-disc">
+              This index reproduces public listing data only. We have no affiliation with the
+              source agent or the seller. Contact the agent directly for viewings, offers, and
+              legal advice — or see our <Link to="/blog">buying guide</Link> for the basics.
+            </p>
           </div>
         </aside>
       </div>
@@ -540,8 +821,33 @@ export default function Detail() {
       {/* Market Context */}
       {marketCtx && <KvMarketContext ctx={marketCtx} island={detail.island} />}
 
-      {/* Similar Properties */}
-      {similar.length > 0 && <KvSimilar cards={similar} />}
+      {/* Similar Properties — minimum 3 cards or hide. A 1- or 2-card
+          row breaks the editorial grid (last column reads as missing,
+          not as a curated short row). Better to drop the section than
+          ship a sparse "Similar" rail. */}
+      {similar.length >= 3 && <KvSimilar cards={similar} />}
+
+      {/* Mobile sticky CTA — visible <768px, mirrors aside's primary
+          action so the View-on-source link is one tap away while
+          scrolling. Uses position: fixed at viewport bottom. */}
+      {detail.source_url && (
+        <div className="kv-d-mcta" role="region" aria-label="Listing actions">
+          <div className="kv-d-mcta-info">
+            {detail.price && (
+              <div className="kv-d-mcta-price">{formatPrice(detail.price, detail.currency)}</div>
+            )}
+            <div className="kv-d-mcta-source">via {formatSourceLabel(detail.source_id)}</div>
+          </div>
+          <a
+            className="kv-d-mcta-btn"
+            href={detail.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      )}
 
       {/* Lightbox */}
       {lightboxOpen &&
@@ -673,6 +979,11 @@ function KvMortgage({ price }: { price: number }) {
   });
 
   const [rawInterestRate, setRawInterestRate] = useState(String(input.interestRate));
+  /* Mobile-only: collapses property tax + carrying costs (insurance, HOA,
+     maintenance, utilities) behind a Show more toggle. Defaults are sane,
+     so the typical reader can submit-by-skip. The toggle button hides
+     itself on desktop where space is no constraint and all fields show. */
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const set = <K extends keyof MortgageInput>(key: K, val: MortgageInput[K]) =>
     setInput((prev) => ({ ...prev, [key]: val }));
 
@@ -747,53 +1058,65 @@ function KvMortgage({ price }: { price: number }) {
               }}
             />
           </div>
-          <div className="kv-d-mc-field">
-            <label>Property tax (%)</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={input.propertyTaxPct}
-              onChange={(e) => set("propertyTaxPct", parseNum(e.target.value, true))}
-            />
+          {/* Advanced fields — wrapped in a display:contents group so they
+              still flow into the parent grid on desktop. On mobile, the
+              wrapper is hidden until the reader opens the toggle below. */}
+          <div className="kv-d-mc-advanced" data-open={showAdvanced ? "true" : "false"}>
+            <div className="kv-d-mc-field">
+              <label>Property tax (%)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={input.propertyTaxPct}
+                onChange={(e) => set("propertyTaxPct", parseNum(e.target.value, true))}
+              />
+            </div>
+            <div className="kv-d-mc-field">
+              <label>Insurance (€/yr)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={input.insuranceAnnual || ""}
+                onChange={(e) => set("insuranceAnnual", parseNum(e.target.value))}
+              />
+            </div>
+            <div className="kv-d-mc-field">
+              <label>Condo fee (€/mo)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={input.hoaMonthly || ""}
+                onChange={(e) => set("hoaMonthly", parseNum(e.target.value))}
+              />
+            </div>
+            <div className="kv-d-mc-field">
+              <label>Maintenance (€/mo)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={input.maintenanceMonthly || ""}
+                onChange={(e) => set("maintenanceMonthly", parseNum(e.target.value))}
+              />
+            </div>
+            <div className="kv-d-mc-field">
+              <label>Utilities (€/mo)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={input.utilitiesMonthly || ""}
+                onChange={(e) => set("utilitiesMonthly", parseNum(e.target.value))}
+              />
+            </div>
           </div>
-
-          {/* Carrying costs */}
-          <div className="kv-d-mc-field">
-            <label>Insurance (€/yr)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={input.insuranceAnnual || ""}
-              onChange={(e) => set("insuranceAnnual", parseNum(e.target.value))}
-            />
-          </div>
-          <div className="kv-d-mc-field">
-            <label>Condo fee (€/mo)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={input.hoaMonthly || ""}
-              onChange={(e) => set("hoaMonthly", parseNum(e.target.value))}
-            />
-          </div>
-          <div className="kv-d-mc-field">
-            <label>Maintenance (€/mo)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={input.maintenanceMonthly || ""}
-              onChange={(e) => set("maintenanceMonthly", parseNum(e.target.value))}
-            />
-          </div>
-          <div className="kv-d-mc-field">
-            <label>Utilities (€/mo)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={input.utilitiesMonthly || ""}
-              onChange={(e) => set("utilitiesMonthly", parseNum(e.target.value))}
-            />
-          </div>
+          <button
+            type="button"
+            className="kv-d-mc-advanced-toggle"
+            onClick={() => setShowAdvanced((s) => !s)}
+            aria-expanded={showAdvanced}
+          >
+            <span>{showAdvanced ? "Hide advanced costs" : "Show advanced costs"}</span>
+            <span aria-hidden="true">{showAdvanced ? "−" : "+"}</span>
+          </button>
         </div>
 
         <div className="kv-d-mc-result">
@@ -971,8 +1294,9 @@ function KvSimilar({ cards }: { cards: ListingCard[] }) {
   };
 
   return (
-    <section className="kv-d-section">
-      <div className="kv-d-section-head">
+    <section className="kv-d-section kv-d-section-tinted">
+      <div className="kv-d-section-inner">
+        <div className="kv-d-section-head">
         <div>
           <div className="kv-d-ey">Comparable</div>
           <h2 className="kv-d-h2">Similar properties</h2>
@@ -1022,6 +1346,7 @@ function KvSimilar({ cards }: { cards: ListingCard[] }) {
             </Link>
           );
         })}
+      </div>
       </div>
     </section>
   );
