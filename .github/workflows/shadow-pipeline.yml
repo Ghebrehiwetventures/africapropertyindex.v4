@@ -8,8 +8,6 @@ on:
   push:
     branches:
       - fix/pipeline-source-issue
-    paths:
-      - ".github/workflows/shadow-pipeline.yml"
   workflow_dispatch:
     inputs:
       market_id:
