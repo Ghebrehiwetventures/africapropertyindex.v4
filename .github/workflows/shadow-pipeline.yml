@@ -34,8 +34,8 @@ jobs:
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       MARKET_ID: ${{ inputs.market_id || 'cv' }}
-      DRY_RUN: ${{ inputs.dry_run == false && '0' || '1' }}
-      DEBUG_GENERIC: ${{ inputs.debug_generic == false && '0' || '1' }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == false && '0' || '1' }}
+      DEBUG_GENERIC: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_generic == false && '0' || '1' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
