@@ -8,6 +8,7 @@ const distDir = path.resolve(__dirname, "../dist");
 const baseHtmlPath = path.join(distDir, "index.html");
 const spaFallbackPath = path.join(distDir, "spa-fallback", "index.html");
 const blogDataPath = path.resolve(__dirname, "../src/lib/blog-data.ts");
+const faqDataPath = path.resolve(__dirname, "../src/lib/faq-data.ts");
 const prerenderListingsPath = path.resolve(__dirname, "../src/lib/prerender-listings.ts");
 const siteUrl = "https://kazaverde.com";
 const ogImage = `${siteUrl}/og-default.png`;
@@ -19,21 +20,22 @@ function page(title, description, body, options = {}) {
   return { title, description, body, ...options };
 }
 
-function getStaticRoutes(blogArticles, listingRoutes = []) {
+function getStaticRoutes(blogArticles, listingRoutes = [], faqEntries = []) {
   return [
     {
       route: "/",
       ...page(
       "KazaVerde — Cape Verde Real Estate",
-      "An independent index of Cape Verde real estate. Browse verified property listings across Sal, Boa Vista, Santiago and more — source-linked, updated daily.",
+      "Search Cape Verde real estate listings from local agencies, portals and property websites. Compare homes for sale across Sal, Boa Vista and other Cape Verde islands with KazaVerde.",
       `
         <main>
           <section>
             <p>KazaVerde</p>
-            <h1>Cape Verde Real Estate Index</h1>
+            <h1>Cape Verde real estate, aggregated in one place</h1>
             <p>
-              A read-only Cape Verde property index with source-linked listings, island-level market context,
-              and practical guides for buyers and investors.
+              An independent property search and data platform for Cape Verde — listings
+              aggregated from local agencies, portals and property websites, with
+              island-level market context and practical guides for buyers.
             </p>
             <p>
               <a href="/listings">Browse Properties</a>
@@ -44,7 +46,7 @@ function getStaticRoutes(blogArticles, listingRoutes = []) {
           <section>
             <h2>What you can explore</h2>
             <ul>
-              <li>Source-linked property listings across multiple Cape Verde islands</li>
+              <li>Source-linked property listings tracked across multiple Cape Verde islands</li>
               <li>Market-level context including median price and inventory coverage</li>
               <li>Editorial guides on buying, tax changes, residency, and island selection</li>
             </ul>
@@ -55,19 +57,53 @@ function getStaticRoutes(blogArticles, listingRoutes = []) {
             <ul>
               <li><a href="/listings/sal">Property for sale in Sal</a></li>
               <li><a href="/listings/boa-vista">Property for sale in Boa Vista</a></li>
-              <li><a href="/listings">All Cape Verde properties</a></li>
+              <li><a href="/listings">All tracked Cape Verde listings</a></li>
             </ul>
           </section>
 
           <section>
             <h2>Built for discovery, not transactions</h2>
             <p>
-              KazaVerde is not a broker or marketplace. Each property links back to its original source page,
-              so buyers can compare public inventory before speaking to an agent or lawyer.
+              KazaVerde is not a broker, agency, or marketplace, and listings are not
+              legally verified. Each property links back to its original source page, so
+              buyers can confirm details directly with the agent and their own lawyer.
             </p>
           </section>
         </main>
       `,
+      {
+        jsonLd: {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": "https://kazaverde.com/#organization",
+              name: "KazaVerde",
+              url: "https://kazaverde.com",
+              logo: "https://kazaverde.com/og-default.png",
+              description:
+                "KazaVerde is an independent property search and data platform for Cape Verde real estate. It is not a broker or agency.",
+            },
+            {
+              "@type": "WebSite",
+              "@id": "https://kazaverde.com/#website",
+              url: "https://kazaverde.com",
+              name: "KazaVerde",
+              description:
+                "Search Cape Verde real estate listings aggregated from local agencies, portals and property websites.",
+              publisher: { "@id": "https://kazaverde.com/#organization" },
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: "https://kazaverde.com/listings?q={search_term_string}",
+                },
+                "query-input": "required name=search_term_string",
+              },
+            },
+          ],
+        },
+      },
     ),
     },
     {
@@ -133,8 +169,32 @@ function getStaticRoutes(blogArticles, listingRoutes = []) {
               ).join("")}
             </ul>
           </section>
+
+          ${faqEntries.length > 0 ? `<section>
+            <h2>Frequently asked questions</h2>
+            <dl>
+              ${faqEntries.map((f) => `
+                <dt>${escapeHtml(f.question)}</dt>
+                <dd>${escapeHtml(f.answer)}</dd>
+              `).join("")}
+            </dl>
+          </section>` : ""}
         </main>
       `,
+      faqEntries.length > 0
+        ? {
+            jsonLd: {
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "@id": "https://kazaverde.com/blog#faq",
+              mainEntity: faqEntries.map((f) => ({
+                "@type": "Question",
+                name: f.question,
+                acceptedAnswer: { "@type": "Answer", text: f.answer },
+              })),
+            },
+          }
+        : {},
     ),
     },
     {
@@ -365,8 +425,9 @@ function getStaticRoutes(blogArticles, listingRoutes = []) {
 
 async function main() {
   const blogArticles = await loadBlogArticles();
+  const faqEntries = await loadFaqEntries();
   const listingRoutes = await getListingDetailRoutes();
-  const routes = [...getStaticRoutes(blogArticles, listingRoutes), ...getBlogArticleRoutes(blogArticles), ...listingRoutes];
+  const routes = [...getStaticRoutes(blogArticles, listingRoutes, faqEntries), ...getBlogArticleRoutes(blogArticles), ...listingRoutes];
   const baseHtml = await readFile(baseHtmlPath, "utf8");
 
   await mkdir(path.dirname(spaFallbackPath), { recursive: true });
@@ -474,7 +535,16 @@ function renderRouteHtml(baseHtml, route) {
     `<meta name="twitter:title" content="${escapeHtml(documentTitle)}" />`,
     `<meta name="twitter:description" content="${escapeHtml(route.description)}" />`,
     `<meta name="twitter:image" content="${escapeHtml(route.image ?? ogImage)}" />`,
-  ].join("\n    ");
+  ];
+  if (route.jsonLd) {
+    const payload = Array.isArray(route.jsonLd) ? route.jsonLd : [route.jsonLd];
+    for (const entry of payload) {
+      headExtras.push(
+        `<script type="application/ld+json">${JSON.stringify(entry).replace(/</g, "\\u003c")}</script>`,
+      );
+    }
+  }
+  const headExtrasHtml = headExtras.join("\n    ");
 
   return baseHtml
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(documentTitle)}</title>`)
@@ -482,7 +552,7 @@ function renderRouteHtml(baseHtml, route) {
       /<meta name="description" content="[\s\S]*?" \/>/,
       `<meta name="description" content="${escapeHtml(route.description)}" />`,
     )
-    .replace("</head>", `    ${headExtras}\n  </head>`)
+    .replace("</head>", `    ${headExtrasHtml}\n  </head>`)
     .replace(
       '<div id="root"></div>',
       `<div id="root" data-prerendered="phase1">\n${wrapPrerenderMarkup(route.body, route.description)}\n    </div>`,
@@ -517,6 +587,16 @@ function escapeHtml(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+async function loadFaqEntries() {
+  const source = await readFile(faqDataPath, "utf8");
+  const sanitizedSource = source
+    .replace(/export interface FaqEntry[\s\S]*?\n}\n\n/, "")
+    .replace(/export const FAQ_ENTRIES: FaqEntry\[] =/, "const FAQ_ENTRIES =");
+  const moduleUrl = `data:text/javascript;charset=utf-8,${encodeURIComponent(`${sanitizedSource}\nexport { FAQ_ENTRIES };`)}`;
+  const module = await import(moduleUrl);
+  return module.FAQ_ENTRIES;
 }
 
 async function loadBlogArticles() {

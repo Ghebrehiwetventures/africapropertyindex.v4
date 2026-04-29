@@ -131,9 +131,57 @@ function categoryLabel(cat: string): string {
 
 export default function Landing() {
   useDocumentMeta(
-    "KazaVerde — Cape Verde Real Estate Index",
-    "An independent, source-linked index of every property listed for sale across Cape Verde. No sign-up, no broker fees, no hidden inventory.",
+    "KazaVerde — Cape Verde Real Estate",
+    "Search Cape Verde real estate listings from local agencies, portals and property websites. Compare homes for sale across Sal, Boa Vista and other Cape Verde islands with KazaVerde.",
   );
+
+  /* Inject homepage JSON-LD: Organization + WebSite. FAQPage lives on
+     /blog where the Q&A is actually rendered — schema must match
+     visible page content. */
+  useEffect(() => {
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "https://kazaverde.com";
+    const data = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": `${origin}/#organization`,
+          name: "KazaVerde",
+          url: origin,
+          logo: `${origin}/og-default.png`,
+          description:
+            "KazaVerde is an independent property search and data platform for Cape Verde real estate. It is not a broker or agency.",
+        },
+        {
+          "@type": "WebSite",
+          "@id": `${origin}/#website`,
+          url: origin,
+          name: "KazaVerde",
+          description:
+            "Search Cape Verde real estate listings aggregated from local agencies, portals and property websites.",
+          publisher: { "@id": `${origin}/#organization` },
+          potentialAction: {
+            "@type": "SearchAction",
+            target: {
+              "@type": "EntryPoint",
+              urlTemplate: `${origin}/listings?q={search_term_string}`,
+            },
+            "query-input": "required name=search_term_string",
+          },
+        },
+      ],
+    };
+
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.dataset.kvJsonld = "home";
+    script.text = JSON.stringify(data);
+    document.head.appendChild(script);
+    return () => {
+      script.remove();
+    };
+  }, []);
 
   // Top 3 newest articles for guides preview
   const guides = BLOG_ARTICLES.slice(0, 3);
@@ -290,11 +338,11 @@ export default function Landing() {
       <header className="kv-l-hero">
         <div className="kv-l-hero-inner">
           <h1 className="kv-l-hero-title">
-            Every home for sale in Cape&nbsp;Verde, in one place.
+            Cape&nbsp;Verde real estate, aggregated in one place
           </h1>
           <p className="kv-l-hero-sub">
-            An independent, source-linked index of every property listed for sale
-            across the archipelago.
+            An independent property search and data platform — listings aggregated
+            from local agencies, portals and property websites across the archipelago.
           </p>
           <div className="kv-l-hero-cta">
             <Link to="/listings" className="kv-btn kv-btn-solid">Browse all listings →</Link>
@@ -350,7 +398,7 @@ export default function Landing() {
               </span>
               <h2>Where the Cape Verde index stands today.</h2>
               <p>
-                Live counts and medians across every verified listing on the index.
+                Live counts and medians across every tracked listing on the index.
                 Period-over-period movements begin once a full month of snapshots
                 accumulates.
               </p>
