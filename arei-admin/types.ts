@@ -69,6 +69,14 @@ export interface SourceQualityRowRaw {
   approved_count: number;
   with_image_count: number;
   with_price_count: number;
+  /** Optional fields are present when the RPC has been migrated to the latest
+   *  schema (Sprint 2 health columns). Older RPCs omit them. */
+  with_sqm_count?: number;
+  with_beds_count?: number;
+  with_baths_count?: number;
+  trust_passed_count?: number;
+  indexable_count?: number;
+  public_feed_count?: number;
   /** Max(listings.updated_at) per source. Null when source has no rows or
    *  the RPC has not yet been migrated to expose this column. */
   last_updated_at?: string | null;
@@ -79,6 +87,15 @@ export interface SourceQualityRow extends SourceQualityRowRaw {
   approved_pct: number;
   with_image_pct: number;
   with_price_pct: number;
+  with_sqm_pct: number;
+  with_beds_pct: number;
+  with_baths_pct: number;
+  /** Resolved counts (default 0 when RPC has not been migrated). */
+  trust_passed_count_n: number;
+  indexable_count_n: number;
+  public_feed_count_n: number;
+  /** public_feed_count / approved_count * 100. 0 when approved_count is 0. */
+  feed_conversion_pct: number;
   score: number;
   grade: "A" | "B" | "C" | "D";
   sourceName: string;

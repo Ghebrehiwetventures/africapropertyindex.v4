@@ -551,6 +551,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       const approvedPct = (Number(r.approved_count) / n) * 100;
       const imagePct = (Number(r.with_image_count) / n) * 100;
       const pricePct = (Number(r.with_price_count) / n) * 100;
+      const sqmPct = (Number(r.with_sqm_count ?? 0) / n) * 100;
+      const bedsPct = (Number(r.with_beds_count ?? 0) / n) * 100;
+      const bathsPct = (Number(r.with_baths_count ?? 0) / n) * 100;
+      const trustPassedN = Number(r.trust_passed_count ?? 0);
+      const indexableN = Number(r.indexable_count ?? 0);
+      const feedN = Number(r.public_feed_count ?? 0);
+      const approvedN = Number(r.approved_count);
+      const feedConvPct = approvedN > 0 ? (feedN / approvedN) * 100 : 0;
       const { score, grade } = computeGrade(approvedPct, imagePct, pricePct);
       return {
         ...r,
@@ -558,6 +566,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         approved_pct: Math.round(approvedPct * 10) / 10,
         with_image_pct: Math.round(imagePct * 10) / 10,
         with_price_pct: Math.round(pricePct * 10) / 10,
+        with_sqm_pct: Math.round(sqmPct * 10) / 10,
+        with_beds_pct: Math.round(bedsPct * 10) / 10,
+        with_baths_pct: Math.round(bathsPct * 10) / 10,
+        trust_passed_count_n: trustPassedN,
+        indexable_count_n: indexableN,
+        public_feed_count_n: feedN,
+        feed_conversion_pct: Math.round(feedConvPct * 10) / 10,
         score,
         grade,
         sourceName: sourceIdToName(r.source_id),
