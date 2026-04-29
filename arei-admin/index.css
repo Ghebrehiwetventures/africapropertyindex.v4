@@ -245,3 +245,19 @@ input, select, textarea {
     white-space: nowrap;
   }
 }
+
+/* Right-edge fade on horizontally scrollable data tables — soft
+   visual hint that the table extends beyond the viewport. Mobile
+   only. Uses :has() to scope to wrappers around .data-table; the
+   Stats per-market table is left untouched, matching .data-table
+   scope from PR #100. Implementation: a mask-image fades the
+   wrapper's rightmost 20px to transparent, letting the parent
+   surface-1 show through. Works in both light and dark mode without
+   per-mode overrides because the fade is to transparency, not to a
+   specific color. */
+@media (max-width: 640px) {
+  .overflow-x-auto:has(> .data-table) {
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 20px), transparent);
+            mask-image: linear-gradient(to right, black calc(100% - 20px), transparent);
+  }
+}
