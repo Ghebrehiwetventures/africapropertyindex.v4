@@ -617,6 +617,23 @@ const GITHUB_ACTIONS_URL = import.meta.env.VITE_GITHUB_ACTIONS_URL ?? "";
 
 type SourceQualitySortKey = "sourceName" | "marketId" | "listing_count" | "approved_pct" | "with_image_pct" | "with_price_pct" | "grade";
 
+function SourceHealthStat({ label, value, tone }: { label: string; value: number; tone?: "good" | "warn" | "bad" }) {
+  const toneClass =
+    tone === "bad"
+      ? "text-red"
+      : tone === "warn"
+        ? "text-amber"
+        : tone === "good"
+          ? "text-green"
+          : "text-foreground";
+  return (
+    <div>
+      <div className="text-[11px] font-medium uppercase tracking-wide text-foreground-subtle mb-1.5">{label}</div>
+      <div className={`text-2xl font-semibold tabular-nums font-mono ${toneClass}`}>{value}</div>
+    </div>
+  );
+}
+
 function DashboardView() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -669,6 +686,18 @@ function DashboardView() {
   const best = stats.sourceRows.filter((r) => r.grade === "A" || r.grade === "B").slice(-5).reverse();
   const approvedPct = stats.totalListings > 0 ? Math.round((100 * stats.approvedCount) / stats.totalListings) : 0;
   const healthLabel = approvedPct >= 70 ? "Good" : approvedPct >= 40 ? "Acceptable" : "Needs attention";
+
+  // ── Source Health (Sprint 2) ───────────────────────────────────────────────
+  const healthRows = stats.sourceRows;
+  const totalSources = healthRows.length;
+  const freshSources = healthRows.filter((r) => {
+    const f = formatFreshness(r.last_updated_at);
+    return !f.missing && !f.stale;
+  }).length;
+  const staleSourcesCount = healthRows.filter((r) => formatFreshness(r.last_updated_at).stale && !formatFreshness(r.last_updated_at).missing).length;
+  const missingSqmSources = healthRows.filter((r) => Number(r.listing_count) > 0 && Number(r.with_sqm_count ?? 0) === 0).length;
+  const approvedNoIndexableSources = healthRows.filter((r) => Number(r.approved_count) > 0 && r.indexable_count_n === 0).length;
+  const lowFeedConvSources = healthRows.filter((r) => Number(r.approved_count) >= 20 && r.feed_conversion_pct < 25).length;
 
   const gradeOrder: Record<string, number> = { A: 1, B: 2, C: 3, D: 4 };
   const sortedSourceRows = [...stats.sourceRows].sort((a, b) => {
@@ -789,6 +818,19 @@ function DashboardView() {
           )}
         </div>
       )}
+
+      {/* ── Source Health (Sprint 2) ────────────────────────────── */}
+      <section className="surface-1 rounded-xl border border-border p-5">
+        <h2 className="text-base font-semibold text-foreground mb-4">Source health</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <SourceHealthStat label="Total sources" value={totalSources} />
+          <SourceHealthStat label="Fresh (≤30d)" value={freshSources} tone={freshSources === totalSources ? "good" : undefined} />
+          <SourceHealthStat label="Stale (>30d)" value={staleSourcesCount} tone={staleSourcesCount > 0 ? "warn" : "good"} />
+          <SourceHealthStat label="Missing sqm" value={missingSqmSources} tone={missingSqmSources > 0 ? "warn" : "good"} />
+          <SourceHealthStat label="Approved · 0 indexable" value={approvedNoIndexableSources} tone={approvedNoIndexableSources > 0 ? "bad" : "good"} />
+          <SourceHealthStat label="Low feed conversion" value={lowFeedConvSources} tone={lowFeedConvSources > 0 ? "warn" : "good"} />
+        </div>
+      </section>
 
       {/* ── Latest sync ─────────────────────────────────────────── */}
       <section className="surface-1 rounded-xl border border-border p-5">
@@ -1616,14 +1658,18 @@ function SourcesView() {
               </span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px] data-table data-table-id-narrow">
+              <table className="w-full min-w-[1100px] data-table data-table-id-narrow">
                 <thead>
                   <tr className="border-b border-border bg-surface-2">
                     <th className="text-left py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Source</th>
                     <th className="text-right py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Listings</th>
+                    <th className="text-right py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Public feed</th>
                     <th className="text-right py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Approved</th>
-                    <th className="text-right py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Images</th>
-                    <th className="text-right py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Prices</th>
+                    <th className="text-right py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Indexable</th>
+                    <th className="text-right py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Trust passed</th>
+                    <th className="text-right py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Sqm %</th>
+                    <th className="text-right py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Beds %</th>
+                    <th className="text-right py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Baths %</th>
                     <th className="text-left py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Freshness</th>
                     <th className="text-left py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Grade</th>
                   </tr>
@@ -1640,15 +1686,23 @@ function SourcesView() {
                           : fresh.days != null && fresh.days >= 14
                             ? "text-amber"
                             : "text-foreground-muted";
+                      const approvedN = Number(r.approved_count);
+                      const trustClass = approvedN > 0 && r.trust_passed_count_n === 0 ? "text-red" : "text-foreground-muted";
+                      const indexableClass = approvedN > 0 && r.indexable_count_n === 0 ? "text-red" : "text-foreground-muted";
+                      const sqmClass = Number(r.listing_count) >= 10 && Number(r.with_sqm_count ?? 0) === 0 ? "text-red" : "text-foreground-muted";
                       return (
                       <tr key={r.source_id} className="border-b border-border last:border-0 hover:bg-surface-3/50 transition-colors">
                         <td className="py-2.5 px-3 text-sm font-medium text-foreground">{r.sourceName}</td>
                         <td className="py-2.5 px-3 text-right text-sm text-foreground-muted tabular-nums font-mono">
                           {Number(r.listing_count).toLocaleString()}
                         </td>
-                        <td className="py-2.5 px-3 text-right text-sm text-foreground-muted tabular-nums font-mono">{r.approved_pct}%</td>
-                        <td className="py-2.5 px-3 text-right text-sm text-foreground-muted tabular-nums font-mono">{r.with_image_pct}%</td>
-                        <td className="py-2.5 px-3 text-right text-sm text-foreground-muted tabular-nums font-mono">{r.with_price_pct}%</td>
+                        <td className="py-2.5 px-3 text-right text-sm text-foreground-muted tabular-nums font-mono">{r.public_feed_count_n.toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right text-sm text-foreground-muted tabular-nums font-mono">{approvedN.toLocaleString()}</td>
+                        <td className={`py-2.5 px-3 text-right text-sm tabular-nums font-mono ${indexableClass}`}>{r.indexable_count_n.toLocaleString()}</td>
+                        <td className={`py-2.5 px-3 text-right text-sm tabular-nums font-mono ${trustClass}`}>{r.trust_passed_count_n.toLocaleString()}</td>
+                        <td className={`py-2.5 px-3 text-right text-sm tabular-nums font-mono ${sqmClass}`}>{r.with_sqm_pct}%</td>
+                        <td className="py-2.5 px-3 text-right text-sm text-foreground-muted tabular-nums font-mono">{r.with_beds_pct}%</td>
+                        <td className="py-2.5 px-3 text-right text-sm text-foreground-muted tabular-nums font-mono">{r.with_baths_pct}%</td>
                         <td
                           className={`py-2.5 px-3 text-sm tabular-nums font-mono ${freshClass}`}
                           title={r.last_updated_at ?? "No timestamp from RPC"}
@@ -1733,6 +1787,11 @@ function StatsView() {
   const gradeC = rows.filter((r) => r.grade === "C");
   const staleSources = rows.filter((r) => formatFreshness(r.last_updated_at).stale && !formatFreshness(r.last_updated_at).missing);
   const missingFreshness = rows.filter((r) => formatFreshness(r.last_updated_at).missing);
+  // Sprint 2 red flags — concrete per-source pathologies
+  const approvedNoTrust = rows.filter((r) => Number(r.approved_count) > 0 && r.trust_passed_count_n === 0);
+  const listingsNoApproved = rows.filter((r) => Number(r.listing_count) >= 10 && Number(r.approved_count) === 0);
+  const listingsNoSqm = rows.filter((r) => Number(r.listing_count) >= 10 && Number(r.with_sqm_count ?? 0) === 0);
+  const lowFeedConv = rows.filter((r) => Number(r.approved_count) >= 20 && r.feed_conversion_pct < 25);
   const byMarket = new Map<string, { listings: number; sources: number; approvedSum: number; worstGrade: number }>();
   rows.forEach((r) => {
     const m = r.marketId;
@@ -1763,7 +1822,11 @@ function StatsView() {
     (noPrice.length ? 1 : 0) +
     (singleSourceMarkets.length ? 1 : 0) +
     (staleSources.length ? 1 : 0) +
-    (missingFreshness.length ? 1 : 0);
+    (missingFreshness.length ? 1 : 0) +
+    approvedNoTrust.length +
+    listingsNoApproved.length +
+    listingsNoSqm.length +
+    lowFeedConv.length;
 
   return (
     <div className="space-y-6">
@@ -1888,6 +1951,38 @@ function StatsView() {
               </span>
             </div>
           )}
+          {approvedNoTrust.map((r) => (
+            <div key={`trust-${r.source_id}`} className="rounded-lg p-3 bg-red-muted text-sm flex gap-2 items-start">
+              <span className="text-red font-medium shrink-0">No trust pass</span>
+              <span className="text-foreground-muted">
+                <span className="font-mono">{r.source_id}</span> has {Number(r.approved_count).toLocaleString()} approved but 0 trust_passed
+              </span>
+            </div>
+          ))}
+          {listingsNoApproved.map((r) => (
+            <div key={`appr-${r.source_id}`} className="rounded-lg p-3 bg-red-muted text-sm flex gap-2 items-start">
+              <span className="text-red font-medium shrink-0">No approvals</span>
+              <span className="text-foreground-muted">
+                <span className="font-mono">{r.source_id}</span> has {Number(r.listing_count).toLocaleString()} listings but 0 approved
+              </span>
+            </div>
+          ))}
+          {listingsNoSqm.map((r) => (
+            <div key={`sqm-${r.source_id}`} className="rounded-lg p-3 bg-amber-muted text-sm flex gap-2 items-start">
+              <span className="text-amber font-medium shrink-0">No sqm</span>
+              <span className="text-foreground-muted">
+                <span className="font-mono">{r.source_id}</span> has {Number(r.listing_count).toLocaleString()} listings but 0 sqm
+              </span>
+            </div>
+          ))}
+          {lowFeedConv.map((r) => (
+            <div key={`conv-${r.source_id}`} className="rounded-lg p-3 bg-amber-muted text-sm flex gap-2 items-start">
+              <span className="text-amber font-medium shrink-0">Low feed conv</span>
+              <span className="text-foreground-muted">
+                <span className="font-mono">{r.source_id}</span>: {r.public_feed_count_n}/{Number(r.approved_count)} approved reach public feed ({r.feed_conversion_pct}%)
+              </span>
+            </div>
+          ))}
           {flagCount === 0 && (
             <div className="rounded-lg p-3 bg-green-muted text-sm text-green">
               No red flags or warnings.
