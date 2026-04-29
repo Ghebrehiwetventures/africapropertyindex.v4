@@ -179,3 +179,69 @@ input, select, textarea {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
+
+/* ── Data table — narrow-viewport usability ───────────────────────
+   For tables wrapped in <div class="overflow-x-auto">. Keeps the
+   first column (identifying column: Source, Title, etc.) visible
+   while horizontal-scrolling, and prevents header truncation.
+   Apply via class="data-table" on <table>. */
+
+/* Headers never wrap — prevents "APPROVED %" → "AP…" truncation. */
+.data-table thead th {
+  white-space: nowrap;
+}
+
+/* Sticky first column (identity column). */
+.data-table thead th:first-child,
+.data-table tbody td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.data-table thead th:first-child {
+  background: var(--color-surface-2);
+}
+
+.data-table tbody td:first-child {
+  background: var(--color-surface-1);
+}
+
+.data-table tbody tr:hover td:first-child {
+  background: var(--color-surface-2);
+}
+
+/* Subtle right-edge separator on the sticky first column so the
+   transition into the scrollable area is legible. */
+.data-table thead th:first-child,
+.data-table tbody td:first-child {
+  box-shadow: inset -1px 0 0 var(--color-border);
+}
+
+/* Tighten cell padding on small viewports to recover horizontal
+   space without changing typography. */
+@media (max-width: 640px) {
+  .data-table th,
+  .data-table td {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* Variant for tables whose first column is a free-text identifier
+   that can balloon with long values (e.g., "Capeverdeproperty24" in
+   the Sources tables). Requires table-layout: fixed because
+   table-layout: auto ignores width on cells. Apply this together
+   with .data-table on the source-quality and per-market tables. */
+@media (max-width: 640px) {
+  .data-table-id-narrow {
+    table-layout: fixed;
+  }
+  .data-table-id-narrow thead th:first-child,
+  .data-table-id-narrow tbody td:first-child {
+    width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
