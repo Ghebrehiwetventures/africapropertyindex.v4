@@ -8,6 +8,7 @@ const distDir = path.resolve(__dirname, "../dist");
 const baseHtmlPath = path.join(distDir, "index.html");
 const spaFallbackPath = path.join(distDir, "spa-fallback", "index.html");
 const blogDataPath = path.resolve(__dirname, "../src/lib/blog-data.ts");
+const faqDataPath = path.resolve(__dirname, "../src/lib/faq-data.ts");
 const prerenderListingsPath = path.resolve(__dirname, "../src/lib/prerender-listings.ts");
 const siteUrl = "https://kazaverde.com";
 const ogImage = `${siteUrl}/og-default.png`;
@@ -19,7 +20,7 @@ function page(title, description, body, options = {}) {
   return { title, description, body, ...options };
 }
 
-function getStaticRoutes(blogArticles, listingRoutes = []) {
+function getStaticRoutes(blogArticles, listingRoutes = [], faqEntries = []) {
   return [
     {
       route: "/",
@@ -100,44 +101,6 @@ function getStaticRoutes(blogArticles, listingRoutes = []) {
                 "query-input": "required name=search_term_string",
               },
             },
-            {
-              "@type": "FAQPage",
-              "@id": "https://kazaverde.com/#faq",
-              mainEntity: [
-                {
-                  "@type": "Question",
-                  name: "Is KazaVerde a real estate agency or broker?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "No. KazaVerde is an independent property search and data platform. We do not represent buyers or sellers and we do not charge commissions. Each listing links back to its original source.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "Where do KazaVerde listings come from?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Listings are aggregated from publicly accessible sources, including local Cape Verde agencies, international property portals and individual property websites. Each card links to the original source.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "Are listings on KazaVerde legally verified?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "No. KazaVerde does not perform legal, ownership or title verification. We surface what is publicly listed and link to the source so you can confirm details directly with the agent or seller and your own lawyer.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "Which Cape Verde islands does KazaVerde cover?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "KazaVerde tracks listings across multiple Cape Verde islands, including Sal, Boa Vista, Santiago, São Vicente and others where public listings are available.",
-                  },
-                },
-              ],
-            },
           ],
         },
       },
@@ -206,8 +169,32 @@ function getStaticRoutes(blogArticles, listingRoutes = []) {
               ).join("")}
             </ul>
           </section>
+
+          ${faqEntries.length > 0 ? `<section>
+            <h2>Frequently asked questions</h2>
+            <dl>
+              ${faqEntries.map((f) => `
+                <dt>${escapeHtml(f.question)}</dt>
+                <dd>${escapeHtml(f.answer)}</dd>
+              `).join("")}
+            </dl>
+          </section>` : ""}
         </main>
       `,
+      faqEntries.length > 0
+        ? {
+            jsonLd: {
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "@id": "https://kazaverde.com/blog#faq",
+              mainEntity: faqEntries.map((f) => ({
+                "@type": "Question",
+                name: f.question,
+                acceptedAnswer: { "@type": "Answer", text: f.answer },
+              })),
+            },
+          }
+        : {},
     ),
     },
     {
@@ -438,8 +425,9 @@ function getStaticRoutes(blogArticles, listingRoutes = []) {
 
 async function main() {
   const blogArticles = await loadBlogArticles();
+  const faqEntries = await loadFaqEntries();
   const listingRoutes = await getListingDetailRoutes();
-  const routes = [...getStaticRoutes(blogArticles, listingRoutes), ...getBlogArticleRoutes(blogArticles), ...listingRoutes];
+  const routes = [...getStaticRoutes(blogArticles, listingRoutes, faqEntries), ...getBlogArticleRoutes(blogArticles), ...listingRoutes];
   const baseHtml = await readFile(baseHtmlPath, "utf8");
 
   await mkdir(path.dirname(spaFallbackPath), { recursive: true });
@@ -599,6 +587,16 @@ function escapeHtml(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+async function loadFaqEntries() {
+  const source = await readFile(faqDataPath, "utf8");
+  const sanitizedSource = source
+    .replace(/export interface FaqEntry[\s\S]*?\n}\n\n/, "")
+    .replace(/export const FAQ_ENTRIES: FaqEntry\[] =/, "const FAQ_ENTRIES =");
+  const moduleUrl = `data:text/javascript;charset=utf-8,${encodeURIComponent(`${sanitizedSource}\nexport { FAQ_ENTRIES };`)}`;
+  const module = await import(moduleUrl);
+  return module.FAQ_ENTRIES;
 }
 
 async function loadBlogArticles() {

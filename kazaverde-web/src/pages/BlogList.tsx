@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import { BLOG_ARTICLES } from "../lib/blog-data";
@@ -41,6 +41,32 @@ export default function BlogList() {
 
   const [query, setQuery] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  /* Inject FAQPage JSON-LD built from the same FAQ_ENTRIES rendered on
+     this page, so the structured data matches visible content. */
+  useEffect(() => {
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "https://kazaverde.com";
+    const data = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "@id": `${origin}/blog#faq`,
+      mainEntity: FAQ_ENTRIES.map((f) => ({
+        "@type": "Question",
+        name: f.question,
+        acceptedAnswer: { "@type": "Answer", text: f.answer },
+      })),
+    };
+
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.dataset.kvJsonld = "blog-faq";
+    script.text = JSON.stringify(data);
+    document.head.appendChild(script);
+    return () => {
+      script.remove();
+    };
+  }, []);
 
   const filteredArticles = useMemo(
     () =>

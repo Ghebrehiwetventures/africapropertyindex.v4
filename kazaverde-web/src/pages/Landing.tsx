@@ -135,9 +135,9 @@ export default function Landing() {
     "Search Cape Verde real estate listings from local agencies, portals and property websites. Compare homes for sale across Sal, Boa Vista and other Cape Verde islands with KazaVerde.",
   );
 
-  /* Inject homepage JSON-LD: Organization + WebSite + FAQPage. Stays
-     accurate to KazaVerde's positioning — independent search/data
-     platform, not a broker, listings aggregated from public sources. */
+  /* Inject homepage JSON-LD: Organization + WebSite. FAQPage lives on
+     /blog where the Q&A is actually rendered — schema must match
+     visible page content. */
   useEffect(() => {
     const origin =
       typeof window !== "undefined" ? window.location.origin : "https://kazaverde.com";
@@ -169,48 +169,6 @@ export default function Landing() {
             },
             "query-input": "required name=search_term_string",
           },
-        },
-        {
-          "@type": "FAQPage",
-          "@id": `${origin}/#faq`,
-          mainEntity: [
-            {
-              "@type": "Question",
-              name: "Is KazaVerde a real estate agency or broker?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text:
-                  "No. KazaVerde is an independent property search and data platform. We do not represent buyers or sellers and we do not charge commissions. Each listing links back to its original source.",
-              },
-            },
-            {
-              "@type": "Question",
-              name: "Where do KazaVerde listings come from?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text:
-                  "Listings are aggregated from publicly accessible sources, including local Cape Verde agencies, international property portals and individual property websites. Each card links to the original source.",
-              },
-            },
-            {
-              "@type": "Question",
-              name: "Are listings on KazaVerde legally verified?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text:
-                  "No. KazaVerde does not perform legal, ownership or title verification. We surface what is publicly listed and link to the source so you can confirm details directly with the agent or seller and your own lawyer.",
-              },
-            },
-            {
-              "@type": "Question",
-              name: "Which Cape Verde islands does KazaVerde cover?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text:
-                  "KazaVerde tracks listings across multiple Cape Verde islands, including Sal, Boa Vista, Santiago, São Vicente and others where public listings are available.",
-              },
-            },
-          ],
         },
       ],
     };
