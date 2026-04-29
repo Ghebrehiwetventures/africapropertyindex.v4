@@ -826,7 +826,7 @@ function DashboardView() {
         <h2 className="text-base font-semibold text-foreground mb-4">Source quality</h2>
         <div className="surface-1 rounded-xl border border-border overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px]">
+            <table className="w-full min-w-[700px] data-table data-table-id-narrow">
               <thead>
                 <tr className="border-b border-border bg-surface-2">
                   {(
@@ -1403,7 +1403,7 @@ function ListingsTabView() {
         <>
           <div className="surface-1 rounded-xl border border-border overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1000px]">
+              <table className="w-full min-w-[1000px] data-table">
                 <thead>
                   <tr className="border-b border-border bg-surface-2">
                     {LISTINGS_COLUMNS.map(({ key, label }) =>
@@ -1601,7 +1601,7 @@ function SourcesView() {
               </span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px]">
+              <table className="w-full min-w-[700px] data-table data-table-id-narrow">
                 <thead>
                   <tr className="border-b border-border bg-surface-2">
                     <th className="text-left py-2.5 px-3 text-[11px] uppercase tracking-wider text-foreground-subtle font-medium">Source</th>
