@@ -195,6 +195,113 @@ const FIXTURES: Listing[] = [
     approved: true,
     description: "Large premium apartment.",
   },
+  // Missing property_type, but title clearly says apartment. Must not appear
+  // as a land partial just because the structured type is missing.
+  {
+    id: "11",
+    title: "DuarGema, House of Diaspora - B13 Apartment T1",
+    price: 59_000,
+    currency: "EUR",
+    images: [],
+    sourceId: "cv_duargema",
+    sourceName: "DuarGema",
+    sourceUrl: "https://example.com/listing/11",
+    island: "Santiago",
+    city: "Praia",
+    bedrooms: 1,
+    bathrooms: 1,
+    area_sqm: 48,
+    approved: true,
+    description: "Apartment record with sparse source metadata.",
+  },
+  // Missing property_type records with obvious title contradictions for villa.
+  {
+    id: "12",
+    title: "Sea View Apartment",
+    price: 165_000,
+    currency: "EUR",
+    images: [],
+    sourceId: "cv_boa",
+    sourceName: "Boa Vista Source",
+    sourceUrl: "https://example.com/listing/12",
+    island: "Boa Vista",
+    city: "Sal Rei",
+    bedrooms: 2,
+    bathrooms: 1,
+    area_sqm: 82,
+    approved: true,
+    description: "Sea view apartment close to the beach.",
+  },
+  {
+    id: "13",
+    title: "BUILDING PLOT ON THE BEACH",
+    price: 120_000,
+    currency: "EUR",
+    images: [],
+    sourceId: "cv_boa",
+    sourceName: "Boa Vista Source",
+    sourceUrl: "https://example.com/listing/13",
+    island: "Boa Vista",
+    city: "Sal Rei",
+    bedrooms: null,
+    bathrooms: null,
+    area_sqm: 300,
+    approved: true,
+    description: "Plot with beach access.",
+  },
+  {
+    id: "14",
+    title: "BUILDING LAND CLOSE TO PRAIA DO ESTORIL BEACH 300 m2",
+    price: 95_000,
+    currency: "EUR",
+    images: [],
+    sourceId: "cv_boa",
+    sourceName: "Boa Vista Source",
+    sourceUrl: "https://example.com/listing/14",
+    island: "Boa Vista",
+    city: "Sal Rei",
+    bedrooms: null,
+    bathrooms: null,
+    area_sqm: 300,
+    approved: true,
+    description: "Building land near Praia do Estoril.",
+  },
+  // Commercial title should not appear for apartment searches.
+  {
+    id: "15",
+    title: "Negozio in Santa Maria",
+    price: 50_000,
+    currency: "EUR",
+    images: [],
+    sourceId: "cv_commercial",
+    sourceName: "Commercial CV",
+    sourceUrl: "https://example.com/listing/15",
+    island: "Sal",
+    city: "Santa Maria",
+    bedrooms: null,
+    bathrooms: 1,
+    area_sqm: 35,
+    approved: true,
+    description: "Small shop unit.",
+  },
+  // Sparse source record without a contradicting title can still be partial.
+  {
+    id: "16",
+    title: "Affordable unit in Santa Maria",
+    price: 95_000,
+    currency: "EUR",
+    images: [],
+    sourceId: "cv_sparse",
+    sourceName: "Sparse Source",
+    sourceUrl: "https://example.com/listing/16",
+    island: "Sal",
+    city: "Santa Maria",
+    bedrooms: 2,
+    bathrooms: 1,
+    area_sqm: 72,
+    approved: true,
+    description: "Sparse source record with no property type.",
+  },
 ];
 
 const SAMPLES = [
@@ -534,6 +641,99 @@ function runRegressions() {
       "R14: broad holiday apartment search does not rank the €3.12M outlier first");
     assert(!m[0]?.reasons.includes("highest price among matches"),
       "R14: broad holiday apartment search is not using most-expensive selector ranking");
+  }
+
+  // R15: missing property_type cannot make an obvious apartment a land partial.
+  {
+    const out = respondToPropertyChat({
+      message: "cheap land in Santiago",
+      state: { intent: { keywords: [] }, lastMatches: [], turns: [] },
+      listings: FIXTURES,
+    });
+    const ids = new Set((out.reply.matches ?? []).map((x) => x.listing.id));
+    assert(!ids.has("11"),
+      "R15: Apartment T1 with missing property_type is excluded from land matches");
+  }
+
+  // R16: missing property_type cannot make obvious apartments/plots villa partials.
+  {
+    const out = respondToPropertyChat({
+      message: "beachfront villa in Boa Vista under 500000",
+      state: { intent: { keywords: [] }, lastMatches: [], turns: [] },
+      listings: FIXTURES,
+    });
+    const ids = new Set((out.reply.matches ?? []).map((x) => x.listing.id));
+    assert(!ids.has("12"),
+      "R16: Sea View Apartment is excluded from villa matches");
+    assert(!ids.has("13"),
+      "R16: BUILDING PLOT ON THE BEACH is excluded from villa matches");
+    assert(!ids.has("14"),
+      "R16: BUILDING LAND near Estoril is excluded from villa matches");
+  }
+
+  // R17: commercial/shop-like records should not appear for apartment searches.
+  {
+    const out = respondToPropertyChat({
+      message: "2 bedroom apartment in Sal under 200k",
+      state: { intent: { keywords: [] }, lastMatches: [], turns: [] },
+      listings: FIXTURES,
+    });
+    const ids = new Set((out.reply.matches ?? []).map((x) => x.listing.id));
+    assert(!ids.has("15"),
+      "R17: Negozio/shop record is excluded from apartment matches");
+  }
+
+  // R18: sparse missing-type records can still be partial when not contradictory.
+  {
+    const out = respondToPropertyChat({
+      message: "2 bedroom apartment in Sal under 200k",
+      state: { intent: { keywords: [] }, lastMatches: [], turns: [] },
+      listings: FIXTURES,
+    });
+    const sparse = (out.reply.matches ?? []).find((x) => x.listing.id === "16");
+    assert(sparse?.confidence === "partial",
+      "R18: non-contradictory missing-property-type record remains a partial match");
+    assert(sparse?.unknownFields.includes("property_type") === true,
+      "R18: sparse partial is labeled as missing property_type");
+  }
+
+  // R19: repeated cheaper refinements should not degrade into weak partials.
+  {
+    let state: ChatState = { intent: { keywords: [] }, lastMatches: [], turns: [] };
+    state = respondToPropertyChat({
+      message: "2 bedroom apartment in Sal under 200k",
+      state, listings: FIXTURES,
+    }).state;
+    const beforeIntent = JSON.stringify(state.intent);
+    const beforeMatches = matchIds(state);
+    const out = respondToPropertyChat({
+      message: "show cheaper ones",
+      state, listings: FIXTURES,
+    });
+    assert(/I don't have good cheaper apartment matches/.test(out.reply.text),
+      "R19: weak-only cheaper result gets a guardrail response");
+    assert(!out.reply.matches?.length,
+      "R19: weak-only cheaper result renders no listing cards");
+    assert(JSON.stringify(out.state.intent) === beforeIntent,
+      "R19: weak-only cheaper result does not mutate the last good intent");
+    assert(matchIds(out.state) === beforeMatches,
+      "R19: weak-only cheaper result preserves last good matches");
+
+    const out2 = respondToPropertyChat({
+      message: "show cheaper ones",
+      state: out.state, listings: FIXTURES,
+    });
+    assert(!out2.reply.matches?.length,
+      "R19: repeated cheaper guard still renders no listing cards");
+    assert(matchIds(out2.state) === beforeMatches,
+      "R19: repeated cheaper guard keeps prior links available");
+
+    const links = respondToPropertyChat({
+      message: "send me the links",
+      state: out2.state, listings: FIXTURES,
+    });
+    assert(links.reply.text.includes("https://example.com/listing/1"),
+      "R19: send links still uses the last good cheaper-search matches");
   }
 }
 

@@ -77,6 +77,18 @@ function formatPrice(n: number): string {
   return String(n);
 }
 
+function cheaperWeakOnlyReply(intent: BuyerIntent): string {
+  const type = intent.propertyType ?? "property";
+  return `I don't have good cheaper ${type} matches with the current data. Do you want to relax bedrooms, increase budget, or see possible matches with missing data?`;
+}
+
+function isWeakCheaperResult(parsed: ParseResult, matches: ListingMatch[]): boolean {
+  return (
+    parsed.modifiers.includes("cheaper") &&
+    matches.every((m) => m.confidence !== "strong")
+  );
+}
+
 /** Map applicable-field keys to user-facing words, for the data-quality note. */
 const FIELD_LABEL: Record<string, string> = {
   price: "price",
@@ -283,6 +295,22 @@ export function respondToPropertyChat(input: RespondInput): RespondOutput {
   // ── Run match ────────────────────────────────────────────────────────
   const limit = newIntent.selector ? 1 : 5;
   const matches = matchListings(listings, newIntent, { limit });
+
+  if (cls === "refinement" && newIntent.propertyType && isWeakCheaperResult(parsed, matches)) {
+    const assistantTurn: ChatTurn = {
+      role: "assistant",
+      text: cheaperWeakOnlyReply(newIntent),
+      intentSnapshot: state.intent,
+    };
+    return {
+      state: {
+        intent: state.intent,
+        lastMatches: state.lastMatches,
+        turns: [...state.turns, userTurn, assistantTurn],
+      },
+      reply: assistantTurn,
+    };
+  }
 
   // If the user combined a selector with a send_links request (e.g.
   // "send me link to the most expensive house"), reply with a link list.

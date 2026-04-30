@@ -32,6 +32,7 @@ const HOLIDAY_TERMS = [
 ];
 
 type ConstraintState = "verified" | "violated" | "unknown";
+type InferredListingType = "land" | "apartment" | "villa" | "house" | "commercial";
 
 function listingText(listing: Listing): string {
   return [listing.title, listing.description, listing.city, listing.island]
@@ -40,20 +41,85 @@ function listingText(listing: Listing): string {
     .toLowerCase();
 }
 
+function hasTypeKeyword(text: string, want: PropertyTypeIntent): boolean {
+  return TYPE_KEYWORDS[want].some((kw) => text.includes(kw));
+}
+
+function inferListingTypes(listing: Listing): Set<InferredListingType> {
+  const text = listingText(listing);
+  const inferred = new Set<InferredListingType>();
+
+  if (/\b(building\s+)?(land|plot|plots|parcel|terrain|terreno|lote|lot)\b/.test(text)) {
+    inferred.add("land");
+  }
+  if (
+    /\b(apartment|apartments|flat|flats|studio|studios|t[0-9]|condominium|condo|penthouse)\b/.test(text)
+  ) {
+    inferred.add("apartment");
+  }
+  if (/\b(villa|villas)\b/.test(text)) {
+    inferred.add("villa");
+  }
+  if (/\b(house|houses|detached|townhouse|home|homes|moradia)\b/.test(text)) {
+    inferred.add("house");
+  }
+  if (
+    /\b(negozio|shop|shops|commercial|office|retail|store|loja|restaurant|bar)\b/.test(text)
+  ) {
+    inferred.add("commercial");
+  }
+
+  return inferred;
+}
+
+function inferredTypesVerifyRequest(
+  inferred: Set<InferredListingType>,
+  want: PropertyTypeIntent
+): boolean {
+  if (want === "studio") return inferred.has("apartment");
+  return inferred.has(want);
+}
+
+function inferredTypesContradictRequest(
+  inferred: Set<InferredListingType>,
+  want: PropertyTypeIntent
+): boolean {
+  if (inferred.size === 0 || inferredTypesVerifyRequest(inferred, want)) {
+    return false;
+  }
+  if (inferred.has("commercial") && want !== "commercial") return true;
+  if (want === "land") {
+    return inferred.has("apartment") || inferred.has("villa") || inferred.has("house");
+  }
+  if (want === "apartment" || want === "studio") {
+    return inferred.has("land") || inferred.has("villa") || inferred.has("house");
+  }
+  if (want === "villa" || want === "house") {
+    return inferred.has("land") || inferred.has("apartment");
+  }
+  if (want === "commercial") {
+    return (
+      inferred.has("land") ||
+      inferred.has("apartment") ||
+      inferred.has("villa") ||
+      inferred.has("house")
+    );
+  }
+  return false;
+}
+
 function listingTypeState(
   listing: Listing,
   want: PropertyTypeIntent
 ): ConstraintState {
-  const haystack = [listing.property_type, listing.title]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  if (!haystack) return "unknown";
-  // Special case: land is detectable by title even when property_type is null.
-  if (TYPE_KEYWORDS[want].some((kw) => haystack.includes(kw))) return "verified";
-  // If property_type field is set and disagrees, treat as violated.
-  if (listing.property_type) return "violated";
-  // If title exists but no type keyword and no property_type field, unknown.
+  if (listing.property_type) {
+    const explicit = listing.property_type.toLowerCase();
+    return hasTypeKeyword(explicit, want) ? "verified" : "violated";
+  }
+
+  const inferred = inferListingTypes(listing);
+  if (inferredTypesVerifyRequest(inferred, want)) return "verified";
+  if (inferredTypesContradictRequest(inferred, want)) return "violated";
   return "unknown";
 }
 
