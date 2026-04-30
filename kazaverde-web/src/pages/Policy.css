@@ -177,34 +177,19 @@
   margin-top: 14px;
 }
 .kv-pol-founder-byline {
-  display: flex;
-  align-items: center;
-  gap: 14px;
   margin-top: 26px;
   padding-top: 18px;
   border-top: 1px solid var(--kv-rule);
-}
-.kv-pol-founder-mark {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  background: var(--kv-green-deep, var(--kv-green));
-  color: var(--kv-green);
-  font-family: var(--kv-mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  max-width: 720px;
 }
 .kv-pol-founder-meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 .kv-pol-founder-name {
   font-family: var(--kv-mono);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--kv-black);
 }
@@ -215,15 +200,15 @@
 }
 .kv-pol-founder-link {
   align-self: flex-start;
-  margin-top: 6px;
+  margin-top: 8px;
   font-family: var(--kv-mono);
   font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--kv-black);
+  color: var(--kv-ink-700);
   text-decoration: none;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.28);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.22);
   transition: color var(--kv-dur-fast) var(--kv-ease), border-color var(--kv-dur-fast) var(--kv-ease);
 }
 .kv-pol-founder-link:hover {
@@ -236,5 +221,4 @@
   .kv-pol-prose, .kv-pol-list, .kv-pol-pull { font-size: 14.5px; }
   .kv-pol-cards { grid-template-columns: 1fr; }
   .kv-pol-founder-quote { font-size: 15px; }
-  .kv-pol-founder-byline { align-items: flex-start; }
 }
