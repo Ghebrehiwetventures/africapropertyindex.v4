@@ -382,6 +382,65 @@
   border-top: 1px dashed var(--kv-rule-soft);
 }
 
+.kv-lcard-skeleton {
+  pointer-events: none;
+}
+.kv-lcard-skeleton:hover {
+  border-color: var(--kv-rule);
+  transform: none;
+}
+.kv-lcard-skeleton .kv-lc-img {
+  background: var(--kv-off-white);
+}
+.kv-lcard-skeleton .kv-lc-topline,
+.kv-lcard-skeleton .kv-lc-provenance {
+  min-height: 14px;
+}
+.kv-lcard-skeleton .kv-lc-specs {
+  min-height: 31px;
+}
+.kv-skel-line {
+  display: block;
+  width: 72%;
+  height: 12px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--kv-rule-soft), var(--kv-off-white), var(--kv-rule-soft));
+  background-size: 180% 100%;
+}
+.kv-skel-wide { width: 88%; }
+.kv-skel-short { width: 42%; }
+.kv-skel-xs {
+  width: 68px;
+  height: 10px;
+}
+.kv-skel-price {
+  width: 118px;
+  height: 22px;
+  margin-bottom: 8px;
+}
+.kv-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .kv-skel-line {
+    animation: kv-skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes kv-skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
 /* ═══════════ EMPTY / ERROR ═══════════ */
 .kv-empty {
   padding: 60px 20px;
