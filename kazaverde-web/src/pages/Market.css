@@ -32,11 +32,8 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 40px;
-  /* center, not stretch — stretch on the map card would re-introduce
-     empty bands above/below its 2:1 surface. center keeps the fact
-     table (which has more rows than the map has height) optically
-     balanced against the map instead of top-anchored. */
-  align-items: center;
+  /* stretch so the map card matches the facts panel's exact height. */
+  align-items: stretch;
 }
 .kv-m-geo-map {
   position: relative;
@@ -47,6 +44,7 @@
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+  display: flex;
 }
 /* Wrapper sits as the left grid item on desktop and stacks above
    the fact table on mobile (kv-m-geo-grid behaviour). Holds the
@@ -58,12 +56,14 @@
   min-width: 0;
   max-width: 100%;
 }
-/* GL JS map container. 2:1 aspect ratio drives the height so the
-   card matches the bbox proportions and shrinks gracefully on
-   mobile — no fixed pixel height. */
+/* GL JS map container. Fills the parent card so the map height
+   tracks the facts panel exactly on desktop. On mobile the grid
+   collapses to a single column and the min-height below keeps the
+   card a sensible size. */
 .kv-m-geo-mapbox {
   width: 100%;
-  aspect-ratio: 2 / 1;
+  flex: 1;
+  min-height: 320px;
   background: var(--kv-paper);
 }
 
@@ -92,10 +92,11 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
-  /* Match the live map's 2:1 aspect so the card is the same height
-     either way and the grid rhythm doesn't shift when the token is
-     missing locally. */
-  aspect-ratio: 2 / 1;
+  /* Fills the parent card height (which is grid-stretched to match
+     the facts panel). Min-height keeps the fallback usable on mobile
+     where the grid collapses to a single column. */
+  flex: 1;
+  min-height: 320px;
   background: var(--kv-paper);
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
