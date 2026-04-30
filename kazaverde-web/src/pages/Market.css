@@ -44,7 +44,6 @@
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-  display: flex;
 }
 /* Wrapper sits as the left grid item on desktop and stacks above
    the fact table on mobile (kv-m-geo-grid behaviour). Holds the
@@ -61,8 +60,8 @@
    collapses to a single column and the min-height below keeps the
    card a sensible size. */
 .kv-m-geo-mapbox {
-  width: 100%;
-  flex: 1;
+  position: absolute;
+  inset: 0;
   background: var(--kv-paper);
 }
 
@@ -85,15 +84,13 @@
 /* Fallback shown when VITE_MAPBOX_TOKEN is missing. Editorial card,
    same dimensions as the live map so the page rhythm is preserved. */
 .kv-m-geo-fallback {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
-  /* Fills the parent card height (which is grid-stretched to match
-     the facts panel on desktop). */
-  flex: 1;
   background: var(--kv-paper);
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
@@ -154,10 +151,11 @@
 @media (max-width: 640px) {
   .kv-m-geo { padding: 28px 0; }
   .kv-m-geo-grid { grid-template-columns: 1fr; gap: 16px; }
-  /* On mobile each grid item lives in its own row, so stretch is a
-     no-op — give the map/fallback an explicit 2:1 height instead. */
-  .kv-m-geo-mapbox,
-  .kv-m-geo-fallback { aspect-ratio: 2 / 1; }
+  /* On mobile each grid item lives in its own row, so the map card
+     no longer inherits a stretched height — give it an intrinsic
+     2:1 aspect ratio. The absolutely-positioned map/fallback fills
+     the card. */
+  .kv-m-geo-map { aspect-ratio: 2 / 1; }
 }
 
 /* ─── Intro band — sits between hero and KPI strip ─── */
