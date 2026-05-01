@@ -438,6 +438,13 @@ export default function Listings() {
           </div>
 
           <div className="kv-sort-wrap">
+            <button
+              type="button"
+              className="kv-sort"
+              onClick={(e) => stopAndToggle(e, "sort")}
+            >
+              Sort by <b>{sortLabel}</b> ▾
+            </button>
             <div className="kv-view-toggle" role="group" aria-label="View mode">
               <button
                 type="button"
@@ -458,13 +465,6 @@ export default function Listings() {
                 <ListIcon />
               </button>
             </div>
-            <button
-              type="button"
-              className="kv-sort"
-              onClick={(e) => stopAndToggle(e, "sort")}
-            >
-              Sort by <b>{sortLabel}</b> ▾
-            </button>
             {openPop === "sort" && (
               <PopOver className="kv-pop-right" onClickInside={(e) => e.stopPropagation()}>
                 <div className="kv-pop-h">Sort</div>
