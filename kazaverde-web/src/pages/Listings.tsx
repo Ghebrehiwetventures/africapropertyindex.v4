@@ -787,7 +787,6 @@ function ListingRow({ l }: { l: ListingCard }) {
           <span>{relTime(l.first_seen_at)}</span>
         </div>
       </div>
-      <span className="kv-list-row-arrow" aria-hidden="true">→</span>
     </Link>
   );
 }
