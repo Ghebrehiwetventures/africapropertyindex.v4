@@ -663,6 +663,17 @@
   color: var(--kv-black);
 }
 .kv-d-btn-ghost:active { transform: translateY(1px); }
+.kv-d-btn-source {
+  color: var(--kv-black);
+  text-decoration: none;
+}
+.kv-d-wa-note {
+  margin: 8px 0 0;
+  font-family: var(--kv-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--kv-gray-500);
+}
 
 /* Listing-summary inner blocks — cv-listing.html .s-price/.s-specs.
    Light-weight large price + tight subline, then specs row that
@@ -1672,8 +1683,8 @@
 
 /* ══════════════════════════════════════════════════════════
    MOBILE STICKY CTA
-   Visible <768px only. Mirrors aside's "View on source" so
-   the primary action stays one tap away while the user scrolls
+   Visible <768px only. Mirrors aside's primary action so the
+   WhatsApp/source CTA stays one tap away while the user scrolls
    long descriptions / Mortgage / Market context / Similar.
    Hidden on desktop where the sidebar already provides this CTA.
    ══════════════════════════════════════════════════════════ */

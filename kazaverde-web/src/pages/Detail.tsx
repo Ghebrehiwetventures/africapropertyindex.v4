@@ -16,6 +16,8 @@ import {
   formatMedian,
   formatPricePerSqm,
 } from "../lib/format";
+import { trackEvent, type EventMetadata } from "../lib/events";
+import { buildWhatsAppUrl, WHATSAPP_CTA_VARIANT_ID } from "../lib/whatsapp";
 // Italian-runtime-translation helper removed: descriptions are now
 // pre-translated and rewritten in AREI voice via the backend backfill
 // (Claude Sonnet 4.6, see scripts/backfill_ai_descriptions.ts) and
@@ -192,6 +194,21 @@ function buildListingMetaDescription(detail: ListingDetailType, title: string): 
   return truncateSeoText(parts.join(" "));
 }
 
+function whatsappEventMetadata(
+  detail: ListingDetailType,
+  ctaLocation: string
+): EventMetadata {
+  return {
+    listing_id: detail.id,
+    source: detail.source_id,
+    island: detail.island,
+    city: detail.city,
+    page_type: "listing_detail",
+    variant_id: WHATSAPP_CTA_VARIANT_ID,
+    cta_location: ctaLocation,
+  };
+}
+
 /** Extract a short slug from source_id (e.g. "cv_gabetticasecapoverde:CV-TER339" → "TCV") */
 /* Map our free-form property_type onto schema.org Residence subtypes.
    Falls back to "Residence" when nothing matches — still valid per the
@@ -229,6 +246,24 @@ export default function Detail() {
 
   const displayTitle = detail ? toTitleCase(detail.title) : "Property";
   const listingCanonicalUrl = detail ? buildListingCanonicalUrl(detail.id) : undefined;
+  const whatsappUrl = useMemo(
+    () =>
+      detail
+        ? buildWhatsAppUrl({
+            title: displayTitle,
+            city: detail.city,
+            island: detail.island,
+            listingId: detail.id,
+            sourceId: detail.source_id,
+          })
+        : null,
+    [detail, displayTitle]
+  );
+
+  const trackWhatsAppClick = (ctaLocation: string) => {
+    if (!detail) return;
+    trackEvent("wa_click", whatsappEventMetadata(detail, ctaLocation));
+  };
 
   useDocumentMeta(
     detail ? displayTitle : error ? "Property not found" : "Property",
@@ -241,6 +276,15 @@ export default function Detail() {
         ? { image: images[0] }
         : undefined
   );
+
+  useEffect(() => {
+    if (!detail || !whatsappUrl) return;
+
+    trackEvent("wa_cta_view", whatsappEventMetadata(detail, "listing_detail_sidebar"));
+    if (window.matchMedia("(max-width: 768px)").matches) {
+      trackEvent("wa_cta_view", whatsappEventMetadata(detail, "listing_detail_mobile_sticky"));
+    }
+  }, [detail, whatsappUrl]);
 
   /* JSON-LD RealEstateListing — gives Google the structured data needed for
      property rich results. Injected as a single <script> tag in the head and
@@ -835,16 +879,43 @@ export default function Detail() {
                 </div>
               )}
 
-              {detail.source_url && (
-                <a
-                  className="kv-d-btn-primary"
-                  href={detail.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <span>View on {formatSourceLabel(detail.source_id)}</span>
-                  <span aria-hidden="true">→</span>
-                </a>
+              {whatsappUrl ? (
+                <>
+                  <a
+                    className="kv-d-btn-primary"
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackWhatsAppClick("listing_detail_sidebar")}
+                  >
+                    <span>Check availability on WhatsApp</span>
+                    <span aria-hidden="true">→</span>
+                  </a>
+                  <p className="kv-d-wa-note">Ask price, availability, or viewing.</p>
+                  {detail.source_url && (
+                    <a
+                      className="kv-d-btn-ghost kv-d-btn-source"
+                      href={detail.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span>View on {formatSourceLabel(detail.source_id)}</span>
+                      <span aria-hidden="true">→</span>
+                    </a>
+                  )}
+                </>
+              ) : (
+                detail.source_url && (
+                  <a
+                    className="kv-d-btn-primary"
+                    href={detail.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span>View on {formatSourceLabel(detail.source_id)}</span>
+                    <span aria-hidden="true">→</span>
+                  </a>
+                )
               )}
               <button
                 type="button"
@@ -945,9 +1016,9 @@ export default function Detail() {
       {similar.length >= 3 && <KvSimilar cards={similar} />}
 
       {/* Mobile sticky CTA — visible <768px, mirrors aside's primary
-          action so the View-on-source link is one tap away while
-          scrolling. Uses position: fixed at viewport bottom. */}
-      {detail.source_url && (
+          action so WhatsApp/source is one tap away while scrolling.
+          Uses position: fixed at viewport bottom. */}
+      {(whatsappUrl || detail.source_url) && (
         <div className="kv-d-mcta" role="region" aria-label="Listing actions">
           <div className="kv-d-mcta-info">
             {detail.price && (
@@ -957,11 +1028,14 @@ export default function Detail() {
           </div>
           <a
             className="kv-d-mcta-btn"
-            href={detail.source_url}
+            href={whatsappUrl ?? detail.source_url}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              if (whatsappUrl) trackWhatsAppClick("listing_detail_mobile_sticky");
+            }}
           >
-            View <span aria-hidden="true">→</span>
+            {whatsappUrl ? "WhatsApp" : "View"} <span aria-hidden="true">→</span>
           </a>
         </div>
       )}
