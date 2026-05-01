@@ -443,7 +443,7 @@ export default function Listings() {
               className="kv-sort"
               onClick={(e) => stopAndToggle(e, "sort")}
             >
-              Sort by <b>{sortLabel}</b> ▾
+              <span className="kv-sort-prefix">Sort by </span><b>{sortLabel}</b> ▾
             </button>
             <div className="kv-view-toggle" role="group" aria-label="View mode">
               <button

@@ -624,7 +624,16 @@
     min-width: 0;
   }
   /* Trim sort chip slightly so the row stays comfortable at 360px. */
-  .kv-sort { font-size: 10.5px; letter-spacing: 0.06em; padding: 6px 0; }
+  .kv-sort {
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    padding: 6px 0;
+    white-space: nowrap;
+  }
+  /* Drop the "Sort by " prefix on phones — saves ~45px so longer labels
+     ("SIZE — LARGEST FIRST") stay on one line next to the count and
+     the view toggle. The bold value alone is unambiguous. */
+  .kv-sort-prefix { display: none; }
   /* Tighter gap between view toggle and sort on phones — the row at
      360px holds count + toggle + sort and overflows with longer sort
      labels ("SIZE — LARGEST FIRST"). Shrink the toggle and the gap. */
